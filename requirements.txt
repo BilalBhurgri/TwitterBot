@@ -12,3 +12,4 @@ requests
 tweepy
 python-dotenv
 ollama
+arxiv
