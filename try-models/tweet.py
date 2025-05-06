@@ -4,14 +4,14 @@ import random
 import argparse
 import json
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import tweepy  # You'll need to install this
 
 # Set up argument parser
 parser = argparse.ArgumentParser(description='Generate tweets from paper database')
 parser.add_argument('--name', required=True, help='DB name')
 parser.add_argument('--topic', default=None, help='Optional topic to focus on')
-parser.add_argument('--recent_days', type=int, default=30, help='Focus on papers from last N days')
+parser.add_argument('--days', type=int, default=30, help='Focus on papers from last N days')
 parser.add_argument('--post', action='store_true', help='Actually post to Twitter')
 args = parser.parse_args()
 
@@ -43,32 +43,35 @@ def get_recent_papers(days=30):
     # This approach works for smaller collections; for larger ones,
     # you might want to add publication date to the metadata and query by that
     results = collection.query(
-        query_texts=[""],  # Empty query to get all papers
-        n_results=1000,    # Adjust based on your collection size
-        include=["metadatas"]
+        query_texts=[""], # Empty query to get all papers
+        n_results=1000, # Adjust based on your collection size
+        include=["metadatas"],
+        where = {"chunk_index": {"$eq": 0}} # Get the abstract chunk
     )
-    
+
     recent_papers = set()
-    cutoff_date = datetime.now() - timedelta(days=days)
-    
-    for metadata in results["metadatas"]:
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
+
+    for metadata, doc_id in zip(results["metadatas"][0], results["ids"][0]):
         paper_metadata = json.loads(metadata["metadata"])
         pub_date = datetime.fromisoformat(paper_metadata["published"])
         if pub_date >= cutoff_date:
             # Extract the paper ID from the chunk ID
-            paper_id = metadata["id"].split("_")[0]
+            paper_id = doc_id.split("_")[0]
+            print(paper_id)
             recent_papers.add(paper_id)
-    
+
     return list(recent_papers)
 
-def query_papers(query_text, n_results=5):
+def query_papers(query_text, n_results=3):
     """Query the database for relevant paper chunks"""
     query_embedding = model.encode(query_text)
     
     results = collection.query(
         query_embeddings=[query_embedding.tolist()],
         n_results=n_results,
-        include=["documents", "metadatas"]
+        include=["documents", "metadatas"],
+        where = {"chunk_index": {"$eq": 0}} # Get the abstract chunk
     )
     
     return results
@@ -78,7 +81,7 @@ def extract_interesting_finding(paper_id):
     # First get the abstract
     abstract_results = collection.query(
         query_texts=[""],  # Empty query
-        where={"$and": [{"id": {"$eq": f"{paper_id}_0"}}]},  # Get the abstract chunk
+        where={"id": {"$eq": f"{paper_id}_0"}},  # Get the abstract chunk
         include=["documents", "metadatas"]
     )
     
@@ -145,15 +148,12 @@ def generate_tweet(results, paper_metadata):
     return tweet
 
 def main():
-    # Get recent papers
-    recent_papers = get_recent_papers(days=args.recent_days)
-    
-    if not recent_papers:
-        print("No recent papers found!")
-        return
-    
-    # Choose a random paper if no specific topic
+    # Choose a random recent paper if no specific topic
     if args.topic is None:
+        recent_papers = get_recent_papers(days=args.days)
+        if not recent_papers:
+            print("No recent papers found!")
+            return
         paper_id = random.choice(recent_papers)
         results, paper_metadata = extract_interesting_finding(paper_id)
     else:
@@ -163,8 +163,9 @@ def main():
             print(f"No relevant papers found for topic: {args.topic}")
             return
         
-        # Extract paper ID from the first result
-        paper_id = topic_results["metadatas"][0]["id"].split("_")[0]
+        # Extract paper ID from a random result
+        print(topic_results["ids"][0])
+        paper_id = random.choice(topic_results["ids"][0]).split("_")[0]
         results, paper_metadata = extract_interesting_finding(paper_id)
     
     if not results or not paper_metadata:
@@ -172,7 +173,8 @@ def main():
         return
     
     # Generate tweet
-    tweet = generate_tweet(results, paper_metadata)
+    # tweet = generate_tweet(results, paper_metadata)
+    tweet = "Test Tweet"
     print("\n--- Generated Tweet ---")
     print(tweet)
     print("--- End Tweet ---\n")
