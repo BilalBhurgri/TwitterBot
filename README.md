@@ -1,6 +1,6 @@
 # TwitterBot
-
-
+1) Python libraries needed for scraping: playwright, requests, tweepy, python-dotenv, ollama
+2) Make .env file with api keys
 
 ## Setup
 
