@@ -4,3 +4,4 @@ abstracts
 snippets
 .env
 .env
+__pycache__/
