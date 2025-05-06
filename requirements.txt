@@ -8,3 +8,8 @@ langchain-community
 langchain-huggingface
 PyMuPDF
 arxiv
+playwright
+requests
+tweepy
+python-dotenv
+ollama
