@@ -14,9 +14,11 @@ parser.add_argument('--input', required=True, help='File with arXiv URLs')
 args = parser.parse_args()
 
 # Initialize components
+EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+model = SentenceTransformer(EMBEDDING_MODEL)  # Direct model usage
+
 client = chromadb.PersistentClient(path=f"./db/{args.name}")
 collection = client.get_or_create_collection(name="papers")
-model = SentenceTransformer("all-MiniLM-L6-v2")  # Direct model usage
 TEXT_CHUNK_SIZE = 1000  # Can make this CLI arg if needed
 
 def get_or_fetch_metadata(arxiv_id):
@@ -60,7 +62,9 @@ def process_paper(url):
             paper.download_pdf(dirpath="./pdfs", filename=f"{arxiv_id}.pdf")
             time.sleep(3)  # Rate limit
 
-        if collection.get(f"{arxiv_id}_0") is not None:
+        existing = collection.get(ids=[f"{arxiv_id}_0"])
+
+        if existing and existing["ids"]:
             print(f"{arxiv_id} already in the collection. skipping!")
             return
         
@@ -79,6 +83,7 @@ def process_paper(url):
         # Prepare metadata for each chunk
         chunk_metadatas = [
             {
+            "arxiv_id": f"{arxiv_id}",
             "metadata": metadata_str,
             "chunk_type": "abstract" if i == 0 else "body",
             "chunk_index": i
