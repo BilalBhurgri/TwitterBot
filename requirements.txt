@@ -7,3 +7,8 @@ chromadb
 langchain-community
 langchain-huggingface
 PyMuPDF
+playwright
+requests
+tweepy
+python-dotenv
+ollama
