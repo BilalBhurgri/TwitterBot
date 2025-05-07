@@ -112,7 +112,7 @@ def generate_paper_summary(collection, paper_id, query="novel OR breakthrough OR
     print(f"Context for {paper_id}: {context}")
     return summarizer(
         context,
-        max_length=400,
+        max_length=200,
         min_length=50,
         do_sample=False,
         truncation=True
@@ -134,19 +134,18 @@ def generate_tweet(summary, paper_metadata, paper_id):
 
     
     # Generate tweet text
-    tweet = f"📑 {title}\n\n"
-    tweet += f"Key finding: {summary}...\n\n"
-    tweet += f"By {author_text} #DeepLearning #MachineLearning\n"
+    tweet = f"📑 {title}" + "\n"
+    tweet += f"Key finding: {summary}" + "\n"
+    tweet += f"By {author_text} #DeepLearning #AI" + "\n"
     
     # Ensure tweet is within Twitter's character limit (280)
     if len(tweet) > 280:
         # Shorten the key finding
         excess = len(tweet) - 280 + 3  # +3 for the ellipsis
-        tweet = f"📑 {title}\n\n"
-        # tweet += f"Key finding: {key_finding[:200-excess].strip()}...\n\n"
-        tweet = f"Key finding: {summary}" # {summary[:200-excess].strip()}...\n\n
-        tweet += f"By {author_text} #DeepLearning #MachineLearning\n"
-        tweet += f"https://arxiv.org/abs/{paper_id}"
+        tweet = f"📑 {title}" + "\n"
+        tweet = f"Key finding: {summary[:-excess]}..." + "\n"
+        tweet += f"By {author_text} #DeepLearning #AI" + "\n"
+        tweet += f"https://arxiv.org/abs/{paper_id}" + "\n"
     
     return tweet
 
