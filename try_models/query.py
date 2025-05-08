@@ -14,7 +14,6 @@ from collections import defaultdict
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 TEXT_CHUNK_SIZE = 1000
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
-summarizer = pipeline("summarization", model='facebook/bart-large-cnn')
 
 def find_relevant_papers(collection, query_text, n_papers=3):
     """
@@ -84,11 +83,13 @@ def get_paper_metadata(collection, paper_id):
     abstract_chunk = collection.get(ids=[f"{paper_id}_0"])["metadatas"][0]
     return json.loads(abstract_chunk["metadata"])
 
-def generate_paper_summary(collection, paper_id, query="novel OR breakthrough OR state-of-the-art"):
+def generate_paper_summary(summarizer, collection, paper_id, query="novel OR breakthrough OR state-of-the-art"):
     """
     Generate summary from paper's most relevant chunks. This is after the user's query
     is passed to find_relevant_papers, so the new query for this paper is...?
     Parameters:
+    summarizer - the summarizer model
+    collection - 
     paper_id - arxiv_id 
     query - string for one query.
     """
@@ -150,10 +151,11 @@ def generate_tweet(summary, paper_metadata, paper_id):
     return tweet
 
 def query_and_generate(args):
+    summarizer = pipeline("summarization", model=args.model_type)
     current_dir = os.path.dirname(__file__)
-    file_path = os.path.join(current_dir, "db", args.name)
+    file_path = os.path.join(current_dir, "db", args.folder_name)
     client = chromadb.PersistentClient(file_path)
-    collection = client.get_collection(name="papers")
+    collection = client.get_collection(name=args.db_name)
     items = collection.get()
     # print(len(items['ids'])) # number of entries
     # print(items.keys())
@@ -187,7 +189,7 @@ def query_and_generate(args):
             continue
 
         # Step 3: Generate summary for this paper
-        summary = generate_paper_summary(collection, paper_id, query)
+        summary = generate_paper_summary(summarizer, collection, paper_id, query)
         if not summary:
             continue
 
@@ -197,7 +199,9 @@ def query_and_generate(args):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate tweets from paper database')
-    parser.add_argument('--name', required=True, help='DB name')
+    parser.add_argument('--model_type', required=False, default="facebook/bart-large-cnn", help='Specify summarizer model. Default: facebook/bart-large-cnn')
+    parser.add_argument('--folder_name', required=True, help='DB folder name (within db)')
+    parser.add_argument('--db_name', required=False, default='papers', help='The actual DB name within chroma.sqlite3. Default is "papers"')
     parser.add_argument('--topic', default=None, help='Optional topic to focus on')
     parser.add_argument('--num_papers', type=int, default=3, help='Number of papers to tweet about')
     parser.add_argument('--days', type=int, default=None, help='Focus on papers from last N days')
