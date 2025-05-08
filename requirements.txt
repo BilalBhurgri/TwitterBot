@@ -7,3 +7,4 @@ chromadb
 langchain-community
 langchain-huggingface
 PyMuPDF
+arxiv
