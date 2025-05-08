@@ -15,18 +15,35 @@ EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 TEXT_CHUNK_SIZE = 1000
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
-def find_relevant_papers(collection, query_text, n_papers=3):
+def find_relevant_papers(collection, query_text, n_papers=3, cutoff_date=None):
     """
     Find relevant papers using semantic search.
+    Args:
+        collection: ChromaDB collection
+        query_text: Query text for semantic search
+        n_papers: Number of papers to return
+        cutoff_date: Optional datetime to filter papers published after this date
     """
     query_embedding = embedding_model.encode(query_text).tolist()
 
-    # Account for the TEXT_CHUNK_SIZE per paper.
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=n_papers*TEXT_CHUNK_SIZE,  # Get extra to account for multiple chunks per paper
-        include=["metadatas", "distances"]
-    )
+    # Build query parameters
+    query_params = {
+        "query_embeddings": [query_embedding],
+        "n_results": n_papers*TEXT_CHUNK_SIZE,
+        "include": ["metadatas", "distances"]
+    }
+
+    # Add where clause only if we have a cutoff date
+    if cutoff_date:
+        query_params["where"] = {
+            "$and": [
+                {"chunk_index": {"$eq": 0}},  # Only look at abstract chunks
+                {"published": {"$gt": cutoff_date.isoformat()}}  # Filter by ISO date string
+            ]
+        }
+
+    # Query the collection
+    results = collection.query(**query_params)
 
     # Group results by paper ID
     paper_scores = defaultdict(float)
@@ -40,29 +57,21 @@ def find_relevant_papers(collection, query_text, n_papers=3):
     return [paper_id for paper_id, _ in sorted_papers]
 
 def get_recent_papers(collection, days=60, n_papers=3):
-    """Get papers published in the last N days"""
-    # Query for all papers and filter by date
-    # This approach works for smaller collections; for larger ones,
-    # you might want to add publication date to the metadata and query by that
-    results = collection.query(
-        query_texts=[""], # Empty query to get all papers
-        n_results=1000, # Adjust based on your collection size
-        include=["metadatas"],
-        where = {"chunk_index": {"$eq": 0}} # Get the abstract chunk
-    )
-
-    recent_papers = set()
+    """
+    Get the most semantically relevant papers published within the last N days.
+    
+    Args:
+        collection: ChromaDB collection containing paper data
+        days (int): Number of days to look back for recent papers
+        n_papers (int): Number of papers to return
+        
+    Returns:
+        list: List of paper IDs that are both recent and semantically relevant to
+             recent advances and breakthroughs in the field
+    """
     cutoff_date = datetime.now(timezone.utc) - timedelta(days=days)
-
-    for metadata, doc_id in zip(results["metadatas"][0], results["ids"][0]):
-        paper_metadata = json.loads(metadata["metadata"])
-        pub_date = datetime.fromisoformat(paper_metadata["published"])
-        if pub_date >= cutoff_date:
-            # Extract the paper ID from the chunk ID
-            paper_id = doc_id.split("_")[0]
-            recent_papers.add(paper_id)
-
-    return random.sample(list(recent_papers), n_papers)
+    query = "novel OR breakthrough OR state-of-the-art OR recent advances"
+    return find_relevant_papers(collection, query, n_papers, cutoff_date)
 
 def find_relevant_papers_by_abstract(collection, query_text, n_papers=3):
     """Find relevant papers by using semantic search (abstract only)"""
