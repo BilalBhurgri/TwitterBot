@@ -101,7 +101,7 @@ def run_bot():
 def get_random_time_between(start_hour):
     """Return a datetime object with today's date and a random time within the hour."""
     now = datetime.datetime.now()
-    minute = random.randint(57, 57)
+    minute = random.randint(0, 0)
     second = random.randint(0, 20)
     return now.replace(hour=start_hour, minute=minute, second=second, microsecond=0)
 
@@ -117,7 +117,7 @@ def schedule_daily_tasks():
         tomorrow = now + datetime.timedelta(days=1)
 
         # Schedule for today or tomorrow depending on current time
-        for hour in [13, 19]:  # 9AM and 6PM
+        for hour in [14, 19]:  # 9AM and 6PM
             t = get_random_time_between(hour)
             if t > now:
                 print("Scheduling task at:", t)
