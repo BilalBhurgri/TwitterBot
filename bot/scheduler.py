@@ -17,7 +17,7 @@ app = Flask(__name__)
 
 # Global variables, confirm is the number of confirmations needed to post and admins is the list of admins
 # The admins have their tokens paired with a random uuid and confirmations is the list of confirmations
-confirm = 0
+current_tweet = ""
 admins = [
     os.getenv("SENDER")
     #os.getenv("SENDEE1"),
@@ -37,8 +37,7 @@ def send_confirmation_emails(tweet):
             "confirmed": False
         }
 
-        url = f"http://localhost:5000/confirm?token={token}"
-        url = f"https://yourapp.com/confirm?token={token}"
+        url = f"http://{os.getenv('VM_IP')}:{os.getenv('PORT')}/confirm?token={token}"
         body = (
             f"Hello,\n\n"
             f"A tweet has been submitted for review. Please confirm it by clicking the link below within 1 hour:\n\n"
@@ -53,6 +52,7 @@ def send_confirmation_emails(tweet):
         msg["Subject"] = "Please confirm the tweet"
         msg["From"] = os.getenv('SENDER')
         msg["To"] = email
+        current_tweet = tweet
 
         # Send email via Gmail SMTP
         try:
@@ -81,9 +81,9 @@ def confirm():
 
     if all(c["confirmed"] for c in confirmations.values()):
         print("✅ All admins confirmed. Tweet will be posted.")
-        # Placeholder: post_tweet() or mark ready
-        # For now, just log
         # reset confirmations
+        post_tweet(current_tweet)
+        current_tweet = ""
         confirmations = {}
         return "All admins confirmed. Tweet action complete!"
     
@@ -134,4 +134,4 @@ def schedule_daily_tasks():
 
 if __name__ == "__main__":
     threading.Thread(target=schedule_daily_tasks, daemon=True).start()
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=os.getenv('PORT'))
