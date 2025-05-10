@@ -19,9 +19,10 @@ app = Flask(__name__)
 # The admins have their tokens paired with a random uuid and confirmations is the list of confirmations
 confirm = 0
 admins = [
-    os.getenv("SENDEE1"),
-    os.getenv("SENDEE2"),
-    os.getenv("SENDEE3")
+    os.getenv("SENDER")
+    #os.getenv("SENDEE1"),
+    #os.getenv("SENDEE2"),
+    #os.getenv("SENDEE3")
 ]
 confirmations = {}
 
