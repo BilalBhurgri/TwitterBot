@@ -5,7 +5,9 @@ from bot.scrape import get_responses, get_responses_text
 from try_models.query import query_and_generate
 
 parser = argparse.ArgumentParser(description='Generate tweets from paper database')
-parser.add_argument('--name', required=True, help='DB name')
+parser.add_argument('--folder_name', required=False, help='DB name', default="papers2")
+parser.add_argument('--model_type', required=False, default="facebook/bart-large-cnn", help='Specify summarizer model. Default: facebook/bart-large-cnn')
+parser.add_argument('--db_name', required=False, default='papers', help='The actual DB name within chroma.sqlite3. Default is "papers"')
 parser.add_argument('--topic', default=None, help='Optional topic to focus on')
 parser.add_argument('--num_papers', type=int, default=3, help='Number of papers to tweet about')
 parser.add_argument('--days', type=int, default=None, help='Focus on papers from last N days')
@@ -44,24 +46,18 @@ def post_tweet(tweet):
         print(f"❌ Failed to post tweet: {str(e)}")
 
 def main():
-    #replies = get_responses_text(username="RanjayKrishna" , post_index=6, headless=False)
-    #summary_prompt = "Summarize or respond to these tweets with a short reply:\n\n" + "\n".join(replies)
-    #print(summary_prompt)
-    # json_file_path = os.path.join(current_dir, '1408.5882.json')
-    # with open(json_file_path, 'r') as file:
-    #     data = json.load(file)
-
     tweets = query_and_generate(args)
     for paper_id, tweet in tweets:
-        print(f"Generated Tweet for {paper_id}:")
-        print(tweet)
-        print("\n" + "-"*50 + "\n")
-        print("Do you want to post this? (y/n): ", end="")
-        answer = input().strip().lower()
-        if answer == "y":
-            post_tweet(tweet)
-        else:
-            print("❌ Tweet canceled.")
+        # print(f"Generated Tweet for {paper_id}:")
+        # print(tweet)
+        # print("\n" + "-"*50 + "\n")
+        # print("Do you want to post this? (y/n): ", end="")
+        # answer = input().strip().lower()
+        return tweet
+        # if answer == "y":
+        #     post_tweet(tweet)
+        # else:
+        #     print("❌ Tweet canceled.")
         
 
 if __name__ == "__main__":
