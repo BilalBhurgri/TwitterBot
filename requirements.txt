@@ -13,3 +13,5 @@ tweepy
 python-dotenv
 ollama
 arxiv
+Flask
+requests
