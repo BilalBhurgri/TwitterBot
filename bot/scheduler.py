@@ -37,7 +37,7 @@ def send_confirmation_emails(tweet):
             "confirmed": False
         }
 
-        url = f"http://{os.getenv('VM_IP')}:{os.getenv('PORT')}/confirm?token={token}"
+        url = f"http://{os.getenv('VM_IP')}:{os.getenv('PORT_NO')}/confirm?token={token}"
         body = (
             f"Hello,\n\n"
             f"A tweet has been submitted for review. Please confirm it by clicking the link below within 1 hour:\n\n"
@@ -66,12 +66,15 @@ def send_confirmation_emails(tweet):
 def confirm():
     token = request.args.get("token")
     record = confirmations.get(token)
-
+    print("Endpoint works")
     if not record:
+        print("Invalid or exp")
         return "Invalid or expired token.", 400
     if datetime.datetime.now(LOCAL_TZ) > record["expiry"]:
+        print("E")
         return "Token expired.", 403
     if record["confirmed"]:
+        print("A")
         return "Already confirmed.", 200
 
     record["confirmed"] = True
@@ -95,8 +98,8 @@ def run_bot():
 
 def get_random_time_between(start_hour):
     now = datetime.datetime.now(LOCAL_TZ)
-    minute = random.randint(30, 35)
-    second = random.randint(0, 20)
+    minute = random.randint(46, 46)
+    second = random.randint(0, 1)
     return now.replace(hour=start_hour, minute=minute, second=second, microsecond=0)
 
 def schedule_task_at(random_time, task):
@@ -126,4 +129,4 @@ def schedule_daily_tasks():
 
 if __name__ == "__main__":
     threading.Thread(target=schedule_daily_tasks, daemon=True).start()
-    app.run(host="0.0.0.0", port=os.getenv('PORT'))
+    app.run(host="0.0.0.0", port=os.getenv('PORT_NO'))
