@@ -11,24 +11,24 @@ from email.message import EmailMessage
 from dotenv import load_dotenv
 from bot.bot import main, post_tweet
 
+# For timezone handling
+from zoneinfo import ZoneInfo
+
 load_dotenv()
+
+# Set your timezone
+LOCAL_TZ = ZoneInfo("America/Los_Angeles")
 
 app = Flask(__name__)
 
-# Global variables, confirm is the number of confirmations needed to post and admins is the list of admins
-# The admins have their tokens paired with a random uuid and confirmations is the list of confirmations
 current_tweet = ""
 admins = [
     os.getenv("SENDER")
-    #os.getenv("SENDEE1"),
-    #os.getenv("SENDEE2"),
-    #os.getenv("SENDEE3")
 ]
 confirmations = {}
 
-# Send confirmation emails to all admins
 def send_confirmation_emails(tweet):
-    expiry = datetime.datetime.now() + datetime.timedelta(hours=1)
+    expiry = datetime.datetime.now(LOCAL_TZ) + datetime.timedelta(hours=1)
     for email in admins:
         token = str(uuid.uuid4())
         confirmations[token] = {
@@ -46,7 +46,6 @@ def send_confirmation_emails(tweet):
             f"Thank you."
         )
 
-
         msg = EmailMessage()
         msg.set_content(body)
         msg["Subject"] = "Please confirm the tweet"
@@ -54,7 +53,6 @@ def send_confirmation_emails(tweet):
         msg["To"] = email
         current_tweet = tweet
 
-        # Send email via Gmail SMTP
         try:
             with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
                 smtp.login(os.getenv('SENDER'), os.getenv('SENDER_PASSWORD'))
@@ -71,7 +69,7 @@ def confirm():
 
     if not record:
         return "Invalid or expired token.", 400
-    if datetime.datetime.now() > record["expiry"]:
+    if datetime.datetime.now(LOCAL_TZ) > record["expiry"]:
         return "Token expired.", 403
     if record["confirmed"]:
         return "Already confirmed.", 200
@@ -81,7 +79,6 @@ def confirm():
 
     if all(c["confirmed"] for c in confirmations.values()):
         print("✅ All admins confirmed. Tweet will be posted.")
-        # reset confirmations
         post_tweet(current_tweet)
         current_tweet = ""
         confirmations = {}
@@ -90,47 +87,42 @@ def confirm():
     return f"Thanks, {record['email']}. Awaiting other confirmations."
 
 def run_bot():
-    """Run the bot and handle its output"""
     try:
-        # Run the bot script
         tweet = main()
         send_confirmation_emails(tweet)
     except Exception as e:
         print(f"Error running bot: {str(e)}")
 
 def get_random_time_between(start_hour):
-    """Return a datetime object with today's date and a random time within the hour."""
-    now = datetime.datetime.now()
-    minute = random.randint(0, 0)
+    now = datetime.datetime.now(LOCAL_TZ)
+    minute = random.randint(30, 35)
     second = random.randint(0, 20)
     return now.replace(hour=start_hour, minute=minute, second=second, microsecond=0)
 
 def schedule_task_at(random_time, task):
-    delay = (random_time - datetime.datetime.now()).total_seconds()
+    now = datetime.datetime.now(LOCAL_TZ)
+    delay = (random_time - now).total_seconds()
     if delay < 0:
-        return  # Don't schedule if time already passed
+        return
     threading.Timer(delay, task).start()
 
 def schedule_daily_tasks():
     while True:
-        now = datetime.datetime.now()
+        now = datetime.datetime.now(LOCAL_TZ)
         tomorrow = now + datetime.timedelta(days=1)
 
-        # Schedule for today or tomorrow depending on current time
-        for hour in [14, 19]:  # 9AM and 6PM
+        for hour in [14, 19]:  # 2 PM and 7 PM
             t = get_random_time_between(hour)
             if t > now:
                 print("Scheduling task at:", t)
                 schedule_task_at(t, run_bot)
             else:
-                t = t.replace(day=tomorrow.day)
+                t = t.replace(day=tomorrow.day, month=tomorrow.month, year=tomorrow.year)
                 print("Scheduling task at (tomorrow):", t)
                 schedule_task_at(t, run_bot)
 
-        # Sleep until just after midnight to reschedule for the next day
         next_midnight = now.replace(hour=0, minute=0, second=0, microsecond=0) + datetime.timedelta(days=1)
-        print("Sleeping")
-        time.sleep((next_midnight - datetime.datetime.now()).total_seconds())
+        time.sleep((next_midnight - datetime.datetime.now(LOCAL_TZ)).total_seconds())
 
 if __name__ == "__main__":
     threading.Thread(target=schedule_daily_tasks, daemon=True).start()
