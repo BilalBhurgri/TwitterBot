@@ -10,10 +10,14 @@ import tweepy
 # Match your DB embedding model
 from sentence_transformers import SentenceTransformer 
 from collections import defaultdict 
+from bot_persona import BotPersona
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 TEXT_CHUNK_SIZE = 1000
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
+
+persona_ids = ["vision_bot", "robotics_bot", "bio_bot", "security_bot", "education_bot", "industry_bot", "theory_bot", "layperson_bot"]
 
 def find_relevant_papers(collection, query_text, n_papers=3, cutoff_date=None):
     """
@@ -119,7 +123,7 @@ def generate_paper_summary(summarizer, collection, paper_id, query="novel OR bre
     # Combine and summarize
     context = " ".join(internal_results["documents"][0])
 
-    print(f"Context for {paper_id}: {context}")
+    # print(f"Context for {paper_id}: {context}")
     return summarizer(
         context,
         max_length=200,
@@ -159,6 +163,31 @@ def generate_tweet(summary, paper_metadata, paper_id):
     
     return tweet
 
+def personify_tweet(paper_id, tweet, persona_id, tokenizer, persona_model):
+    bot = BotPersona(persona_id)
+    context = bot._get_persona()
+
+    # Tokenize the context and tweet
+    prompt = f"Summary: {tweet} Relate tweet to applications of this context: {context}. Don't repeat summary or mention persona, just talk like you're posting a tweet on why you find the paper interesting."
+    inputs = tokenizer.encode(prompt, return_tensors="pt", max_length=300, truncation=True)
+
+    # Generate a response using the persona model
+    outputs = persona_model.generate(
+        inputs, 
+        max_length=512,
+        min_length=100,
+        num_return_sequences=1,
+        no_repeat_ngram_size=2,
+        do_sample=True,
+        top_k=50,
+        top_p=0.95,
+        temperature=0.7,
+        pad_token_id=tokenizer.eos_token_id
+    )
+    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    return response
+
 def query_and_generate(args):
     summarizer = pipeline("summarization", model=args.model_type)
     current_dir = os.path.dirname(__file__)
@@ -166,12 +195,6 @@ def query_and_generate(args):
     client = chromadb.PersistentClient(file_path)
     collection = client.get_collection(name=args.db_name)
     items = collection.get()
-    # print(len(items['ids'])) # number of entries
-    # print(items.keys())
-
-    # paper_ids = find_relevant_papers(args.query, args.num_papers)
-    # "Give me a useful insight about deep learning and list the papers you referenced.", 
-    #           "How do larger models learn? List the papers you referenced.", 
 
     # Step 1: Find relevant papers based on the query
     if args.days is not None:
@@ -215,11 +238,40 @@ def main():
     parser.add_argument('--num_papers', type=int, default=3, help='Number of papers to tweet about')
     parser.add_argument('--days', type=int, default=None, help='Focus on papers from last N days')
     args = parser.parse_args()
+    
+    persona_model_name = "mistralai/Mistral-7B-Instruct-v0.3"
+    tokenizer = AutoTokenizer.from_pretrained(persona_model_name)
+    persona_model = AutoModelForCausalLM.from_pretrained(
+        persona_model_name,
+        torch_dtype=torch.float16,  # Use half-precision for efficiency
+        device_map="auto"  # Automatically decide device placement
+    )
+
+    # Create text generation pipeline 
+    generator = pipeline(
+        "text-generation",
+        model=persona_model,
+        tokenizer=tokenizer,
+        max_length=512,
+        do_sample=True,
+        temperature=0.7,
+        top_p=0.95,
+        pad_token_id=tokenizer.eos_token_id
+    )
 
     tweets = query_and_generate(args)
-    for paper_id, tweet in tweets:
-        print(f"Generated Tweet for {paper_id}:")
+    personified_tweets = []
+
+    for persona_id in persona_ids:
+        for paper_id, tweet in tweets:
+            result = personify_tweet(paper_id, tweet, persona_id, tokenizer, persona_model)
+            personified_tweets.append((paper_id, tweet, result))
+
+    for paper_id, tweet, result in personified_tweets:
+        print(f"Original tweet for {paper_id}: ")
         print(tweet)
+        print(f"Generated PERSONIFIED Tweet for {paper_id}:")
+        print(result)
         print("\n" + "-"*50 + "\n")
 
 if __name__ == "__main__":
