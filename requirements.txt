@@ -15,3 +15,5 @@ ollama
 arxiv
 Flask
 requests
+sentencepiece
+accelerate
