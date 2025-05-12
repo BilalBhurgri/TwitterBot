@@ -84,7 +84,7 @@ def confirm():
     record["confirmed"] = True
     if all(c["confirmed"] for c in confirmations.values()):
         print("✅ All admins confirmed. Tweet will be posted.")
-        post_tweet(current_tweet)
+        # post_tweet(current_tweet)
         current_tweet = ""
         confirmations = {}
     return "Confirmed!", 200
@@ -98,8 +98,8 @@ def run_bot():
 
 def get_random_time_between(start_hour):
     now = datetime.datetime.now(LOCAL_TZ)
-    minute = random.randint(0, 59)
-    second = random.randint(0, 59)
+    minute = random.randint(29, 29)
+    second = random.randint(0, 1)
     return now.replace(hour=start_hour, minute=minute, second=second, microsecond=0)
 
 def schedule_task_at(random_time, task):
