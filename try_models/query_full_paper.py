@@ -1,21 +1,22 @@
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import argparse
-import json
 import os
 import PyPDF2
 
-NUM_TOKENS = 15000
-
 def load_paper(paper_path):
-    """Load a paper from a text file"""
+    """Load a paper from a PDF file"""
     text_content = ""
-    with open(paper_path, 'rb', encoding='utf-8') as pdf_file:
-        pdf_reader = PyPDF2.PdfReader(pdf_file)
-        for page_num in range(len(pdf_reader.pages)):
-            page = pdf_reader.pages[page_num]
-            text_content += page.extract_text()
-    return text_content
+    try:
+        with open(paper_path, 'rb') as pdf_file:  # Remove encoding parameter
+            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            for page_num in range(len(pdf_reader.pages)):
+                page = pdf_reader.pages[page_num]
+                text_content += page.extract_text()
+        return text_content
+    except Exception as e:
+        print(f"Error loading PDF: {e}")
+        return ""
 
 def generate_summary(text, tokenizer, model, max_length=200):
     """Generate a summary using Qwen3-8B"""
@@ -26,14 +27,17 @@ def generate_summary(text, tokenizer, model, max_length=200):
 
         Summary:"""
 
-    # Tokenize the input
-    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, model_max_length=NUM_TOKENS)
+    # Reduce token count to save memory
+    NUM_TOKENS = 8000  # Reduced from 15000
+    
+    # Tokenize the input with shorter context
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=NUM_TOKENS)
     inputs = inputs.to(model.device)
 
-    # Generate summary
+    # Generate summary with reduced parameters
     outputs = model.generate(
         **inputs,
-        max_new_tokens=NUM_TOKENS,
+        max_new_tokens=300,  # Reduced from NUM_TOKENS
         min_new_tokens=50,
         do_sample=True,
         temperature=0.7,
@@ -52,34 +56,65 @@ def generate_summary(text, tokenizer, model, max_length=200):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate paper summary using Qwen3-8B')
-    parser.add_argument('--paper_path', required=True, help='Path to the paper text file')
+    parser.add_argument('--paper_path', required=True, help='Path to the paper PDF file')
     parser.add_argument('--output_path', default=None, help='Path to save the summary (optional)')
+    parser.add_argument('--use_8bit', action='store_true', help='Use 8-bit quantization to reduce memory usage')
     args = parser.parse_args()
 
-    # Load model and tokenizer
+    # Check if file exists
+    if not os.path.exists(args.paper_path):
+        print(f"Error: File {args.paper_path} not found")
+        return
+
+    # Load model and tokenizer with memory optimization
     model_name = "Qwen/Qwen3-8B"
     tokenizer = AutoTokenizer.from_pretrained(model_name)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype=torch.float16,
-        device_map="auto"
-    )
+    
+    # Use 8-bit quantization if requested to reduce memory usage
+    if args.use_8bit:
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            load_in_8bit=True,
+            device_map="auto"
+        )
+    else:
+        try:
+            model = AutoModelForCausalLM.from_pretrained(
+                model_name,
+                torch_dtype=torch.float16,
+                device_map="auto",
+                low_cpu_mem_usage=True  # Add low memory usage flag
+            )
+        except Exception as e:
+            print(f"Error loading model: {e}")
+            print("Try running with --use_8bit to reduce memory usage")
+            return
 
     # Load paper
     paper_text = load_paper(args.paper_path)
     
+    if not paper_text:
+        print("Failed to extract text from the PDF. Check the file format.")
+        return
+    
     # Generate summary
-    summary = generate_summary(paper_text, tokenizer, model)
-    
-    # Print or save results
-    print("\nGenerated Summary:")
-    print("-" * 50)
-    print(summary)
-    print("-" * 50)
-    
-    if args.output_path:
-        with open(args.output_path, 'w', encoding='utf-8') as f:
-            f.write(summary)
+    try:
+        summary = generate_summary(paper_text, tokenizer, model)
+        
+        # Print or save results
+        print("\nGenerated Summary:")
+        print("-" * 50)
+        print(summary)
+        print("-" * 50)
+        
+        if args.output_path:
+            with open(args.output_path, 'w', encoding='utf-8') as f:
+                f.write(summary)
+    except RuntimeError as e:
+        if "CUDA out of memory" in str(e):
+            print("GPU ran out of memory. Try using --use_8bit option or a smaller model.")
+        else:
+            print(f"Error during generation: {e}")
 
 if __name__ == "__main__":
     main()
