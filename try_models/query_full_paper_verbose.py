@@ -148,10 +148,10 @@ Summary:"""
         return f"Error generating summary: {str(e)}"
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate paper summary using Qwen3-3B')
+    parser = argparse.ArgumentParser(description='Generate paper summary using Qwen/Qwen3-1.7B-FP8')
     parser.add_argument('--paper_path', required=True, help='Path to the paper PDF file')
     parser.add_argument('--output_path', default=None, help='Path to save the summary')
-    parser.add_argument('--model_name', default="Qwen/Qwen3-3B", help='Model to use (default: Qwen3-3B)')
+    parser.add_argument('--model_name', default="Qwen/Qwen3-1.7B-FP8", help='Model to use (default: Qwen/Qwen3-1.7B-FP8)')
     args = parser.parse_args()
     
     # Check if file exists
