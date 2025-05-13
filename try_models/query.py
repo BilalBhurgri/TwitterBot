@@ -231,6 +231,8 @@ def query_and_generate(args):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate tweets from paper database')
+    # FIX THIS WITH AN EASILY ACCESSIBLE  MODEL!!! Not gated, like llama-3.2-1B
+    parser.add_argument('--persona_model_name', required=False, default="meta-llama/Llama-3.2-1B", help='Specify persona model. Default:meta-llama/Llama-3.2-1B')
     parser.add_argument('--model_type', required=False, default="facebook/bart-large-cnn", help='Specify summarizer model. Default: facebook/bart-large-cnn')
     parser.add_argument('--folder_name', required=True, help='DB folder name (within db)')
     parser.add_argument('--db_name', required=False, default='papers', help='The actual DB name within chroma.sqlite3. Default is "papers"')
@@ -239,10 +241,9 @@ def main():
     parser.add_argument('--days', type=int, default=None, help='Focus on papers from last N days')
     args = parser.parse_args()
     
-    persona_model_name = "mistralai/Mistral-7B-Instruct-v0.3"
-    tokenizer = AutoTokenizer.from_pretrained(persona_model_name)
+    tokenizer = AutoTokenizer.from_pretrained(args.persona_model_name)
     persona_model = AutoModelForCausalLM.from_pretrained(
-        persona_model_name,
+        args.persona_model_name,
         torch_dtype=torch.float16,  # Use half-precision for efficiency
         device_map="auto"  # Automatically decide device placement
     )
