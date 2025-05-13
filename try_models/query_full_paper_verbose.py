@@ -71,7 +71,7 @@ def generate_summary(text, tokenizer, model, max_length=200):
         return "No text was provided for summarization."
     
     # Truncate text if needed
-    max_chars = 12000
+    max_chars = 20000
     if len(text) > max_chars:
         print(f"Truncating text from {len(text)} to {max_chars} characters")
         text = text[:max_chars]
@@ -165,6 +165,10 @@ def main():
     print(f"  - Model: {args.model_name}")
     
     print_memory_usage("Starting")
+
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
     
     # Load model and tokenizer with extra error handling
     model_name = args.model_name
@@ -184,6 +188,12 @@ def main():
         
         print("Model loaded successfully")
         print_memory_usage("After model load")
+
+        # After loading the model
+        print(f"Model device: {next(model.parameters()).device}")
+        
+        # During generation, time the operation
+        start_time = time.time()
         
         # Verify model and tokenizer are valid
         if not hasattr(model, 'generate'):
@@ -233,6 +243,8 @@ def main():
         
         print_memory_usage("After cleanup")
         print("Script completed successfully")
+        generation_time = time.time() - start_time
+        print(f"Generation took {generation_time:.2f} seconds")
         
     except Exception as e:
         print(f"Unhandled exception: {e}")
