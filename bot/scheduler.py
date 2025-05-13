@@ -4,12 +4,15 @@ import time
 import threading
 import subprocess
 import os
+import arxiv
 import smtplib
 import uuid
+from bot.tweetBot import TweetBot
 from flask import Flask, request
 from email.message import EmailMessage
 from dotenv import load_dotenv
 from bot.bot import main, post_tweet
+# from try_models.simple_update_db import process_paper
 
 # For timezone handling
 from zoneinfo import ZoneInfo
@@ -27,6 +30,7 @@ admins = [
     os.getenv("SENDER")
 ]
 confirmations = {}
+bot = TweetBot()
 
 def send_confirmation_emails(tweet):
     global confirmations, current_tweet
@@ -70,7 +74,6 @@ def confirm():
     global confirmations, current_tweet
     token = request.args.get("token")
     record = confirmations.get(token)
-    print("Endpoint works")
     if not record:
         print("Invalid or exp")
         return "Invalid or expired token.", 400
@@ -84,7 +87,7 @@ def confirm():
     record["confirmed"] = True
     if all(c["confirmed"] for c in confirmations.values()):
         print("✅ All admins confirmed. Tweet will be posted.")
-        post_tweet(current_tweet)
+        bot.post_tweet(current_tweet)
         current_tweet = ""
         confirmations = {}
     return "Confirmed!", 200
@@ -95,6 +98,34 @@ def run_bot():
         send_confirmation_emails(tweet)
     except Exception as e:
         print(f"Error running bot: {str(e)}")
+
+def fetch_recent_papers(max_papers):
+    """Fetch recent deep learning papers from arXiv"""
+    # Create search query for deep learning papers
+    search = arxiv.Search(
+        query="cat:cs.LG",
+        max_results=max_papers,
+        sort_by=arxiv.SortCriterion.SubmittedDate,
+        sort_order=arxiv.SortOrder.Descending
+    )
+    # Create output directory if it doesn't exist
+    os.makedirs('paper_urls', exist_ok=True)
+    # Open file to write URLs
+    with open('paper_urls/recent_papers.txt', 'w') as f:
+        for paper in search.results():
+            # Get the PDF URL
+            pdf_url = paper.pdf_url
+            # Write URL to file
+            f.write(f"{pdf_url}\n")
+            print(f"Added URL: {pdf_url}")
+    try:
+        subprocess.run(['python', 'try_models/simple_update_db.py', '--name', 'db/papers2/chroma.sqlite3', '--input', 'paper_urls/recent_papers.txt'], check=True)
+        print("Successfully processed papers with simple_update_db.py")
+    except subprocess.CalledProcessError as e:
+        print(f"Error running simple_update_db.py: {str(e)}")
+    print("Fetched recent papers")
+
+
 
 def get_random_time_between(start_hour):
     now = datetime.datetime.now(LOCAL_TZ)
@@ -113,8 +144,20 @@ def schedule_daily_tasks():
     while True:
         now = datetime.datetime.now(LOCAL_TZ)
         tomorrow = now + datetime.timedelta(days=1)
-
-        for hour in [9, 19]:  # 9 AM and 7 PM
+        
+        # Bot gathers latest papers
+        t = get_random_time_between(6)
+        if t > now:
+            print("Scheduling task at:", t)
+            # execute task
+            schedule_task_at(t, fetch_recent_papers(100))
+        else:
+            t = t.replace(day=tomorrow.day, month=tomorrow.month, year=tomorrow.year)
+            print("Scheduling task at (tomorrow):", t)
+            # execute task
+            schedule_task_at(t, run_bot)
+        # Bot will post a tweet between 9-10 AM and 6-7 PM
+        for hour in [9, 18]:
             t = get_random_time_between(hour)
             if t > now:
                 print("Scheduling task at:", t)
