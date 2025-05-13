@@ -77,18 +77,23 @@ def generate_summary(text, tokenizer, model, max_length=200):
         text = text[:max_chars]
     
     # Create a prompt
-    prompt = f"""Please provide a concise summary of the following research paper in no more than 200 words:
+    prompt = f"""Write an extremely concise summary of this paper. Focus only on key contributions and results.:
 
-{text}
+    PAPER TEXT:
+    {text}
 
-Summary:"""
+    INSTRUCTIONS:
+    Write a concise summary of the above paper in about 200 words. Focus on key findings and contributions.
+    DO NOT repeat the paper text verbatim.
+    DO NOT include phrases like "this paper" or "the authors".
+    """
 
     print(f"Prompt created with {len(prompt)} characters")
     
     try:
         # Tokenize with conservative limits
         print("Tokenizing input...")
-        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096)
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=20000)
         inputs = inputs.to(model.device)
         
         print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
@@ -100,7 +105,7 @@ Summary:"""
         # Setting return_dict_in_generate=True to get more debug info
         outputs = model.generate(
             **inputs,
-            max_new_tokens=256,
+            max_new_tokens=200,
             do_sample=True,
             temperature=0.7,
             top_p=0.95,
@@ -108,6 +113,16 @@ Summary:"""
             pad_token_id=tokenizer.eos_token_id,
             return_dict_in_generate=True
         )
+
+        # Get input length in tokens
+        input_length = inputs.input_ids.shape[1]
+
+        # Extract only the newly generated tokens
+        generated_tokens = outputs[0][input_length:]
+
+        # Decode only these new tokens to get the summary
+        summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+
         
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
