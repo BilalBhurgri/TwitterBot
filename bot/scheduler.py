@@ -21,6 +21,7 @@ LOCAL_TZ = ZoneInfo("America/Los_Angeles")
 
 app = Flask(__name__)
 
+# Global variables
 current_tweet = ""
 admins = [
     os.getenv("SENDER")
@@ -28,7 +29,10 @@ admins = [
 confirmations = {}
 
 def send_confirmation_emails(tweet):
+    global confirmations, current_tweet
     expiry = datetime.datetime.now(LOCAL_TZ) + datetime.timedelta(hours=1)
+    confirmations = {}  # Reset confirmations for new tweet
+    current_tweet = tweet
     for email in admins:
         token = str(uuid.uuid4())
         confirmations[token] = {
@@ -51,7 +55,6 @@ def send_confirmation_emails(tweet):
         msg["Subject"] = "Please confirm the tweet"
         msg["From"] = os.getenv('SENDER')
         msg["To"] = email
-        current_tweet = tweet
 
         try:
             with smtplib.SMTP_SSL("smtp.gmail.com", 465) as smtp:
@@ -64,6 +67,7 @@ def send_confirmation_emails(tweet):
 
 @app.route("/confirm")
 def confirm():
+    global confirmations, current_tweet
     token = request.args.get("token")
     record = confirmations.get(token)
     print("Endpoint works")
@@ -78,16 +82,12 @@ def confirm():
         return "Already confirmed.", 200
 
     record["confirmed"] = True
-    print(f"{record['email']} confirmed.")
-
     if all(c["confirmed"] for c in confirmations.values()):
         print("✅ All admins confirmed. Tweet will be posted.")
         post_tweet(current_tweet)
         current_tweet = ""
         confirmations = {}
-        return "All admins confirmed. Tweet action complete!"
-    
-    return f"Thanks, {record['email']}. Awaiting other confirmations."
+    return "Confirmed!", 200
 
 def run_bot():
     try:
@@ -98,8 +98,8 @@ def run_bot():
 
 def get_random_time_between(start_hour):
     now = datetime.datetime.now(LOCAL_TZ)
-    minute = random.randint(46, 46)
-    second = random.randint(0, 1)
+    minute = random.randint(0, 59)
+    second = random.randint(0, 59)
     return now.replace(hour=start_hour, minute=minute, second=second, microsecond=0)
 
 def schedule_task_at(random_time, task):
@@ -114,7 +114,7 @@ def schedule_daily_tasks():
         now = datetime.datetime.now(LOCAL_TZ)
         tomorrow = now + datetime.timedelta(days=1)
 
-        for hour in [14, 19]:  # 2 PM and 7 PM
+        for hour in [9, 19]:  # 9 AM and 7 PM
             t = get_random_time_between(hour)
             if t > now:
                 print("Scheduling task at:", t)

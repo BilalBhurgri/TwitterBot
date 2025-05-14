@@ -71,24 +71,29 @@ def generate_summary(text, tokenizer, model, max_length=200):
         return "No text was provided for summarization."
     
     # Truncate text if needed
-    max_chars = 12000
+    max_chars = 20000
     if len(text) > max_chars:
         print(f"Truncating text from {len(text)} to {max_chars} characters")
         text = text[:max_chars]
     
     # Create a prompt
-    prompt = f"""Please provide a concise summary of the following research paper in no more than 200 words:
+    prompt = f"""Write an extremely concise summary of this paper. Focus only on key contributions and results.:
 
-{text}
+    PAPER TEXT:
+    {text}
 
-Summary:"""
+    INSTRUCTIONS:
+    Write a concise summary of the above paper in about 200 words. Focus on key findings and contributions.
+    DO NOT repeat the paper text verbatim.
+    DO NOT include phrases like "this paper" or "the authors".
+    """
 
     print(f"Prompt created with {len(prompt)} characters")
     
     try:
         # Tokenize with conservative limits
         print("Tokenizing input...")
-        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=4096)
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=20000)
         inputs = inputs.to(model.device)
         
         print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
@@ -100,7 +105,7 @@ Summary:"""
         # Setting return_dict_in_generate=True to get more debug info
         outputs = model.generate(
             **inputs,
-            max_new_tokens=256,
+            max_new_tokens=200,
             do_sample=True,
             temperature=0.7,
             top_p=0.95,
@@ -108,6 +113,16 @@ Summary:"""
             pad_token_id=tokenizer.eos_token_id,
             return_dict_in_generate=True
         )
+
+        # Get input length in tokens
+        input_length = inputs.input_ids.shape[1]
+
+        # Extract only the newly generated tokens
+        generated_tokens = outputs[0][input_length:]
+
+        # Decode only these new tokens to get the summary
+        summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+
         
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
@@ -148,10 +163,10 @@ Summary:"""
         return f"Error generating summary: {str(e)}"
 
 def main():
-    parser = argparse.ArgumentParser(description='Generate paper summary using Qwen3-3B')
+    parser = argparse.ArgumentParser(description='Generate paper summary using Qwen/Qwen3-1.7B')
     parser.add_argument('--paper_path', required=True, help='Path to the paper PDF file')
     parser.add_argument('--output_path', default=None, help='Path to save the summary')
-    parser.add_argument('--model_name', default="Qwen/Qwen3-3B", help='Model to use (default: Qwen3-3B)')
+    parser.add_argument('--model_name', default="Qwen/Qwen3-1.7B", help='Model to use (default: Qwen/Qwen3-1.7B)')
     args = parser.parse_args()
     
     # Check if file exists
@@ -165,6 +180,10 @@ def main():
     print(f"  - Model: {args.model_name}")
     
     print_memory_usage("Starting")
+
+    print(f"CUDA available: {torch.cuda.is_available()}")
+    if torch.cuda.is_available():
+        print(f"GPU: {torch.cuda.get_device_name(0)}")
     
     # Load model and tokenizer with extra error handling
     model_name = args.model_name
@@ -184,6 +203,12 @@ def main():
         
         print("Model loaded successfully")
         print_memory_usage("After model load")
+
+        # After loading the model
+        print(f"Model device: {next(model.parameters()).device}")
+        
+        # During generation, time the operation
+        start_time = time.time()
         
         # Verify model and tokenizer are valid
         if not hasattr(model, 'generate'):
@@ -233,6 +258,8 @@ def main():
         
         print_memory_usage("After cleanup")
         print("Script completed successfully")
+        generation_time = time.time() - start_time
+        print(f"Generation took {generation_time:.2f} seconds")
         
     except Exception as e:
         print(f"Unhandled exception: {e}")
