@@ -1,3 +1,4 @@
+"""Fast eval implementation using ollama"""
 import chromadb
 from transformers import pipeline # AutoModelForCausalLM, AutoTokenizer
 import torch
@@ -12,12 +13,14 @@ from sentence_transformers import SentenceTransformer
 from collections import defaultdict 
 from try_models.bot_persona import BotPersona
 from transformers import AutoModelForCausalLM, AutoTokenizer
+import ollama
 
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"
 TEXT_CHUNK_SIZE = 1000
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
-persona_ids = ["vision_bot", "robotics_bot", "bio_bot", "security_bot", "education_bot", "industry_bot", "theory_bot", "layperson_bot"]
+# persona_ids = ["vision_bot", "robotics_bot", "bio_bot", "security_bot", "education_bot", "industry_bot", "theory_bot", "layperson_bot"]
+persona_ids = ["layperson_bot"]
 device = "mps" if torch.has_mps else "cpu"
 
 def find_relevant_papers(collection, query_text, n_papers=3, cutoff_date=None):
@@ -164,32 +167,19 @@ def generate_tweet(summary, paper_metadata, paper_id):
     
     return tweet
 
-def personify_tweet(paper_id, tweet, persona_id, tokenizer, persona_model):
+def personify_tweet(tweet, persona_id, persona_model):
     bot = BotPersona(persona_id)
     context = bot._get_persona()
 
     # Tokenize the context and tweet
     prompt = f"Summary: {tweet} Relate tweet to applications of this context: {context}. Don't repeat summary or mention persona, just talk like you're posting a tweet on why you find the paper interesting."
-    inputs = tokenizer.encode(prompt, return_tensors="pt", max_length=300, truncation=True).to(device)
-
-    # Generate a response using the persona model
-    outputs = persona_model.generate(
-        inputs, 
-        max_length=512,
-        min_length=100,
-        num_return_sequences=1,
-        no_repeat_ngram_size=2,
-        do_sample=True,
-        top_k=50,
-        top_p=0.95,
-        temperature=0.7,
-        pad_token_id=tokenizer.eos_token_id
-    )
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    response = ollama.chat(model=persona_model, messages=[
+        {"role": "user", "content": prompt}
+    ])
 
     return response
 
-def evaluate_tweet(context, tweet, tokenizer, eval_model):
+def evaluate_tweet(context, tweet, eval_model):
     # Tokenize the context and tweet
     prompt = f"""You will be given one summary tweet written for a research paper.
 
@@ -225,15 +215,9 @@ Evaluation Form:
 (Factual Consistency, Engagingness):
 """
 
-    inputs = tokenizer.encode(prompt, return_tensors="pt", max_length=4096, truncation=True).to(device)
-
-    # Generate a response using the persona model
-    outputs = eval_model.generate(
-        inputs,
-        do_sample=False,
-        pad_token_id=tokenizer.eos_token_id
-    )
-    response = tokenizer.decode(outputs[0], skip_special_tokens=True)
+    response = ollama.chat(model=eval_model, messages=[
+        {"role": "user", "content": prompt}
+    ])
 
     return response
 
@@ -281,9 +265,8 @@ def query_and_generate(args):
 
 def main():
     parser = argparse.ArgumentParser(description='Generate tweets from paper database')
-    # FIX THIS WITH AN EASILY ACCESSIBLE  MODEL!!! Not gated, like llama-3.2-1B
-    parser.add_argument('--persona_model_name', required=False, default="meta-llama/Llama-3.2-1B", help='Specify persona model. Default:meta-llama/Llama-3.2-1B')
-    parser.add_argument('--eval_model_name', required=False, default="meta-llama/Llama-3.2-1B", help='Specify eval model. Default:meta-llama/Llama-3.2-1B')
+    parser.add_argument('--persona_model_name', required=False, default="deepseek-r1:1.5b", help='Specify persona model. Default:deepseek-r1:1.5b')
+    parser.add_argument('--eval_model_name', required=False, default="deepseek-r1:1.5b", help='Specify eval model. Default:deepseek-r1:1.5b')
     parser.add_argument('--model_type', required=False, default="facebook/bart-large-cnn", help='Specify summarizer model. Default: facebook/bart-large-cnn')
     parser.add_argument('--folder_name', required=True, help='DB folder name (within db)')
     parser.add_argument('--db_name', required=False, default='papers', help='The actual DB name within chroma.sqlite3. Default is "papers"')
@@ -291,38 +274,14 @@ def main():
     parser.add_argument('--num_papers', type=int, default=3, help='Number of papers to tweet about')
     parser.add_argument('--days', type=int, default=None, help='Focus on papers from last N days')
     args = parser.parse_args()
-    
-    tokenizer = AutoTokenizer.from_pretrained(args.persona_model_name)
-    persona_model = AutoModelForCausalLM.from_pretrained(
-        args.persona_model_name,
-        torch_dtype=torch.float16,  # Use half-precision for efficiency
-        device_map="auto"  # Automatically decide device placement
-    ).to(device)
-    eval_model = AutoModelForCausalLM.from_pretrained(
-        args.eval_model_name,
-        torch_dtype=torch.float16,  # Use half-precision for efficiency
-        device_map="auto"  # Automatically decide device placement
-    ).to(device)
-
-    # # Create text generation pipeline 
-    # generator = pipeline(
-    #     "text-generation",
-    #     model=persona_model,
-    #     tokenizer=tokenizer,
-    #     max_length=512,
-    #     do_sample=True,
-    #     temperature=0.7,
-    #     top_p=0.95,
-    #     pad_token_id=tokenizer.eos_token_id
-    # )
 
     contexts, tweets = query_and_generate(args)
     personified_tweets = []
 
     for persona_id in persona_ids:
         for paper_id, tweet in tweets:
-            result = personify_tweet(paper_id, tweet, persona_id, tokenizer, persona_model)
-            eval = evaluate_tweet(contexts[paper_id], result, tokenizer, eval_model)
+            result = personify_tweet(tweet, persona_id, args.persona_model_name)
+            eval = evaluate_tweet(contexts[paper_id], result, args.eval_model_name)
             personified_tweets.append((paper_id, tweet, result, eval))
             
     for paper_id, tweet, result, eval in personified_tweets:
