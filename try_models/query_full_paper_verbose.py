@@ -48,7 +48,7 @@ def generate_summary(text, tokenizer, model, max_length=200):
     DO NOT repeat the paper text verbatim.
     DO NOT include phrases like "this paper" or "the authors".
     ONLY USE ENGLISH!
-    Ignore lines with figures and math symbols, just look at the text.
+    DO NOT reuse the example output format.
 
     EXAMPLE:
     {examples["good_formal_example"]}
@@ -78,6 +78,7 @@ def generate_summary(text, tokenizer, model, max_length=200):
             do_sample=True,
             temperature=0.7,
             top_p=0.95,
+            top_k=30,
             repetition_penalty=1.1,
             pad_token_id=tokenizer.eos_token_id,
             return_dict_in_generate=True
@@ -120,6 +121,7 @@ def generate_summary(text, tokenizer, model, max_length=200):
         #     # Print a portion of both for comparison
         #     print(f"Input starts with: {original_input_text[:100]}...")
         #     print(f"Output starts with: {full_generated_text[:100]}...")
+        
             
         return generated_only
         
