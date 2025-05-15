@@ -84,23 +84,44 @@ def generate_summary(text, tokenizer, model, max_length=200):
         )
 
         # Get the sequences
+        # sequences = outputs.sequences
+        # # print(f"Shape of sequences: {sequences.shape}")
+
+        # # Get input length in tokens
+        # input_length = inputs.input_ids.shape[1]
+        # print(f"Input length: {input_length}")
+        # # Extract only the newly generated tokens for the first sequence
+        # generated_tokens = sequences[0, input_length:]
+
+        # # Decode only the newly generated tokens
+        # summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        
+        # generation_time = time.time() - start_time
+        # print(f"Generation completed in {generation_time:.2f} seconds")
+        
+        # Step 1: Get your original input text as a string
+        original_input_text = tokenizer.decode(inputs.input_ids[0], skip_special_tokens=True)
+        print(f"Original input text: {original_input_text}")
+
+        # Step 2: Get the full generated text as a string
         sequences = outputs.sequences
-        # print(f"Shape of sequences: {sequences.shape}")
+        full_generated_text = tokenizer.decode(sequences[0], skip_special_tokens=True)
+        print(f"Full generated text: {full_generated_text}")
 
-        # Get input length in tokens
-        input_length = inputs.input_ids.shape[1]
-        print(f"Input length: {input_length}")
-        # Extract only the newly generated tokens for the first sequence
-        generated_tokens = sequences[0, input_length:]
-
-        # Decode only the newly generated tokens
-        summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
-        
-        generation_time = time.time() - start_time
-        print(f"Generation completed in {generation_time:.2f} seconds")
-        
+        # Step 3: Remove the input text from the beginning of the generated text
+        if full_generated_text.startswith(original_input_text):
+            generated_only = full_generated_text[len(original_input_text):]
+            print(f"Generated text only (string method): {generated_only}")
+        else:
+            print("WARNING: Generated text doesn't start with the input text exactly")
+            # Try a more fuzzy approach
+            print("Attempting fuzzy matching...")
             
-        return summary
+            # Print a portion of both for comparison
+            print(f"Input starts with: {original_input_text[:100]}...")
+            print(f"Output starts with: {full_generated_text[:100]}...")
+            
+        return generated_only
         
     except Exception as e:
         print(f"ERROR during generation: {e}")
