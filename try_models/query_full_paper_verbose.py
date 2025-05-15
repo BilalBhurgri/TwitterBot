@@ -2,17 +2,19 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import argparse
 import os
-import PyPDF2
+import pdfplumber
 import gc
 import psutil
 import time
 import traceback
 import re
 import json
+import parse_paper_remove_math
+import parse_paper
 
 examples = {}
 # Load examples from JSON
-with open('examples.json', 'r') as f:
+with open('./example_outputs/examples.json', 'r') as f:
     examples = json.load(f)
 
 def print_memory_usage(label=""):
@@ -25,95 +27,8 @@ def print_memory_usage(label=""):
         print(f"[{label}] GPU Memory: {gpu_allocated:.2f} MB allocated")
 
 def load_paper(paper_path):
-    """Load a paper from a PDF file with better error handling"""
-    text_content = ""
-    try:
-        with open(paper_path, 'rb') as pdf_file:
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
-            total_pages = len(pdf_reader.pages)
-            print(f"PDF has {total_pages} pages")
-            
-            in_related_work = False
-            
-            for page_num in range(total_pages):
-                try:
-                    page = pdf_reader.pages[page_num]
-                    page_text = page.extract_text()
-                    
-                    # Debug: Check if page text is empty
-                    if not page_text or page_text.strip() == "":
-                        print(f"Warning: Page {page_num} returned empty text")
-                    else:
-                        # Check for references section first
-                        if "references" in page_text.lower():
-                            # Only add text up to the word "references"
-                            text_before_refs = page_text.lower().split("references")[0]
-                            text_content += text_before_refs + "\n"
-                            print(f"Found references section on page {page_num}, stopping text extraction")
-                            break
-                            
-                        # Split page into lines to check for section markers
-                        lines = page_text.split('\n')
-                        current_page_text = []
-                        
-                        for line in lines:
-                            # Check for section 2 (Related Work)
-                            if re.search(r'^2\.?\s*[Rr]elated\s+[Ww]ork', line.strip()):
-                                if not in_related_work:  # Only print message when first entering the section
-                                    print(f"Found Related Work section on page {page_num}")
-                                in_related_work = True
-                                continue
-                                
-                            # Check for section 3
-                            if re.search(r'^3\.?\s+', line.strip()):
-                                in_related_work = False
-                                print(f"Found section 3 on page {page_num}")
-                                
-                            # Add line if we're not in the Related Work section
-                            if not in_related_work:
-                                current_page_text.append(line)
-                        
-                        # Add the processed page text
-                        if current_page_text:
-                            text_content += '\n'.join(current_page_text) + '\n'
-                        
-                    # Print progress for large PDFs
-                    if page_num % 10 == 0 and page_num > 0:
-                        print(f"Processed {page_num}/{total_pages} pages")
-                        
-                except Exception as e:
-                    print(f"Error extracting text from page {page_num}: {e}")
-                    traceback.print_exc()
-                    continue
-                    
-        # Verify we got some text
-        if not text_content or text_content.strip() == "":
-            print("ERROR: No text was extracted from the PDF")
-            return ""
-            
-        print(f"Successfully extracted {len(text_content)} characters of text")
-        
-        # Save the extracted text to a file
-        pdf_filename = os.path.basename(paper_path)
-        txt_filename = os.path.splitext(pdf_filename)[0] + '.txt'
-        output_path = os.path.join('pdfs', txt_filename)
-        
-        # Ensure pdfs directory exists
-        os.makedirs('pdfs', exist_ok=True)
-        
-        with open(output_path, 'w', encoding='utf-8') as f:
-            f.write(text_content)
-        print(f"Saved extracted text to {output_path}")
-        
-        # Debug: Show sample of extracted text (first 200 chars):
-
-        
-        return text_content
-        
-    except Exception as e:
-        print(f"Error loading PDF: {e}")
-        traceback.print_exc()
-        return ""
+    text = parse_paper.extract_p_tags_text_better(paper_path)
+    return text
 
 def generate_summary(text, tokenizer, model, max_length=200):
     """Generate a summary with extensive debugging"""
@@ -133,6 +48,8 @@ def generate_summary(text, tokenizer, model, max_length=200):
     Write a 200 word summary of this paper like a twitter post. Focus on key findings and contributions.
     DO NOT repeat the paper text verbatim.
     DO NOT include phrases like "this paper" or "the authors".
+    ONLY USE ENGLISH!
+    Ignore lines with figures and math symbols, just look at the text.
 
     EXAMPLE:
     {examples["good_formal_example"]}
@@ -329,5 +246,4 @@ def main():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    main()
-    # test_load_paper()
+    test_load_paper()
