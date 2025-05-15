@@ -45,7 +45,7 @@ def generate_summary(text, tokenizer, model, max_length=200):
     prompt = f"""
     EXAMPLE:
     {examples["good_formal_example"]}
-    
+
     INSTRUCTIONS:
     Write a 200 word summary of this paper like a twitter post. Focus on key findings and contributions.
     DO NOT repeat the paper text verbatim.
@@ -74,7 +74,7 @@ def generate_summary(text, tokenizer, model, max_length=200):
         # Setting return_dict_in_generate=True to get more debug info
         outputs = model.generate(
             **inputs,
-            max_new_tokens=200,
+            max_new_tokens=400,
             do_sample=True,
             temperature=0.7,
             top_p=0.95,
