@@ -93,32 +93,32 @@ def generate_summary(text, tokenizer, model, max_length=200):
         # summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
 
         # Print the structure of outputs to see what's available
-        print(f"Type of outputs: {type(outputs)}")
-        print(f"Available attributes: {dir(outputs)}")
+        # print(f"Type of outputs: {type(outputs)}")
+        # print(f"Available attributes: {dir(outputs)}")
 
-        # Get the sequences
+        # # Get the sequences
         sequences = outputs.sequences
-        print(f"Shape of sequences: {sequences.shape}")
+        # print(f"Shape of sequences: {sequences.shape}")
 
         # Get input length in tokens
         input_length = inputs.input_ids.shape[1]
         print(f"Input length: {input_length}")
 
-        # Check if any new tokens were generated
-        if sequences.shape[1] <= input_length:
-            print("WARNING: No new tokens were generated!")
-            print(f"Sequence length: {sequences.shape[1]}, Input length: {input_length}")
+        # # Check if any new tokens were generated
+        # if sequences.shape[1] <= input_length:
+        #     print("WARNING: No new tokens were generated!")
+        #     print(f"Sequence length: {sequences.shape[1]}, Input length: {input_length}")
 
         # Extract only the newly generated tokens for the first sequence
         generated_tokens = sequences[0, input_length:]
-        print(f"Number of generated tokens: {len(generated_tokens)}")
+        # print(f"Number of generated tokens: {len(generated_tokens)}")
 
-        # Print the generated tokens for debugging
-        print(f"Generated tokens: {generated_tokens}")
+        # # Print the generated tokens for debugging
+        # print(f"Generated tokens: {generated_tokens}")
 
-        # Decode the complete sequence first for comparison
-        complete_text = tokenizer.decode(sequences[0], skip_special_tokens=True)
-        print(f"Complete text: {complete_text}")
+        # # Decode the complete sequence first for comparison
+        # complete_text = tokenizer.decode(sequences[0], skip_special_tokens=True)
+        # print(f"Complete text: {complete_text}")
 
         # Decode only the newly generated tokens
         summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
