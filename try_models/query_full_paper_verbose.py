@@ -101,25 +101,25 @@ def generate_summary(text, tokenizer, model, max_length=200):
         
         # Step 1: Get your original input text as a string
         original_input_text = tokenizer.decode(inputs.input_ids[0], skip_special_tokens=True)
-        print(f"Original input text: {original_input_text}")
+        # print(f"Original input text: {original_input_text}")
 
         # Step 2: Get the full generated text as a string
         sequences = outputs.sequences
         full_generated_text = tokenizer.decode(sequences[0], skip_special_tokens=True)
-        print(f"Full generated text: {full_generated_text}")
+        # print(f"Full generated text: {full_generated_text}")
 
         # Step 3: Remove the input text from the beginning of the generated text
         if full_generated_text.startswith(original_input_text):
             generated_only = full_generated_text[len(original_input_text):]
-            print(f"Generated text only (string method): {generated_only}")
-        else:
-            print("WARNING: Generated text doesn't start with the input text exactly")
-            # Try a more fuzzy approach
-            print("Attempting fuzzy matching...")
+        #     print(f"Generated text only (string method): {generated_only}")
+        # else:
+        #     print("WARNING: Generated text doesn't start with the input text exactly")
+        #     # Try a more fuzzy approach
+        #     print("Attempting fuzzy matching...")
             
-            # Print a portion of both for comparison
-            print(f"Input starts with: {original_input_text[:100]}...")
-            print(f"Output starts with: {full_generated_text[:100]}...")
+        #     # Print a portion of both for comparison
+        #     print(f"Input starts with: {original_input_text[:100]}...")
+        #     print(f"Output starts with: {full_generated_text[:100]}...")
             
         return generated_only
         
