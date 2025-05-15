@@ -24,3 +24,10 @@ Tweet generation: `python -m try_models.query --name NAME [--topic TOPIC] [--num
 Posting: `python -m bot.bot --name NAME [--topic TOPIC] [--num_papers NUM_PAPERS] [--days DAYS] [--post]`
 - same arguments for tweet generation
 - this makes a mock post on default, use `--post` to actually post on Twitter
+
+## GCP VM
+
+In theory, one user installing necessary packages and cuda toolkit should make them available to all users of the vm. 
+If you try `nvidia-smi` and it isn't recognized, then you might want to try these installation steps: 
+
+1. https://cloud.google.com/compute/docs/gpus/install-drivers-gpu

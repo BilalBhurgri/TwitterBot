@@ -7,6 +7,13 @@ import gc
 import psutil
 import time
 import traceback
+import re
+import json
+
+examples = {}
+# Load examples from JSON
+with open('examples.json', 'r') as f:
+    examples = json.load(f)
 
 def print_memory_usage(label=""):
     """Print current memory usage"""
@@ -26,6 +33,8 @@ def load_paper(paper_path):
             total_pages = len(pdf_reader.pages)
             print(f"PDF has {total_pages} pages")
             
+            in_related_work = False
+            
             for page_num in range(total_pages):
                 try:
                     page = pdf_reader.pages[page_num]
@@ -35,7 +44,38 @@ def load_paper(paper_path):
                     if not page_text or page_text.strip() == "":
                         print(f"Warning: Page {page_num} returned empty text")
                     else:
-                        text_content += page_text + "\n"
+                        # Check for references section first
+                        if "references" in page_text.lower():
+                            # Only add text up to the word "references"
+                            text_before_refs = page_text.lower().split("references")[0]
+                            text_content += text_before_refs + "\n"
+                            print(f"Found references section on page {page_num}, stopping text extraction")
+                            break
+                            
+                        # Split page into lines to check for section markers
+                        lines = page_text.split('\n')
+                        current_page_text = []
+                        
+                        for line in lines:
+                            # Check for section 2 (Related Work)
+                            if re.search(r'^2\.?\s*[Rr]elated\s+[Ww]ork', line.strip()):
+                                if not in_related_work:  # Only print message when first entering the section
+                                    print(f"Found Related Work section on page {page_num}")
+                                in_related_work = True
+                                continue
+                                
+                            # Check for section 3
+                            if re.search(r'^3\.?\s+', line.strip()):
+                                in_related_work = False
+                                print(f"Found section 3 on page {page_num}")
+                                
+                            # Add line if we're not in the Related Work section
+                            if not in_related_work:
+                                current_page_text.append(line)
+                        
+                        # Add the processed page text
+                        if current_page_text:
+                            text_content += '\n'.join(current_page_text) + '\n'
                         
                     # Print progress for large PDFs
                     if page_num % 10 == 0 and page_num > 0:
@@ -53,9 +93,20 @@ def load_paper(paper_path):
             
         print(f"Successfully extracted {len(text_content)} characters of text")
         
-        # Debug: Show sample of extracted text
-        print("Sample of extracted text (first 200 chars):")
-        print(text_content[:200])
+        # Save the extracted text to a file
+        pdf_filename = os.path.basename(paper_path)
+        txt_filename = os.path.splitext(pdf_filename)[0] + '.txt'
+        output_path = os.path.join('pdfs', txt_filename)
+        
+        # Ensure pdfs directory exists
+        os.makedirs('pdfs', exist_ok=True)
+        
+        with open(output_path, 'w', encoding='utf-8') as f:
+            f.write(text_content)
+        print(f"Saved extracted text to {output_path}")
+        
+        # Debug: Show sample of extracted text (first 200 chars):
+
         
         return text_content
         
@@ -77,15 +128,17 @@ def generate_summary(text, tokenizer, model, max_length=200):
         text = text[:max_chars]
     
     # Create a prompt
-    prompt = f"""Write an extremely concise summary of this paper. Focus only on key contributions and results.:
+    prompt = f"""
+    INSTRUCTIONS:
+    Write a 200 word summary of this paper like a twitter post. Focus on key findings and contributions.
+    DO NOT repeat the paper text verbatim.
+    DO NOT include phrases like "this paper" or "the authors".
+
+    EXAMPLE:
+    {examples["good_formal_example"]}
 
     PAPER TEXT:
     {text}
-
-    INSTRUCTIONS:
-    Write a concise summary of the above paper in about 200 words. Focus on key findings and contributions.
-    DO NOT repeat the paper text verbatim.
-    DO NOT include phrases like "this paper" or "the authors".
     """
 
     print(f"Prompt created with {len(prompt)} characters")
@@ -161,6 +214,16 @@ def generate_summary(text, tokenizer, model, max_length=200):
         print(f"ERROR during generation: {e}")
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
+
+def test_load_paper():
+    parser = argparse.ArgumentParser(description='Generate paper summary using Qwen/Qwen3-1.7B')
+    parser.add_argument('--paper_path', required=True, help='Path to the paper PDF file')
+    parser.add_argument('--output_path', default=None, help='Path to save the summary')
+    parser.add_argument('--model_name', default="Qwen/Qwen3-1.7B", help='Model to use (default: Qwen/Qwen3-1.7B)')
+    args = parser.parse_args()
+
+    paper_text = load_paper(args.paper_path)
+
 
 def main():
     parser = argparse.ArgumentParser(description='Generate paper summary using Qwen/Qwen3-1.7B')
@@ -267,3 +330,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # test_load_paper()
