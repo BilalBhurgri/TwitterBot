@@ -1,0 +1,3147 @@
+<?xml version="1.0" encoding="UTF-8"?><TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">Why Larger Language Models Do In-context Learning Differently?</title>
+				<funder ref="#_6VCAPT6 #_mn5UhKZ #_djtm8gv">
+					<orgName type="full">National Science Foundation</orgName>
+					<orgName type="abbreviated">NSF</orgName>
+				</funder>
+				<funder ref="#_fHDb8jS">
+					<orgName type="full">Air Force</orgName>
+				</funder>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2024-05-30">30 May 2024</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Zhenmei</forename><surname>Shi</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Junyi</forename><surname>Wei</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Zhuoyan</forename><surname>Xu</surname></persName>
+						</author>
+						<author>
+							<persName><forename type="first">Yingyu</forename><surname>Liang</surname></persName>
+						</author>
+						<title level="a" type="main">Why Larger Language Models Do In-context Learning Differently?</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2024-05-30">30 May 2024</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">491E7ACB849C43B916791F83F5687BDD</idno>
+					<idno type="arXiv">arXiv:2405.19592v1[cs.LG]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.1" ident="GROBID" when="2025-05-15T06:07+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large language models (LLM) have emerged as a powerful tool for AI, with the key ability of incontext learning (ICL), where they can perform well on unseen tasks based on a brief series of task examples without necessitating any adjustments to the model parameters. One recent interesting mysterious observation is that models of different scales may have different ICL behaviors: larger models tend to be more sensitive to noise in the test context. This work studies this observation theoretically aiming to improve the understanding of LLM and ICL. We analyze two stylized settings: (1) linear regression with one-layer singlehead linear transformers and (2) parity classification with two-layer multiple attention heads transformers (non-linear data and non-linear model).</p><p>In both settings, we give closed-form optimal solutions and find that smaller models emphasize important hidden features while larger ones cover more hidden features; thus, smaller models are more robust to noise while larger ones are more easily distracted, leading to different ICL behaviors. This sheds light on where transformers pay attention to and how that affects ICL. Preliminary experimental results on large base and chat models provide positive support for our analysis.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1.">Introduction</head><p>As large language models (LLM), e.g., <ref type="bibr">ChatGPT (OpenAI, 2022)</ref> and GPT4 <ref type="bibr" target="#b59">(OpenAI, 2023)</ref>, are transforming AI development with potentially profound impact on our societies, it is critical to understand their mechanism for safe and efficient deployment. An important emergent ability <ref type="bibr">(Wei et al., 2022b;</ref><ref type="bibr">An et al., 2023)</ref>, which makes LLM successful, is in-context learning (ICL), where models are given a few exemplars of input-label pairs as part of the prompt before evaluating some new input. More specifically, ICL is a few-shot <ref type="bibr" target="#b13">(Brown et al., 2020)</ref> evaluation method without updating parameters in LLM. Surprisingly, people find that, through ICL, LLM can perform well on tasks that have never been seen before, even without any finetuning. It means LLM can adapt to wide-ranging downstream tasks under efficient sample and computation complexity. The mechanism of ICL is different from traditional machine learning, such as supervised learning and unsupervised learning. For example, in neural networks, learning usually occurs in gradient updates, whereas there is only a forward inference in ICL and no gradient updates. Several recent works, trying to answer why LLM can learn in-context, argue that LLM secretly performs or simulates gradient descent as meta-optimizers with just a forward pass during ICL empirically <ref type="bibr" target="#b20">(Dai et al., 2022;</ref><ref type="bibr" target="#b79">Von Oswald et al., 2023;</ref><ref type="bibr" target="#b52">Malladi et al., 2023)</ref> and theoretically <ref type="bibr">(Zhang et al., 2023b;</ref><ref type="bibr" target="#b1">Ahn et al., 2023;</ref><ref type="bibr" target="#b51">Mahankali et al., 2023;</ref><ref type="bibr" target="#b16">Cheng et al., 2023;</ref><ref type="bibr" target="#b7">Bai et al., 2023;</ref><ref type="bibr" target="#b39">Huang et al., 2023;</ref><ref type="bibr">Li et al., 2023b;</ref><ref type="bibr" target="#b37">Guo et al., 2024;</ref><ref type="bibr" target="#b89">Wu et al., 2024)</ref>. Although some insights have been obtained, the mechanism of ICL deserves further research to gain a better understanding.</p><p>Recently, there have been some important and surprising observations <ref type="bibr" target="#b55">(Min et al., 2022;</ref><ref type="bibr" target="#b61">Pan et al., 2023;</ref><ref type="bibr">Wei et al., 2023b;</ref><ref type="bibr">Shi et al., 2023a)</ref> that cannot be fully explained by existing studies. In particular, <ref type="bibr">Shi et al. (2023a)</ref> finds that LLM is not robust during ICL and can be easily distracted by an irrelevant context. Furthermore, <ref type="bibr">Wei et al. (2023b)</ref> shows that when we inject noise into the prompts, the larger language models may have a worse ICL ability than the small language models, and conjectures that the larger language models may overfit into the prompts and forget the prior knowledge from pretraining, while small models tend to follow the prior knowledge. On the other hand, <ref type="bibr" target="#b55">Min et al. (2022)</ref>; <ref type="bibr" target="#b61">Pan et al. (2023)</ref> demonstrate that injecting noise does not affect the in-context learning that much for smaller models, which have a more strong pretraining knowledge bias. To improve the understanding of the ICL mechanism, to shed light on the properties and inner workings of LLMs, and to inspire efficient and safe use of ICL, we are interested in the following question:</p><p>Why do larger language models do in-context learning differently?</p><p>To answer this question, we study two settings: (1) onelayer single-head linear self-attention network <ref type="bibr" target="#b66">(Schlag et al., 2021;</ref><ref type="bibr" target="#b79">Von Oswald et al., 2023;</ref><ref type="bibr" target="#b3">Akyurek et al., 2023;</ref><ref type="bibr" target="#b1">Ahn et al., 2023;</ref><ref type="bibr">Zhang et al., 2023b;</ref><ref type="bibr" target="#b51">Mahankali et al., 2023;</ref><ref type="bibr" target="#b89">Wu et al., 2024)</ref> pretrained on linear regression in-context tasks <ref type="bibr" target="#b30">(Garg et al., 2022;</ref><ref type="bibr" target="#b64">Raventos et al., 2023;</ref><ref type="bibr" target="#b79">Von Oswald et al., 2023;</ref><ref type="bibr" target="#b3">Akyurek et al., 2023;</ref><ref type="bibr" target="#b7">Bai et al., 2023;</ref><ref type="bibr" target="#b51">Mahankali et al., 2023;</ref><ref type="bibr">Zhang et al., 2023b;</ref><ref type="bibr" target="#b1">Ahn et al., 2023;</ref><ref type="bibr">Li et al., 2023c;</ref><ref type="bibr" target="#b39">Huang et al., 2023;</ref><ref type="bibr" target="#b89">Wu et al., 2024)</ref>, with rank constraint on the attention weight matrices for studying the effect of the model scale;</p><p>(2) two-layer multiple-head transformers <ref type="bibr">(Li et al., 2023b)</ref> pretrained on sparse parity classification in-context tasks, comparing small or large head numbers for studying the effect of the model scale. In both settings, we give the closed-form optimal solutions. We show that smaller models emphasize important hidden features while larger models cover more features, e.g., less important features or noisy features. Then, we show that smaller models are more robust to label noise and input noise during evaluation, while larger models may easily be distracted by such noises, so larger models may have a worse ICL ability than smaller ones.</p><p>We also conduct in-context learning experiments on five prevalent NLP tasks utilizing various sizes of the Llama model families <ref type="bibr">(Touvron et al., 2023a;</ref><ref type="bibr">b)</ref>, whose results are consistent with previous work <ref type="bibr" target="#b55">(Min et al., 2022;</ref><ref type="bibr" target="#b61">Pan et al., 2023;</ref><ref type="bibr">Wei et al., 2023b</ref>) and our analysis.</p><p>Our contributions and novelty over existing work:</p><p>• We formalize new stylized theoretical settings for studying ICL and the scaling effect of LLM. See Section 4 for linear regression and Section 5 for parity.</p><p>• We characterize the optimal solutions for both settings (Theorem 4.1 and Theorem 5.1).</p><p>• The characterizations of the optimal elucidate different attention paid to different hidden features, which then leads to the different ICL behavior (Theorem 4.2, Theorem 4.3, Theorem 5.2).</p><p>• We further provide empirical evidence on large base and chat models corroborating our theoretical analysis (Figure <ref type="figure" target="#fig_2">1</ref>, Figure <ref type="figure" target="#fig_3">2</ref>).</p><p>Note that previous ICL analysis paper may only focus on (1) the approximation power of transformers <ref type="bibr" target="#b30">(Garg et al., 2022;</ref><ref type="bibr" target="#b62">Panigrahi et al., 2023;</ref><ref type="bibr" target="#b37">Guo et al., 2024;</ref><ref type="bibr" target="#b7">Bai et al., 2023;</ref><ref type="bibr" target="#b16">Cheng et al., 2023)</ref>, e.g., constructing a transformer by hands which can do ICL, or (2) considering one-layer single-head linear self-attention network learning ICL on linear regression <ref type="bibr" target="#b79">(Von Oswald et al., 2023;</ref><ref type="bibr" target="#b3">Akyurek et al., 2023;</ref><ref type="bibr" target="#b51">Mahankali et al., 2023;</ref><ref type="bibr">Zhang et al., 2023b;</ref><ref type="bibr" target="#b1">Ahn et al., 2023;</ref><ref type="bibr" target="#b89">Wu et al., 2024)</ref>, and may not focus on the robustness analysis or explain the different behaviors. In this work, (1) we extend the linear model linear data analysis to the non-linear model and non-linear data setting, i.e., two-layer multiple-head transformers leaning ICL on sparse parity classification and (2) we have a rigorous behavior difference analysis under two settings, which explains the empirical observations and provides more insights into the effect of attention mechanism in ICL.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2.">Related Work</head><p>Large language model. Transformer-based <ref type="bibr" target="#b77">(Vaswani et al., 2017)</ref> neural networks have rapidly emerged as the primary machine learning architecture for tasks in natural language processing. Pretrained transformers with billions of parameters on broad and varied datasets are called large language models (LLM) or foundation models <ref type="bibr" target="#b12">(Bommasani et al., 2021)</ref>, e.g., BERT <ref type="bibr" target="#b23">(Devlin et al., 2019)</ref>, PaLM <ref type="bibr" target="#b17">(Chowdhery et al., 2022)</ref>, Llama <ref type="bibr">(Touvron et al., 2023a)</ref>, ChatGPT (Ope-nAI, 2022), GPT4 (OpenAI, 2023) and so on. LLM has shown powerful general intelligence <ref type="bibr" target="#b14">(Bubeck et al., 2023)</ref> in various downstream tasks. To better use the LLM for a specific downstream task, there are many adaptation methods, such as adaptor <ref type="bibr" target="#b38">(Hu et al., 2022;</ref><ref type="bibr">Zhang et al., 2023c;</ref><ref type="bibr" target="#b27">Gao et al., 2023;</ref><ref type="bibr">Shi et al., 2023b)</ref>, calibration <ref type="bibr" target="#b98">(Zhao et al., 2021;</ref><ref type="bibr">Zhou et al., 2023a)</ref>, multitask finetuning <ref type="bibr">(Gao et al., 2021b;</ref><ref type="bibr" target="#b91">Xu et al., 2023;</ref><ref type="bibr" target="#b79">Von Oswald et al., 2023;</ref><ref type="bibr">Xu et al., 2024b)</ref>, prompt tuning <ref type="bibr">(Gao et al., 2021a;</ref><ref type="bibr" target="#b43">Lester et al., 2021)</ref>, instruction tuning <ref type="bibr" target="#b46">(Li &amp; Liang, 2021;</ref><ref type="bibr" target="#b18">Chung et al., 2022;</ref><ref type="bibr" target="#b56">Mishra et al., 2022)</ref>, symbol tuning <ref type="bibr">(Wei et al., 2023a)</ref>, black-box tuning <ref type="bibr" target="#b72">(Sun et al., 2022)</ref>, chain-of-thoughts <ref type="bibr">(Wei et al., 2022c;</ref><ref type="bibr" target="#b42">Khattab et al., 2022;</ref><ref type="bibr" target="#b94">Yao et al., 2023;</ref><ref type="bibr" target="#b99">Zheng et al., 2024)</ref>, scratchpad <ref type="bibr" target="#b57">(Nye et al., 2021)</ref>, reinforcement learning from human feedback (RLHF) <ref type="bibr" target="#b60">(Ouyang et al., 2022)</ref> and many so on.</p><p>In-context learning. One important emergent ability <ref type="bibr">(Wei et al., 2022b)</ref> from LLM is in-context learning (ICL) <ref type="bibr" target="#b13">(Brown et al., 2020)</ref>. Specifically, when presented with a brief series of input-output pairings (known as a prompt) related to a certain task, they can generate predictions for test scenarios without necessitating any adjustments to the model's parameters. ICL is widely used in broad scenarios, e.g., reasoning <ref type="bibr" target="#b101">(Zhou et al., 2022)</ref>, negotiation <ref type="bibr" target="#b26">(Fu et al., 2023)</ref>, self-correction <ref type="bibr" target="#b63">(Pourreza &amp; Rafiei, 2023)</ref>, machine translation <ref type="bibr" target="#b0">(Agrawal et al., 2022)</ref> and so on. Many works trying to improve the ICL and zero-shot ability of LLM <ref type="bibr" target="#b54">(Min et al., 2021;</ref><ref type="bibr" target="#b81">Wang et al., 2022;</ref><ref type="bibr">Wei et al., 2022a;</ref><ref type="bibr" target="#b40">Iyer et al., 2022)</ref>. There is a line of insightful works to study the mechanism of transformer learning <ref type="bibr" target="#b31">(Geva et al., 2021;</ref><ref type="bibr" target="#b90">Xie et al., 2022;</ref><ref type="bibr" target="#b30">Garg et al., 2022;</ref><ref type="bibr" target="#b41">Jelassi et al., 2022;</ref><ref type="bibr" target="#b6">Arora &amp; Goyal, 2023;</ref><ref type="bibr">Li et al., 2023a;</ref><ref type="bibr">d;</ref><ref type="bibr" target="#b4">Allen-Zhu &amp; Li, 2023;</ref><ref type="bibr" target="#b50">Luo et al., 2023;</ref><ref type="bibr">Tian et al., 2023a;</ref><ref type="bibr">b;</ref><ref type="bibr">Zhou et al., 2023b;</ref><ref type="bibr" target="#b10">Bietti et al., 2023;</ref><ref type="bibr">Xu et al., 2024a;</ref><ref type="bibr">Gu et al., 2024a;</ref><ref type="bibr">b;</ref><ref type="bibr" target="#b88">c;</ref><ref type="bibr">d;</ref><ref type="bibr">e)</ref> and in-context learning <ref type="bibr" target="#b20">(Dai et al., 2022;</ref><ref type="bibr" target="#b51">Mahankali et al., 2023;</ref><ref type="bibr" target="#b64">Raventos et al., 2023;</ref><ref type="bibr" target="#b7">Bai et al., 2023;</ref><ref type="bibr" target="#b1">Ahn et al., 2023;</ref><ref type="bibr" target="#b79">Von Oswald et al., 2023;</ref><ref type="bibr" target="#b61">Pan et al., 2023;</ref><ref type="bibr">Li et al., 2023b;</ref><ref type="bibr" target="#b88">c;</ref><ref type="bibr">e;</ref><ref type="bibr" target="#b3">Akyurek et al., 2023;</ref><ref type="bibr">Zhang et al., 2023a;</ref><ref type="bibr">b;</ref><ref type="bibr" target="#b39">Huang et al., 2023;</ref><ref type="bibr" target="#b16">Cheng et al., 2023;</ref><ref type="bibr" target="#b87">Wibisono &amp; Wang, 2023;</ref><ref type="bibr" target="#b89">Wu et al., 2024;</ref><ref type="bibr" target="#b37">Guo et al., 2024;</ref><ref type="bibr" target="#b65">Reddy, 2024)</ref> empirically and theoretically. On the basis of these works, our analysis takes a step forward to show the ICL behavior difference under different scales of language models.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3.">Preliminary</head><p>Notations. We denote [n] := {1, 2, . . . , n}. For a positive semidefinite matrix A, we denote ∥x∥ 2 A := x ⊤ Ax as the norm induced by a positive definite matrix A. We denote ∥ • ∥ F as the Frobenius norm. diag() function will map a vector to a diagonal matrix or map a matrix to a vector with its diagonal terms.</p><p>In-context learning. We follow the setup and notation of the problem in <ref type="bibr">Zhang et al. (2023b)</ref>; <ref type="bibr" target="#b51">Mahankali et al. (2023)</ref>; <ref type="bibr" target="#b1">Ahn et al. (2023)</ref>; <ref type="bibr" target="#b39">Huang et al. (2023)</ref>; <ref type="bibr" target="#b89">Wu et al. (2024)</ref>. In the pretraining stage of ICL, the model is pretrained on prompts. A prompt from a task τ is formed by N examples (x τ,1 , y τ,1 ), . . . , (x τ,N , y τ,N ) and a query token x τ,q for prediction, where for any i ∈ [N ] we have y τ,i ∈ R and x τ,i , x τ,q ∈ R d . The embedding matrix E τ , the label vector y τ , and the input matrix X τ are defined as:</p><formula xml:id="formula_0">E τ :=</formula><p>x τ,1 x τ,2 . . . x τ,N x τ,q y τ,1 y τ,2 . . . y τ,N 0 ∈ R (d+1)×(N +1) ,</p><formula xml:id="formula_1">y τ :=[y τ,1 , . . . , y τ,N ] ⊤ ∈ R N , y τ,q ∈ R, X τ :=[x τ,1 , . . . , x τ,N ] ⊤ ∈ R N ×d , x τ,q ∈ R d .</formula><p>Given prompts represented as E τ 's and the corresponding true labels y τ,q 's, the pretraining aims to find a model whose output on E τ matches y τ,q . After pretraining, the evaluation stage applies the model to a new test prompt (potentially from a different task) and compares the model output to the true label on the query token.</p><p>Note that our pretraining stage is also called learning to learn in-context <ref type="bibr" target="#b54">(Min et al., 2021)</ref> or in-context training warmup <ref type="bibr" target="#b24">(Dong et al., 2022)</ref> in existing work. Learning to learn in-context is the first step to understanding the mechanism of ICL in LLM following previous works <ref type="bibr" target="#b64">(Raventos et al., 2023;</ref><ref type="bibr">Zhou et al., 2023b;</ref><ref type="bibr">Zhang et al., 2023b;</ref><ref type="bibr" target="#b51">Mahankali et al., 2023;</ref><ref type="bibr" target="#b1">Ahn et al., 2023;</ref><ref type="bibr" target="#b39">Huang et al., 2023;</ref><ref type="bibr">Li et al., 2023b;</ref><ref type="bibr" target="#b89">Wu et al., 2024)</ref>.</p><p>Linear self-attention networks. The linear self-attention network has been widely studied <ref type="bibr" target="#b66">(Schlag et al., 2021;</ref><ref type="bibr" target="#b79">Von Oswald et al., 2023;</ref><ref type="bibr" target="#b3">Akyurek et al., 2023;</ref><ref type="bibr" target="#b1">Ahn et al., 2023;</ref><ref type="bibr">Zhang et al., 2023b;</ref><ref type="bibr" target="#b51">Mahankali et al., 2023;</ref><ref type="bibr" target="#b89">Wu et al., 2024;</ref><ref type="bibr" target="#b2">Ahn et al., 2024)</ref>, and will be used as the learning model or a component of the model in our two theoretical settings. It is defined as:</p><formula xml:id="formula_2">f LSA,θ (E) = E + W P V E • E ⊤ W KQ E ρ ,<label>(1)</label></formula><p>where θ = (W P V , W KQ ), E ∈ R (d+1)×(N +1) is the embedding matrix of the input prompt, and ρ is a normalization factor set to be the length of examples, i.e., ρ = N during pretraining. Similar to existing work, for simplicity, we have merged the projection and value matrices into W P V , and merged the key and query matrices into W KQ , and have a residual connection in our LSA network. The prediction of the network for the query token x τ,q will be the bottom right entry of the matrix output, i.e., the entry at location (d + 1), (N + 1), while other entries are not relevant to our study and thus are ignored. So only part of the model parameters are relevant. To see this, let us denote d+1) ,</p><formula xml:id="formula_3">W P V = W P V 11 w P V 12 (w P V 21 ) ⊤ w P V 22 ∈ R (d+1)×(</formula><formula xml:id="formula_4">W KQ = W KQ 11 w KQ 12 (w KQ 21 ) ⊤ w KQ 22 ∈ R (d+1)×(d+1) ,</formula><p>where</p><formula xml:id="formula_5">W P V 11 , W KQ 11 ∈ R d×d ; w P V 12 , w P V 21 , w KQ 12 , w KQ 21 ∈ R d ; and w P V 22 , w KQ 22 ∈ R.</formula><p>Then the prediction is:</p><formula xml:id="formula_6">y τ,q =f LSA,θ (E) (d+1),(N +1)</formula><p>(2)</p><formula xml:id="formula_7">= (w P V 21 ) ⊤ w P V 22 EE ⊤ ρ W KQ 11 (w KQ 21 ) ⊤ x τ,q .</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.">Linear Regression</head><p>In this section, we consider the linear regression task for incontext learning which is widely studied empirically <ref type="bibr" target="#b30">(Garg et al., 2022;</ref><ref type="bibr" target="#b64">Raventos et al., 2023;</ref><ref type="bibr" target="#b79">Von Oswald et al., 2023;</ref><ref type="bibr" target="#b3">Akyurek et al., 2023;</ref><ref type="bibr" target="#b7">Bai et al., 2023)</ref> and theoretically <ref type="bibr" target="#b51">(Mahankali et al., 2023;</ref><ref type="bibr">Zhang et al., 2023b;</ref><ref type="bibr" target="#b1">Ahn et al., 2023;</ref><ref type="bibr">Li et al., 2023c;</ref><ref type="bibr" target="#b39">Huang et al., 2023;</ref><ref type="bibr" target="#b89">Wu et al., 2024)</ref>.</p><p>Data and task. For each task τ , we assume for any i ∈</p><formula xml:id="formula_8">[N ] tokens x τ,i , x τ,q i.i.d.</formula><p>∼ N (0, Λ), where Λ is the covariance matrix. We also assume a d-dimension task weight w τ i.i.d.</p><p>∼ N (0, I d×d ) and the labels are given by y τ,i = ⟨w τ , x τ,i ⟩ and y τ,q = ⟨w τ , x τ,q ⟩. Model and loss. We study a one-layer single-head linear self-attention transformer (LSA) defined in Equation ( <ref type="formula" target="#formula_2">1</ref>) and we use y τ,q := f LSA,θ (E) (d+1),(N +1) as the prediction. We consider the mean square error (MSE) loss so that the empirical risk over B independent prompts is defined as</p><formula xml:id="formula_9">L(f θ ) := 1 2B B τ =1 ( y τ,q -⟨w τ , x τ,q ⟩) 2 .</formula><p>Measure model scale by rank. We first introduce a lemma from previous work that simplifies the MSE and justifies our measurement of the model scale. For notation simplicity, we denote</p><formula xml:id="formula_10">U = W KQ 11 , u = w P V 22 . Lemma 4.1 (Lemma A.1 in Zhang et al. (2023b)). Let Γ := 1 + 1 N Λ + 1 N tr(Λ)I d×d ∈ R d×d . Let L(f LSA,θ ) = lim B→∞ L(f LSA,θ ) = 1 2 E wτ ,xτ,1,...,x τ,N ,xτ,q ( y τ,q -⟨w τ , x τ,q ⟩) 2 , l(U, u) = tr 1 2 u 2 ΓΛUΛU ⊤ -uΛ 2 U ⊤ , we have L(f LSA,θ ) = l(U, u) + C</formula><p>, where C is a constant independent with θ.</p><p>Lemma 4.1 tells us that the loss only depends on uU. If we consider non-zero u, w.l.o.g, letting u = 1, then we can see that the loss only depends on U ∈ R d×d ,</p><formula xml:id="formula_11">L(f LSA,θ ) = tr 1 2 ΓΛUΛU ⊤ -Λ 2 U ⊤ .</formula><p>Note that U = W KQ 11 , then it is natural to measure the size of the model by rank of U. Recall that we merge the key matrix and the query matrix in attention together, i.e.,</p><formula xml:id="formula_12">W KQ = (W K ) ⊤ W Q . Thus, a low-rank U is equivalent to the constraint W K , W Q ∈ R r×d where r ≪ d.</formula><p>The low-rank key and query matrix are practical and have been widely studied <ref type="bibr" target="#b38">(Hu et al., 2022;</ref><ref type="bibr" target="#b15">Chen et al., 2021;</ref><ref type="bibr" target="#b9">Bhojanapalli et al., 2020;</ref><ref type="bibr" target="#b25">Fan et al., 2021;</ref><ref type="bibr" target="#b22">Dass et al., 2023;</ref><ref type="bibr">Shi et al., 2023c)</ref>. Therefore, we use r = rank(U) to measure the scale of the model, i.e., larger r representing larger models. To study the behavior difference under different model scale, we will analyze U under different rank constraints.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1.">Low Rank Optimal Solution</head><p>Since the token covariance matrix Λ is positive semidefinite symmetric, we have eigendecomposition Λ = QDQ ⊤ , where Q is an orthonormal matrix containing eigenvectors of Λ and D is a sorted diagonal matrix with nonnegative entries containing eigenvalues of Λ, denoting as</p><formula xml:id="formula_13">D = diag([λ 1 , . . . , λ d ]), where λ 1 ≥ • • • ≥ λ d ≥ 0.</formula><p>Then, we have the following theorem. Then</p><formula xml:id="formula_14">U * = cQV * Q ⊤ , u = 1 c</formula><p>, where c is any nonzero constant, and</p><formula xml:id="formula_15">V * = diag([v * 1 , . . . , v * d ]) satisfies for any i ≤ r, v * i = N (N +1)λi+tr(D) and for any i &gt; r, v * i = 0.</formula><p>Proof sketch of Theorem 4.1. We defer the full proof to Appendix B.1. The proof idea is that we can decompose the loss function into different ranks, so we can keep the direction by their sorted "variance", i.e., argmin</p><formula xml:id="formula_16">U∈R d×d ,rank(U)≤r,u∈R l(U, u) = d i=1 T i λ 2 i v * i - 1 T i 2 ,</formula><p>where</p><formula xml:id="formula_17">T i = 1 + 1 N λ i + tr(D) N . We have that v * i ≥ 0 for any i ∈ [d] and if v * i &gt; 0, we have v * i = 1 Ti . Denote g(x) = x 2 1 (1+ 1 N )x+ tr(D)</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>N</head><p>. We get the conclusion by g(x) is an increasing function on [0, ∞).</p><p>Theorem 4.1 gives the closed-form optimal rank-r solution of one-layer single-head linear self-attention transformer learning linear regression ICL tasks. Let f LSA,θ denote the optimal rank-r solution corresponding to the U * , u * above.</p><p>In detail, the optimal rank-r solution f LSA,θ satisfies</p><formula xml:id="formula_18">W * P V = 0 d×d 0 d 0 ⊤ d u , W * KQ = U * 0 d 0 ⊤ d 0 .<label>(3)</label></formula><p>What hidden features does the model pay attention to? Theorem 4.1 shows that the optimal rank-r solution indeed is the truncated version of the optimal full-rank solution, keeping only the most important feature directions (i.e., the first r eigenvectors of the token covariance matrix). In detail, (1) for the optimal full-rank solution, we have for any</p><formula xml:id="formula_19">i ∈ [d], v * i = N (N +1)λi+tr(D) ;</formula><p>(2) for the optimal rank-r solution, we have for any i ≤ r, v * i = N (N +1)λi+tr(D) and for any i &gt; r, v * i = 0. That is, the small rank-r model keeps only the first r eigenvectors (viewed as hidden feature directions) and does not cover the others, while larger ranks cover more hidden features, and the large full rank model covers all features.</p><p>Recall that the prediction depends on U * x τ,q = cQV * Q ⊤ x τ,q ; see Equation ( <ref type="formula">2</ref>) and (3). So the optimal rank-r model only uses the components on the first r eigenvector directions to do the prediction in evaluations. When there is noise distributed in all directions, a smaller model can ignore noise and signals along less important directions but still keep the most important directions. Then it can be less sensitive to the noise, as empirically observed. This insight is formalized in the next subsection.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2.">Behavior Difference</head><p>We now formalize our insight into the behavior difference based on our analysis on the optimal solutions. We consider the evaluation prompt to have M examples (may not be equal to the number of examples N during pretraining for a general evaluation setting), and assume noise in labels to facilitate the study of the behavior difference (our results can be applied to the noiseless case by considering noise level σ = 0). Formally, the evaluation prompt is:</p><formula xml:id="formula_20">E := x 1 x 2 . . . x M x q y 1 y 2 . . . y M 0 ∈ R (d+1)×(M +1) = x 1 . . . x M x q ⟨w, x 1 ⟩ + ϵ 1 . . . ⟨w, x M ⟩ + ϵ M 0 ,</formula><p>where w is the weight for the evaluation task, and for any i ∈ [M ], the label noise ϵ i i.i.d.</p><p>∼ N (0, σ 2 ).</p><p>Recall Q are eigenvectors of Λ, i.e., Λ = QDQ ⊤ and</p><formula xml:id="formula_21">D = diag([λ 1 , . . . , λ d ]).</formula><p>In practice, we can view the large variance part of x (top r directions in Q) as a useful signal (like words "positive", "negative"), and the small variance part (bottom d -r directions in Q) as the less important or useless information (like words "even", "just").</p><p>Based on such intuition, we can decompose the evaluation task weight w accordingly: w = Q(s+ξ), where the r-dim truncated vector s ∈ R d has s i = 0 for any r &lt; i ≤ d, and the residual vector ξ ∈ R d has ξ i = 0 for any 1 ≤ i ≤ r.</p><p>The following theorem (proved in Appendix B.2) quantifies the evaluation loss at different model scales r which can explain the scale's effect. </p><formula xml:id="formula_22">L(f LSA,θ ; E) :=E x1,ϵ1,...,x M ,ϵ M ,xq f LSA,θ ( E) -⟨w, x q ⟩ 2 = 1 M ∥s∥ 2 (V * ) 2 D 3 + 1 M ∥s + ξ∥ 2 D + σ 2 tr (V * ) 2 D 2 + ∥ξ∥ 2 D + i∈[r] s 2 i λ i (λ i v * i -1) 2 .</formula><p>Implications. If N is large enough with N λ r ≫ tr(D) (which is practical as we usually pretrain networks on long text), then</p><formula xml:id="formula_23">L(f LSA,θ ; E)≈∥ξ∥ 2 D + 1 M (r + 1)∥s∥ 2 D + r∥ξ∥ 2 D + rσ 2 .</formula><p>The first term ∥ξ∥ 2 D is due to the residual features not covered by the network, so it decreases for larger r and becomes 0 for full-rank r = d. The second term 1 M (•) is significant since we typically have limited examples in evaluation, e.g., M = 16 ≪ N . Within it, (r + 1)∥s∥ 2 D corresponds to the first r directions, and rσ 2 corresponds to the label noise. These increase for larger r. So there is a trade-off between the two error terms when scaling up the model: for larger r the first term decreases while the second term increases. This depends on whether more signals are covered or more noise is kept when increasing the rank r.</p><p>To further illustrate the insights, we consider the special case when the model already covers all useful signals in the evaluation task: w = Qs, i.e., the label only depends on the top r features (like "positive", "negative" tokens). Our above analysis implies that a larger model will cover more useless features and keep more noise, and thus will have worse performance. This is formalized in the following theorem (proved in Appendix B.2).</p><p>Theorem 4.3 (Behavior difference for regression, special case). Let 0 ≤ r ≤ r ′ ≤ d and w = Qs where s is r-dim truncated vector. Denote the optimal rank-r solution as f 1 and the optimal rank-r ′ solution as f 2 . Then,</p><formula xml:id="formula_24">L(f 2 ; E) -L(f 1 ; E) = 1 M ∥s∥ 2 D + σ 2   r ′ i=r+1 N λ i (N + 1) λ i + tr(D) 2   .</formula><p>Implications. By Theorem 4.3, in this case,</p><formula xml:id="formula_25">L(f 2 ; E) -L(f 1 ; E) ≈ r ′ -r M ∥s∥ 2 D input noise + r ′ -r M σ 2 label noise</formula><p>.</p><p>We can decompose the above equation to input noise and label noise, and we know that ∥s∥ 2 D + σ 2 only depends on the intrinsic property of evaluation data and is independent of the model size. When we have a larger model (larger r ′ ), we will have a larger evaluation loss gap between the large and small models. It means larger language models may be easily affected by the label noise and input noise and may have worse in-context learning ability, while smaller models may be more robust to these noises as they only emphasize important signals. Moreover, if we increase the label noise scale σ 2 on purpose, the larger models will be more sensitive to the injected label noise. This is consistent with the observation in <ref type="bibr">Wei et al. (2023b)</ref>; <ref type="bibr">Shi et al. (2023a)</ref> and our experimental results in Section 6.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">Sparse Parity Classification</head><p>We further consider a more sophisticated setting with nonlinear data which necessitates nonlinear models. Viewing sentences as generated from various kinds of thoughts and knowledge that can be represented as vectors in some hidden feature space, we consider the classic data model of dictionary learning or sparse coding, which has been widely used for text and images <ref type="bibr" target="#b58">(Olshausen &amp; Field, 1997;</ref><ref type="bibr" target="#b78">Vinje &amp; Gallant, 2000;</ref><ref type="bibr" target="#b11">Blei et al., 2003)</ref>. Furthermore, beyond linear separability, we assume the labels are given by the (d, 2)-sparse parity on the hidden feature vector, which is the high-dimensional generalization of the classic XOR problem. Parities are a canonical family of highly non-linear learning problems and recently have been used in many recent studies on neural network learning <ref type="bibr" target="#b21">(Daniely &amp; Malach, 2020;</ref><ref type="bibr" target="#b8">Barak et al., 2022;</ref><ref type="bibr" target="#b68">Shi et al., 2022;</ref><ref type="bibr" target="#b71">2023d)</ref>. Data and task. Let X = R d be the input space, and Y = {±1} be the label space. Suppose G ∈ R d×d is an unknown dictionary with d columns that can be regarded as features; for simplicity, assume G is orthonormal. Let ϕ ∈ {±1} d be a hidden vector that indicates the presence of each feature. The data are generated as follows: for each task τ , generate two task indices t τ = (i τ , j τ ) which determines a distribution T τ ; then for this task, draw examples by ϕ ∼ T τ , and setting x = Gϕ (i.e., dictionary learning data), y = ϕ iτ ϕ jτ (i.e., XOR labels).</p><p>We now specify how to generate t τ and ϕ. As some of the hidden features are more important than others, we let A = [k] denote a subset of size k corresponding to the important features. We denote the important task set as</p><formula xml:id="formula_26">S 1 := A × A \ {(l, l) : l ∈ A} and less important task set as S 2 := [d] × [d] \ ({(l, l) : l ∈ [d]} ∪ S 1</formula><p>). Then t τ is drawn uniformly from S 1 with probability 1 -p T , and uniformly from S 2 with probability p T , where p T ∈ [0, 1 2 ) is the less-important task rate. For the distribution of ϕ, we assume ϕ [d]\{iτ ,jτ } is drawn uniformly from {±1} d-2 , and assume ϕ {iτ ,jτ } has good correlation (measured by a parameter γ ∈ (0, 1 4 )) with the label to facilitate learning. Independently, we have</p><formula xml:id="formula_27">Pr[(ϕ iτ , ϕ jτ ) = (1, 1)] = 1/4 + γ, Pr[(ϕ iτ , ϕ jτ ) = (1, -1)] = 1/4, Pr[(ϕ iτ , ϕ jτ ) = (-1, 1)] = 1/4, Pr[(ϕ iτ , ϕ jτ ) = (-1, -1)] = 1/4 -γ.</formula><p>Note that without correlation (γ = 0), it is well-known sparse parities will be hard to learn, so we consider γ &gt; 0.</p><p>Model. Following <ref type="bibr" target="#b89">Wu et al. (2024)</ref>, we consider the reduced linear self-attention f LSA,θ (X, y, x q ) = y ⊤ X N W KQ x q (which is a reduced version of Equation ( <ref type="formula" target="#formula_2">1</ref>)), and also denote W KQ as W for simplicity. It is used as the neuron in our two-layer multiple-head transformers:</p><formula xml:id="formula_28">g(X, y, x q ) = i∈[m] a i σ y ⊤ X N W (i) x q ,</formula><p>where σ is ReLU activation, a = [a 1 , . . . , a m ] ⊤ ∈ [-1, 1] m , W (i) ∈ R d×d and m is the number of attention heads. Denote its parameters as θ = (a, W (1) , . . . , W (m) ).</p><p>This model is more complicated as it uses non-linear activation, and also has two layers with multiple heads.</p><p>Measure model scale by head number. We use the attention head number m to measure the model scale, as a larger m means the transformer can learn more attention patterns. We consider hinge loss ℓ(z) = max(0, 1 -z), and the population loss with weight-decay regularization:</p><formula xml:id="formula_29">L λ (g) =E [ℓ (y q • g(X, y, x q ))] + λ   i∈[m] ∥W (i) ∥ 2 F   .</formula><p>Suppose N → ∞ and let the optimal solution of L λ (g) be</p><formula xml:id="formula_30">g * = argmin g lim λ→0 +</formula><p>L λ (g).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1.">Optimal Solution</head><p>We first introduce some notations to describe the optimal.</p><p>Let bin(•) be the integer to binary function, e.g., bin(6) = 110. Let digit(z, i) denote the digit at the i-th position (from right to left) of z, e.g., digit(01000, 4) = 1. We are now ready to characterize the optimal solution (proved in Appendix C.1).</p><p>Theorem 5.1 (Optimal solution for parity). Consider k = 2 ν1 , d = 2 ν2 , and let g * 1 and g * 2 denote the optimal solutions for m = 2(ν 1 + 1) and m = 2(ν 2 + 1), respectively. When</p><formula xml:id="formula_31">0 &lt; p T &lt; 1 4 -γ d(d-1) 2 ( 1 4 +γ)+ 1 4 -γ</formula><p>, g * 1 neurons are a subset of g * 2 neurons. Specifically, for any i ∈ [2(ν 2 + 1)], let V * ,(i) be diagonal matrix and • For any i ∈ [ν 2 ] and i τ ∈ [d], let a * i = -1 and V * ,(i) iτ ,iτ = (2 digit(bin(i τ -1), i) -1)/(4γ).</p><p>• For i = ν 2 + 1 and any i τ ∈ [d], let a * i = +1 and V * ,(i) iτ ,iτ = -ν j /(4γ) for g * j .</p><p>•</p><formula xml:id="formula_32">For i ∈ [2(ν 2 + 1)] \ [ν 2 + 1], let a * i = a * i-ν2-1 and V * ,(i) = -V * ,(i-ν2-1) . Let W * ,(i) = GV * ,(i) G ⊤ . Up to permutations, g * 2 has neurons (a * , W * ,(1) , . . . , W * ,(m) ) and g * 1 has the {1, . . . , ν 1 , ν 2 + 1, ν 2 + 2 . . . , ν 2 + ν 1 + 1, 2ν 2 + 2}-th neurons of g * 2 .</formula><p>Proof sketch of Theorem 5.1. The proof is challenging as the non-linear model and non-linear data. We defer the full proof to Appendix C.1. The high-level intuition is transferring the optimal solution to patterns covering problems. For small p T , the model will "prefer" to cover all patterns in S 1 first. When the model becomes larger, by checking the sufficient and necessary conditions, it will continually learn to cover non-important features. Thus, the smaller model will mainly focus on important features, while the larger model will focus on all features.</p><p>Example for Theorem 5.1. When ν 2 = 3, the optimal has a 1 = a 2 = a 3 = -1, a 4 = +1 and,</p><formula xml:id="formula_33">V (1) = 1/4γ • diag([-1, +1, -1, +1, -1, +1, -1, +1]) V (2) = 1/4γ • diag([-1, -1, +1, +1, -1, -1, +1, +1]) V (3) = 1/4γ • diag([-1, -1, -1, -1, +1, +1, +1, +1]) V (4) = 3/4γ • diag([-1, -1, -1, -1, -1, -1, -1, -1])</formula><p>and</p><formula xml:id="formula_34">V (i+4) = -V (i) , a i+4 = a i for i ∈ [4].</formula><p>On the other hand, the optimal g * 1 for ν 1 = 1 has the {1, 4, 5, 8}-th neurons of g * 2 . By carefully checking, we can see that the neurons in g * 1 (i.e., the {1, 4, 5, 8}-th neurons of g * 2 ) are used for parity classification task from S 1 , i.e, label determined by the first k = 2 ν1 = 2 dimensions. With the other neurons (i.e., the {2, 3, 6, 7}-th neurons of g * 2 ), g * 2 can further do parity classification on the task from S 2 , label determined by any two dimensions other than the first two dimensions.</p><p>What hidden features does the model pay attention to? Theorem 5.1 gives the closed-form optimal solution of twolayer multiple-head transformers learning sparse-parity ICL tasks. It shows the optimal solution of the smaller model indeed is a sub-model of the larger optimal model. In detail, the smaller model will mainly learn all important features, while the larger model will learn more features. This again shows a trade-off when increasing the model scale: larger models can learn more hidden features which can be beneficial if these features are relevant to the label, but also potentially keep more noise which is harmful.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2.">Behavior Difference</head><p>Similar to Theorem 4.3, to illustrate our insights, we will consider a setting where the smaller model learns useful features for the evaluation task while the larger model covers extra features. That is, for evaluation, we uniformly draw a task t τ = (i τ , j τ ) from S 1 , and then draw M samples to form the evaluation prompt in the same way as during pretraining. To present our theorem (proved in Appendix C.2 using Theorem 5.1), we introduce some notations. Let</p><formula xml:id="formula_35">D 1 = diag(V * ,(1) ), . . . , diag(V * ,(ν1) ), diag(V * ,(ν2+1) ), . . . , diag(V * ,(ν2+ν1+1) ), diag(V * ,(2ν2+2) ) ∈ R d×2(ν1+1) D 2 = diag(V * ,(1) ), . . . , diag(V * ,(2ν2+2) ) ∈ R d×2(ν2+1) ,</formula><p>where for any i ∈ [2(ν 2 + 1)], V * ,(i) is defined in Theorem 5.1. Let φτ,q ∈ R d satisfy φτ,q,iτ = ϕ τ,q,iτ , φτ,q,jτ = ϕ τ,q,jτ and all other entries being zero. For a matrix Z and a vector v, let P Z denote the projection of v to the space of Z, i.e., P Z</p><formula xml:id="formula_36">(v) = Z(Z ⊤ Z) -1 Z ⊤ v.</formula><p>Theorem 5.2 (Behavior difference for parity). Assume the same condition as Theorem 5.1. For j ∈ {1, 2}, Let θ j denote the parameters of g * j . For l ∈ [M ], let ξ l be uniformly drawn from {±1} d , and Ξ = l∈[M ] ξ l M . Then, for any δ ∈ (0, 1), with probability at least 1 -δ over the randomness of test data, we have g * j (X τ , y τ , x τ,q ) = h(θ j , 2γ φτ,q + P Dj (Ξ)) + ϵ j</p><formula xml:id="formula_37">:= i∈[m]</formula><p>a * i σ diag V * ,(i) ⊤ 2γ φτ,q + P Dj (Ξ) +ϵ j where ϵ j = O νj M log 1 δ and we have</p><p>• 2γ φτ,q is the signal useful for prediction: 0 = ℓ(y q • h(θ 1 , 2γ φτ,q )) = ℓ(y q • h(θ 2 , 2γ φτ,q )).</p><p>• P D1 (Ξ)) and P D2 (Ξ)) is noise not related to labels, and</p><formula xml:id="formula_38">E[∥P D 1 (Ξ))∥ 2 2 ] E[∥P D 2 (Ξ))∥ 2 2 ] = ν1+1 ν2+1 .</formula><p>Implications. Theorem 5.2 shows that during evaluation, we can decompose the input into two parts: signal and noise.</p><p>Both the larger model and smaller model can capture the signal part well. However, the smaller model has a much smaller influence from noise than the larger model, i.e., the ratio is ν1+1 ν2+1 . The reason is that smaller models emphasize important hidden features while larger ones cover more hidden features, and thus, smaller models are more robust to noise while larger ones are easily distracted, leading to different ICL behaviors. This again sheds light on where transformers pay attention to and how that affects ICL.</p><p>Remark 5.1. Here, we provide a detailed intuition about Theorem 5.2. Ξ is the input noise. When we only care about the noise part, we can rewrite the smaller model as g 1 = h(θ 1 , P D1 (Ξ)), and the larger model as g 2 = h(θ 2 , P D2 (Ξ)), where they share the same h function.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Our conclusion says that E[∥P</head><formula xml:id="formula_39">D1 (Ξ)∥ 2 2 ]/E[∥P D2 (Ξ)∥ 2 2 ] = (ν 1 + 1)/(ν 2 + 1)</formula><p>, which means the smaller model's "effect" input noise is smaller than the larger model's "effect" input noise. Although their original input noise is the same, as the smaller model only focuses on limited features, the smaller model will ignore part of the noise, and the "effect" input noise is small. However, the larger model is the opposite.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.">Experiments</head><p>Brilliant recent work <ref type="bibr">(Wei et al., 2023b)</ref> runs intensive and thorough experiments to show that larger language models do in-context learning differently. Following their idea, we conduct similar experiments on binary classification datasets, which is consistent with our problem setting in the parity case, to support our theory statements.  . Larger models are easier to be affected by noise (flipped labels) and override pretrained biases than smaller models for different datasets and model families (original/without instruct turning). Accuracy is calculated over 1000 evaluation prompts per dataset and over 5 runs with different random seeds for each evaluation, using M = 16 in-context exemplars.</p><p>Experimental setup. Following the experimental protocols in <ref type="bibr">Wei et al. (2023b)</ref>; <ref type="bibr" target="#b55">Min et al. (2022)</ref>, we conduct experiments on five prevalent NLP tasks, leveraging datasets from GLUE <ref type="bibr" target="#b80">(Wang et al., 2018)</ref> tasks and Subj <ref type="bibr" target="#b19">(Conneau &amp; Kiela, 2018)</ref>. Our experiments utilize various sizes of the Llama model families <ref type="bibr">(Touvron et al., 2023a;</ref><ref type="bibr">b)</ref>: 3B, 7B, 13B, 70B. We follow the prior work on in-context learning <ref type="bibr">(Wei et al., 2023b)</ref> and use M = 16 in-context exemplars. We aim to assess the models' ability to use inherent semantic biases from pretraining when facing in-context examples. As part of this experiment, we introduce noise by inverting an escalating percentage of in-context example labels. To illustrate, a 100% label inversion for the SST-2 dataset implies that every "positive" exemplar is now labeled "negative". Note that while we manipulate the in-context example labels, the evaluation sample labels remain consistent. We use the same templates as <ref type="bibr" target="#b54">(Min et al., 2021)</ref>, a sample evaluation for SST-2 when M = 2: sentence: show us a good time The answer is positive.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>sentence: as dumb and cheesy</head><p>The answer is negative. sentence: it 's a charming and often affecting journey The answer is</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.1.">Behavior Difference</head><p>Figure <ref type="figure" target="#fig_2">1</ref> shows the result of model performance (chat/with instruct turning) across all datasets with respect to the proportion of labels that are flipped. When 0% label flips, we observe that larger language models have better in-context The results show that larger models focus on both sentences, while smaller models only focus on relevant sentences. abilities. On the other hand, the performance decrease facing noise is more significant for larger models. As the percentage of label alterations increases, which can be viewed as increasing label noise σ 2 , the performance of small models remains flat and seldom is worse than random guessing while large models are easily affected by the noise, as predicted by our analysis. These results indicate that large models can override their pretraining biases in-context inputlabel correlations, while small models may not and are more robust to noise. This observation aligns with the findings in <ref type="bibr">Wei et al. (2023b)</ref> and our analysis.</p><p>We can see a similar or even stronger phenomenon in Figure <ref type="figure" target="#fig_3">2</ref>: larger models are more easily affected by noise (flipped labels) and override pretrained biases than smaller models for the original/without instruct turning version (see the "Average" sub-figure). On the one hand, we conclude that both large base models and large chat models suffer from ICL robustness issues. On the other hand, this is also consistent with recent work suggesting that instruction tuning will impair LLM's in-context learning capability.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6.2.">Ablation Study</head><p>To further verify our analysis, we provide an ablation study. We concatenate an irrelevant sentence from GSM-IC <ref type="bibr">(Shi et al., 2023a)</ref> to an input-label pair sentence from SST-2 in GLUE dataset. We use "correct" to denote the original label and "wrong" to denote the flipped label. Then, we measure the magnitude of correlation between labelinput, by computing the norm of the last row of attention maps across all heads in the final layer. We do this between "correct"/"wrong" labels and the original/irrelevant inserted sentences. Figure <ref type="figure" target="#fig_4">3</ref> shows the results on 100 evaluation prompts; for example, the subfigure Correct+Relevant shows the correlation magnitude between the "correct" label and the original input sentence in each prompt. The results show that the small model Llama 2-13b mainly focuses on the relevant part (original input) and may ignore the irrelevant sentence, while the large model Llama 2-70b focuses on both sentences. This well aligns with our analysis.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7.">More Discussions about Noise</head><p>There are three kinds of noise covered in our analysis:</p><p>Pretraining noise. We can see it as toxic or harmful pretraining data on the website (noisy training data). The model will learn these features and patterns. It is covered by ξ in the linear regression case and S 2 in the parity case.</p><p>Input noise during inference. We can see it as natural noise as the user's wrong spelling or biased sampling. It is a finite sampling error as x drawn from the Gaussian distribution for the linear regression case and a finite sampling error as x drawn from a uniform distribution for the parity case.</p><p>Label noise during inference. We can see it as adversarial examples, or misleading instructions, e.g., deliberately letting a model generate a wrong fact conclusion or harmful solution, e.g., poison making. It is σ in the linear regression case and S 2 in the parity case.</p><p>For pretraining noise, it will induce the model to learn noisy or harmful features. During inference, for input noise and label noise, the larger model will pay additional attention to these noisy or harmful features in the input and label pair, i.e., y • x, so that the input and label noise may cause a large perturbation in the final results. If there is no pretraining noise, then the larger model will have as good robustness as the smaller model. Also, if there is no input and label noise, the larger model will have as good robustness as the smaller model. The robustness gap only happens when both pretraining noise and inference noise exist simultaneously.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="8.">Conclusion</head><p>In this work, we answered our research question: why do larger language models do in-context learning differently? Our theoretical study showed that smaller models emphasize important hidden features while larger ones cover more hidden features, and thus the former are more robust to noise while the latter are more easily distracted, leading to different behaviors during in-context learning. Our empirical results provided positive support for the theoretical analysis. Our findings can help improve understanding of LLMs and ICL, and better training and application of these models.</p><formula xml:id="formula_40">diag([λ ′ 1 , . . . , λ ′ d ]) and V * = diag([v * 1 , . . . , v * d ]</formula><p>). Then, we have</p><formula xml:id="formula_41">D ′ 1 2 D 1 2 V -D ′ -1 D 1 2 2 F (4) = d i=1 λ ′ i 1 2 λ i v * i - 1 λ ′ i 2 (5) = d i=1 1 + 1 N λ i + tr(D) N λ 2 i v * i - 1 1 + 1 N λ i + tr(D) N 2 . (<label>6</label></formula><formula xml:id="formula_42">)</formula><p>As V * is the minimum rank r solution, we have that v * i ≥ 0 for any i ∈ [d] and if v * i &gt; 0, we have</p><formula xml:id="formula_43">v * i = 1 (1+ 1 N )λi+ tr(D) N . Denote g(x) = 1 + 1 N x + tr(D) N x 2 1 (1+ 1 N )x+ tr(D) N 2 = x 2 1 (1+ 1 N )x+ tr(D)</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>N</head><p>. It is easy to see that g(x) is an increasing function on [0, ∞). Now, we use contradiction to show that V * only has non-zero entries in the first r diagonal entries. Suppose i &gt; r, such that v * i &gt; 0, then we must have j ≤ r such that v * j = 0 as V * is a rank r solution. We find that if we set</p><formula xml:id="formula_44">v * i = 0, v * j = 1 (1+ 1 N )λj+ tr(D)</formula><p>N and all other values remain the same, Equation (6) will strictly decrease as g(x) is an increasing function on [0, ∞). Thus, here is a contradiction. We finish the proof by V * = uQ ⊤ U * Q.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B.2. Behavior Difference</head><p>Theorem 4.2 (Behavior difference for regression). Let w = Q(s + ξ) ∈ R d where s, ξ ∈ R d are truncated and residual vectors defined above. The optimal rank-r solution f LSA,θ in Theorem 4.1 satisfies:</p><formula xml:id="formula_45">L(f LSA,θ ; E) :=E x1,ϵ1,...,x M ,ϵ M ,xq f LSA,θ ( E) -⟨w, x q ⟩ 2 = 1 M ∥s∥ 2 (V * ) 2 D 3 + 1 M ∥s + ξ∥ 2 D + σ 2 tr (V * ) 2 D 2 + ∥ξ∥ 2 D + i∈[r] s 2 i λ i (λ i v * i -1) 2 .</formula><p>Proof of Theorem 4.2. By Theorem 4.1, w.l.o.g, letting c = 1, the optimal rank-r solution f LSA,θ satisfies θ = (W P V , W KQ ), and</p><formula xml:id="formula_46">W * P V = 0 d×d 0 d 0 ⊤ d 1 , W * KQ = U * 0 d 0 ⊤ d 0 ,</formula><p>where</p><formula xml:id="formula_47">U * = QV * Q ⊤ .</formula><p>We can see that U * and Λ commute. Denote Λ := 1 M M i=1 x i x ⊤ i . Note that we have</p><formula xml:id="formula_48">y q =f LSA,θ ( E) = 0 d×d 0 d 0 ⊤ d 1 E E ⊤ M U * 0 d 0 ⊤ d 0 x q = 0 d×d 0 d 0 ⊤ d 1   1 M x q x ⊤ q + M i=1 x i x ⊤ i 1 M M i=1 x i x ⊤ i w + M i=1 ϵ i x i 1 M M i=1 w ⊤ x i x ⊤ i + M i=1 ϵ i x ⊤ i 1 M M i=1 (w ⊤ x i + ϵ i ) 2   • U * 0 d 0 ⊤ d 0 x q = w ⊤ Λ + 1 M M i=1 ϵ i x ⊤ i U * x q .</formula><p>Then, we have</p><formula xml:id="formula_49">E x1,ϵ1,...,x M ,ϵ M ,xq ( y q -⟨w, x q ⟩) 2 =E x1,ϵ1,...,x M ,ϵ M ,xq w ⊤ ΛU * x q + 1 M M i=1 ϵ i x ⊤ i U * x q -w ⊤ x q 2 = E w ⊤ ΛU * x q -w ⊤ x q 2 (I) + E   1 M M i=1 ϵ i x ⊤ i U * x q 2   (II)</formula><p>,</p><p>where the last equality is due to i.i.d. of ϵ i . We see that the label noise can only have an effect in the second term. For the term (I) we have,</p><formula xml:id="formula_50">(I) =E w ⊤ ΛU * x q -w ⊤ ΛU * x q + w ⊤ ΛU * x q -w ⊤ x q 2 = E w ⊤ ΛU * x q -w ⊤ ΛU * x q 2 (III) + E w ⊤ ΛU * x q -w ⊤ x q 2 (IV)</formula><p>,</p><p>where the last equality is due to E[ Λ] = Λ and Λ is independent with x q . Note the fact that U * and Λ commute. For the (III) term, we have</p><formula xml:id="formula_51">(III) =E E w ⊤ ΛU * x q 2 + w ⊤ ΛU * x q 2 -2 w ⊤ ΛU * x q w ⊤ ΛU * x q x q =E w ⊤ ΛU * x q 2 -w ⊤ ΛU * x q 2 .</formula><p>By the property of trace, we have,</p><formula xml:id="formula_52">(III) =E tr Λww ⊤ Λ(U * ) 2 Λ -∥w∥ 2 (U * ) 2 Λ 3 =E 1 M 2 tr M i=1 x i x ⊤ i ww ⊤ M i=1 x i x ⊤ i (U * ) 2 Λ -∥w∥ 2 (U * ) 2 Λ 3 =E M -1 M tr Λww ⊤ Λ(U * ) 2 Λ + 1 M tr x 1 x ⊤ 1 ww ⊤ x 1 x ⊤ 1 (U * ) 2 Λ -∥w∥ 2 (U * ) 2 Λ 3 = - 1 M ∥w∥ 2 (U * ) 2 Λ 3 + 1 M E tr x 1 x ⊤ 1 ww ⊤ x 1 x ⊤ 1 (U * ) 2 Λ = - 1 M ∥w∥ 2 (U * ) 2 Λ 3 + 1 M E tr ∥w∥ 2 Λ Λ + 2Λw ⊤ wΛ (U * ) 2 Λ = 1 M ∥w∥ 2 (U * ) 2 Λ 3 + 1 M ∥w∥ 2 Λ tr (U * ) 2 Λ 2 ,</formula><p>where the third last equality is by Lemma B.2. Furthermore, injecting w = Q(s + ξ), as ξ ⊤ V * is a zero vector, we have</p><formula xml:id="formula_53">(III) = 1 M ∥s + ξ∥ 2 (V * ) 2 D 3 + 1 M ∥s + ξ∥ 2 D tr (V * ) 2 D 2 = 1 M ∥s∥ 2 (V * ) 2 D 3 + 1 M ∥s + ξ∥ 2 D tr (V * ) 2 D 2 .</formula><p>Similarly, for the term (IV), we have</p><formula xml:id="formula_54">(IV) =E (s + ξ) ⊤ Q ⊤ ΛU * x q -(s + ξ) ⊤ Q ⊤ x q 2 =E s ⊤ DV * Q ⊤ x q -s ⊤ Q ⊤ x q -ξ ⊤ Q ⊤ x q 2 =s ⊤ (V * ) 2 D 3 s + s ⊤ Ds + ξ ⊤ Dξ -2s ⊤ V * D 2 s =ξ ⊤ Dξ + i∈[r] s 2 i λ i λ 2 i (v * i ) 2 -2λ i v * i + 1 =∥ξ∥ 2 D + i∈[r] s 2 i λ i (λ i v * i -1) 2 ,</formula><p>where the third equality is due to s ⊤ Aξ = 0 for any diagonal matrix A ∈ R d×d . Now, we analyze the label noise term. By U * and Λ being commutable, for the term (II), we have</p><formula xml:id="formula_55">(II) = σ 2 M 2 E   M i=1 x ⊤ i U * x q 2   = σ 2 M 2 E   tr   M i=1 x i ⊤ U * ΛU * M i=1 x i     = σ 2 M E tr x ⊤ 1 U * ΛU * x 1 = σ 2 M tr (V * ) 2 D 2 ,</formula><p>where all cross terms vanish in the second equality. We conclude by combining four terms.</p><p>Theorem 4.3 (Behavior difference for regression, special case). Let 0 ≤ r ≤ r ′ ≤ d and w = Qs where s is r-dim truncated vector. Denote the optimal rank-r solution as f 1 and the optimal rank-r ′ solution as f 2 . Then,</p><formula xml:id="formula_56">L(f 2 ; E) -L(f 1 ; E) = 1 M ∥s∥ 2 D + σ 2   r ′ i=r+1 N λ i (N + 1) λ i + tr(D) 2   . Proof of Theorem 4.3. Let V * = diag([v * 1 , . . . , v * d ]) satisfying for any i ≤ r, v * i = N (N +1)λi+tr(D) and for any i &gt; r, v * i = 0. Let V ′ * = diag([v ′ * 1 , . . . , v ′ * d ]) be satisfied for any i ≤ r ′ , v ′ * i = N (N +1</formula><p>)λi+tr(D) and for any i &gt; r ′ , v ′ * i = 0. Note that V * is a truncated diagonal matrix of V ′ * . By Theorem 4.1 and Theorem 4.2, we have</p><formula xml:id="formula_57">L(f 2 ; E) -L(f 1 ; E) =   1 M ∥s∥ 2 (V ′ * ) 2 D 3 + 1 M ∥s∥ 2 D + σ 2 tr (V ′ * ) 2 D 2 + i∈[r ′ ] s 2 i λ i λ i v ′ * i -1 2   -   1 M ∥s∥ 2 (V * ) 2 D 3 + 1 M ∥s∥ 2 D + σ 2 tr (V * ) 2 D 2 + i∈[r] s 2 i λ i (λ i v * i -1) 2   = 1 M ∥s∥ 2 D + σ 2 tr (V ′ * ) 2 D 2 -tr (V * ) 2 D 2 = 1 M ∥s∥ 2 D + σ 2   r ′ i=r+1 N λ i (N + 1) λ i + tr(D) 2   .</formula><p>Proof of Theorem 5.1. Recall t τ = (i τ , j τ ). Let z τ ∈ R d satisfy z τ,iτ = z τ,jτ = 2γ and all other entries are zero. Denote V (i) = G ⊤ W (i) G. Notice that ∥W (i) ∥ 2 F = ∥V (i) ∥ 2 F . Thus, we denote V * ,(i) = G ⊤ W * ,(i) G. Then, we have E τ [ℓ (y τ,q • g(X τ , y τ , x τ,q ))]</p><formula xml:id="formula_58">=E τ   ℓ   y τ,q   i∈[m] a i σ y ⊤ τ X τ N W (i) x τ,q       =E τ   ℓ   y τ,q   i∈[m] a i σ z ⊤ τ V (i) ϕ τ,q       =E τ   ℓ   y τ,q   i∈[m]</formula><p>a i σ 2γ(V We can get a similar equation for (II).</p><p>We make some definitions to be used. We define a pattern as (z 1 , {(i τ , z 2 ), (j τ , z 3 )}), where z 1 , z 2 , z 3 ∈ {±1}. We define a pattern is covered by a neuron means there exists i ∈ [m], such that a * i = z 1 and sign(V * ,(i) iτ ,iτ ) = z 2 and sign(V * ,(i) jτ ,jτ ) = z 3 . We define a neuron as being positive when its a * i = +1 and being negative when its a * i = -1. We define a pattern as being positive if z 1 = +1 and being negative if z 1 = -1.</p><p>Then all terms in (I) and (II) can be written as: probability at least 1 -δ over the randomness of test data, we have g * j (X τ , y τ , x τ,q ) = h(θ j , 2γ φτ,q + P Dj (Ξ)) + ϵ j</p><formula xml:id="formula_59">:= i∈[m]</formula><p>a * i σ diag V * ,(i) ⊤ 2γ φτ,q + P Dj (Ξ) +ϵ j where ϵ j = O νj M log 1 δ and we have</p><p>• 2γ φτ,q is the signal useful for prediction: 0 = ℓ(y q • h(θ 1 , 2γ φτ,q )) = ℓ(y q • h(θ 2 , 2γ φτ,q )).</p><p>• P D1 (Ξ)) and P D2 (Ξ)) is noise not related to labels, and</p><formula xml:id="formula_60">E[∥P D 1 (Ξ))∥ 2 2 ] E[∥P D 2 (Ξ))∥ 2 2 ] = ν1+1 ν2+1 .</formula><p>Proof of Theorem 5.2. Let Φ τ = [ϕ τ,1 , . . . , ϕ τ,M ] ⊤ ∈ R M ×d . Recall t τ = (i τ , j τ ). Let z τ ∈ R d satisfy z τ,iτ = z τ,jτ = 2γ and all other entries are zero. We see t τ as an index set and let r τ = [d] \ t τ . Then, we have</p><formula xml:id="formula_61">g * 2 (X τ , y τ , x τ,q ) = i∈[m] a * i σ y ⊤ τ X τ M W * ,(i) x τ,q = i∈[m] a * i σ y ⊤ τ Φ τ M V * ,(i) ϕ τ,q = i∈[m] a * i σ y ⊤ τ Φ τ :,tτ M V * ,(i)</formula><p>tτ ,: ϕ τ,q,tτ + y ⊤ τ Φ τ :,rτ M V * ,(i) rτ ,: ϕ τ,q,rτ .</p><p>Note that we can absorb the randomness of y τ , Φ τ :,rτ , ϕ τ,q,rτ together. Let z i for i ∈ [n] uniformly draw from {-1, +1}. By Chernoff bound for binomial distribution (Lemma C.1), for any 0 &lt; ϵ &lt; 1, we have</p><formula xml:id="formula_62">Pr i∈[n] z i n ≥ ϵ ≤ 2 exp - ϵ 2 n 6 .</formula><p>Thus, for any 0 &lt; δ &lt; 1, with probability at least 1 -δ over the randomness of evaluation data, such that</p><formula xml:id="formula_63">Ξ ⊤ tτ diag(V * ,(i) tτ ,tτ ) ≤ O 1 M log 1 δ .</formula></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head/><label/><figDesc>Theorem 4.1 (Optimal rank-r solution for regression). Recall the loss function l in Lemma 4.1. Let U * , u * = argmin U∈R d×d ,rank(U)≤r,u∈R l(U, u).</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head/><label/><figDesc>Theorem 4.2 (Behavior difference for regression). Let w = Q(s + ξ) ∈ R d where s, ξ ∈ R d are truncated and residual vectors defined above. The optimal rank-r solution f LSA,θ in Theorem 4.1 satisfies:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_2"><head>Figure 1 .</head><label>1</label><figDesc>Figure 1. Larger models are easier to be affected by noise (flipped labels) and override pretrained biases than smaller models for different datasets and model families (chat/with instruct turning). Accuracy is calculated over 1000 evaluation prompts per dataset and over 5 runs with different random seeds for each evaluation, using M = 16 in-context exemplars. 0.0 20.0 40.0 60.0 80.0 100.0 Accuracy(%)</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 2</head><label>2</label><figDesc>Figure2. Larger models are easier to be affected by noise (flipped labels) and override pretrained biases than smaller models for different datasets and model families (original/without instruct turning). Accuracy is calculated over 1000 evaluation prompts per dataset and over 5 runs with different random seeds for each evaluation, using M = 16 in-context exemplars.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 3 .</head><label>3</label><figDesc>Figure3. The magnitude of attention between the labels and input sentences in Llama 2-13b and 70b on 100 evaluation prompts; see the main text for the details. x-axis: indices of the prompts. y-axis: the norm of the last row of attention maps in the final layer. Correct: original label; wrong: flipped label; relevant: original input sentence; irrelevant: irrelevant sentence from other datasets. The results show that larger models focus on both sentences, while smaller models only focus on relevant sentences.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_5"><head/><label/><figDesc>We can see that for any i ∈[m], |a * i | = 1 and V * ,(i) j,l = 0 when j ̸ = l.As ReLU is a homogeneous function, we haveE τ [ℓ (y τ,q • g * (X τ , y τ , x τ,q ))] = (1 -p T )E   ℓ   2γϕ τ,q,iτ ϕ τ,q,jτ   i∈[m] a * i σ V * ,(i)iτ ,iτ ϕ τ,q,iτ + V * ,(i) jτ ,jτ ϕ τ,q,jτ</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head/><label/><figDesc>a * i σ z 2 V * ,(i) iτ ,iτ + z 3 V * ,(i)</figDesc></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>University of Wisconsin-Madison,</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_1"><p>The University of Hong Kong. Correspondence to: Zhenmei Shi, Yingyu Liang &lt;zhmeishi, yliang@cs.wisc.edu, yingyul@hku.hk&gt;. Proceedings of the 41 st International Conference on Machine Learning, Vienna, Austria. PMLR 235, 2024. Copyright 2024 by the author(s).</p></note>
+		</body>
+		<back>
+
+			<div type="acknowledgement">
+<div><head>Acknowledgements</head><p>The work is partially supported by <rs type="funder">Air Force</rs> Grant <rs type="grantNumber">FA9550-18-1-0166</rs>, the <rs type="funder">National Science Foundation (NSF)</rs> Grants <rs type="grantNumber">2008559-IIS</rs>, <rs type="grantNumber">2023239-DMS</rs>, and <rs type="grantNumber">CCF-2046710</rs>.</p></div>
+<div><head>Impact Statement</head><p>Our work aims to improve the understanding of the incontext learning mechanism and to inspire efficient and safe use of ICL. Our paper is purely theoretical and empirical in nature and thus we foresee no immediate negative ethical impact. We hope our work will inspire effective algorithm design and promote a better understanding of large language model learning mechanisms.</p></div>
+			</div>
+			<listOrg type="funding">
+				<org type="funding" xml:id="_fHDb8jS">
+					<idno type="grant-number">FA9550-18-1-0166</idno>
+				</org>
+				<org type="funding" xml:id="_6VCAPT6">
+					<idno type="grant-number">2008559-IIS</idno>
+				</org>
+				<org type="funding" xml:id="_mn5UhKZ">
+					<idno type="grant-number">2023239-DMS</idno>
+				</org>
+				<org type="funding" xml:id="_djtm8gv">
+					<idno type="grant-number">CCF-2046710</idno>
+				</org>
+			</listOrg>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Appendix</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A. Limitations</head><p>We study and understand an interesting phenomenon of in-context learning: smaller models are more robust to noise, while larger ones are more easily distracted, leading to different ICL behaviors. Although we study two stylized settings and give the closed-form solution, our analysis cannot extend to real Transformers easily due to the high non-convex function and complicated design of multiple-layer Transformers. Also, our work does not study optimization trajectory, which we leave as future work. On the other hand, we use simple binary classification real-world datasets to verify our analysis, which still has a gap for the practical user using the LLM scenario. Then</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>B. Deferred Proof for Linear Regression</head><p>, where c is any nonzero constant, and</p><p>)λi+tr(D) and for any i &gt; r, v * i = 0.</p><p>Proof of Theorem 4.1. Note that,</p><p>Thus, we may consider Equation (7) in Lemma B.1 only. On the other hand, we have</p><p>We denote</p><p>We denote V = uQ ⊤ UQ. Since Γ and Λ are commutable and the Frobenius norm (F -norm) of a matrix does not change after multiplying it by an orthonormal matrix, we have Equation (7) as</p><p>As W KQ is a matrix whose rank is at most r, we have V is also at most rank r. Then, we denote</p><p>. We can see that V * is a diagonal matrix. </p><p>where U = cΓ -1 , u = 1 c for any non-zero constant c are minimum solution. We also have</p><p>Proof of Lemma B.2. As y is a zero mean Gaussian, by Isserlis' theorem <ref type="bibr" target="#b88">(Wick, 1950;</ref><ref type="bibr" target="#b53">Michalowicz et al., 2009)</ref>, for any i, j ∈ [d] we have</p><p>Similarly, we also have E(yx)E(yx) ⊤ = Λ ⊤ ww ⊤ Λ. Thus, we have Here, we provide the proof of Theorem 5.1. Theorem 5.1 (Optimal solution for parity). Consider k = 2 ν1 , d = 2 ν2 , and let g * 1 and g * 2 denote the optimal solutions for m = 2(ν 1 + 1) and m = 2(ν 2 + 1), respectively.</p><p>, g * 1 neurons are a subset of g * 2 neurons. Specifically, for any i ∈ [2(ν 2 + 1)], let V * ,(i) be diagonal matrix and</p><p>iτ ,iτ = -ν j /(4γ) for g * j .</p><p>•</p><p>Let W * ,(i) = GV * ,(i) G ⊤ . Up to permutations, g * 2 has neurons (a * , W * ,(1) , . . . , W * ,(m) ) and g * 1 has the {1, . . . , ν</p><p>where α is the scalar term. Note that there are total k(k-1)</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>2</head><p>× 4 patterns in (I) and d(d-1)</p><p>2 × 4 patterns in (II). The loss depends on the weighted sum of non-covered patterns. To have zero loss, we need all patterns to be covered by m neurons, i.e., (a * , V * ,(1) , . . . , V * ,(m) ).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Note that one neuron at most cover</head><p>, we have</p><p>which means the model will only cover all patterns in (I) before covering a pattern in (II) in purpose.</p><p>Now, we show that the minimum number of neurons to cover all patterns in (I) and (II) is 2(ν 2 + 1).</p><p>First, we show that 2(ν 2 + 1) neurons are enough to cover all patterns in (I) and (II).</p><p>iτ ,iτ = (2 digit(bin(i τ -1), i) -1)/(4γ) and all non-diagonal entries in V (i) being zero and a i = -1.</p><p>iτ ,iτ = -ν 2 /(4γ) and all non-diagonal entries in V (i) being zero and a i = +1.</p><p>We can check that this construction can cover all patterns in (I) and (II) and only needs 2(ν 2 + 1) neurons. V (ν2+1) and V (2(ν2+1)) cover all positive patterns. All other neurons cover all negative patterns. This is because bin(i τ ) and bin(j τ ) have at least one digit difference. If bin(i τ ) and bin(j τ ) are different in the i-th digit, then (-1, {(i τ , -1), (j τ , +1)}) and (-1, {(i τ , +1), (j τ , -1)}) are covered by the i-th and i + ν 2 + 1-th neuron.</p><p>We can also check that the scalar 1 4γ and ν2 4γ is the optimal value. Note that</p><p>(1) For any negative patterns, the positive neurons will not have a cancellation effect on the negative neurons, i.e., when y q = -1, the positive neurons will never activate.</p><p>(2) For each negative neuron, there exist some patterns that are uniquely covered by it.</p><p>(3) For any positive patterns, there are at most ν 2 -1 negative neurons that will have a cancellation effect on the positive neurons, i.e., when y q = +1, these negative neurons will activate simultaneously. Also, we can check that there is a positive pattern such that there are ν 2 -1 negative neurons that will have a cancellation effect.</p><p>(4) For two positive neurons, there exist some patterns that are uniquely covered by one of them.</p><p>Due to hinge loss, we can see that 1 4γ is tight for negative neurons as (1) and ( <ref type="formula">2</ref>). Similarly, we can also see that ν2 4γ is tight for positive neurons as (3) and (4).</p><p>Second, we prove that we need at least 2(ν 2 + 1) neurons to cover all patterns in (I) and (II). We can see that we need at least 2 positive neurons to cover all positive patterns. Then, we only need to show that 2ν 2 -1 neurons are not enough to cover all negative patterns. We can prove that all negative patterns are covered equivalent to all numbers from {0, 1, . . . , 2 ν2 -1} are encoded by</p><p>Therefore, the minimum number of neurons to cover all patterns in (I) and (II) is 2(ν 2 + 1).</p><p>Thus, when m = 2(ν 1 + 1), the optimal solution will cover all patterns in (I) but not all in (II). When m ≥ 2(ν 2 + 1), the optimal solution will cover all patterns in (I) and (II). We see that g * 1 neurons as the subset of g * 2 neurons, while the only difference is that the scalar of positive neurons is ν1 4γ for g * 1 and ν2 4γ for g * 2 . Thus, we finished the proof.</p><p>C.2. Proof of Theorem 5.2</p><p>Here, we provide the proof of Theorem 5.2. Theorem 5.2 (Behavior difference for parity). Assume the same condition as Theorem 5.1. For j ∈ {1, 2}, Let θ j denote the parameters of g * j . For l ∈ [M ], let ξ l be uniformly drawn from {±1} d , and Ξ = l∈[M ] ξ l</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>M</head><p>. Then, for any δ ∈ (0, 1), with Then, for any 0 &lt; δ &lt; 1, with probability at least 1 -δ over the randomness of evaluation data, we have</p><p>Similarly, we have g * 1 (X τ , y τ , x τ,q ) = h(θ 1 , 2γ φτ,q + P D1 (Ξ)) + O ν1 M log 1 δ .</p><p>As t τ ∈ S 1 and the number of (ϕ iτ , ϕ jτ ) being balanced as training, by careful checking, we can see that ℓ(y q • h(θ 1 , 2γ φτ,q )) = ℓ(y q • h(θ 2 , 2γ φτ,q )) = 0 and we have 2γ φτ,q is the signal part.</p><p>On the other hand, we know that all the first half columns in D 2 are orthogonal with each other, and the second half columns in D 2 are opposite to the first half columns. We have the same fact to D 1 . As Ξ is a symmetric noise distribution, we have </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agrawal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Ghazvininejad</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.02437</idno>
+		<title level="m">In-context examples selection for machine translation</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Transformers learn to implement preconditioned gradient descent for in-context learning</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Ahn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Daneshmand</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Sra</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-seventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Linear attention is (maybe) all you need (to understand transformer optimization)</title>
+		<author>
+			<persName><forename type="first">K</forename><surname>Ahn</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Yun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Jadbabaie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Sra</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">What learning algorithm is in-context learning? investigations with linear models</title>
+		<author>
+			<persName><forename type="first">E</forename><surname>Akyurek</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Andreas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<monogr>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.13673</idno>
+		<title level="m">Physics of language models: Part 1, context-free grammar</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>An</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-G</forename><surname>Lou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.04835</idno>
+		<title level="m">How do in-context examples affect compositional generalization?</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<monogr>
+		<title level="m" type="main">A theory for emergence of complex skills in language models</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Arora</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Goyal</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.15936</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Transformers as statisticians: Provable in-context learning with in-context algorithm selection</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mei</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-seventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Hidden progress in deep learning: Sgd learns parities near the computational limit</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Barak</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Edelman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Goel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kakade</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Malach</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="21750" to="21764"/>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">Low-rank bottleneck in multi-head attention models</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bhojanapalli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Yun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">S</forename><surname>Rawat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Reddi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kumar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International conference on machine learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Birth of a transformer: A memory viewpoint</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Bietti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Cabannes</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Bouchacourt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Jegou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Bottou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-seventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Latent dirichlet allocation</title>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">M</forename><surname>Blei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">Y</forename><surname>Ng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">I</forename><surname>Jordan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">the Journal of machine Learning research</title>
+		<imprint>
+			<biblScope unit="volume">3</biblScope>
+			<biblScope unit="page" from="993" to="1022"/>
+			<date type="published" when="2003">2003</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<monogr>
+		<author>
+			<persName><forename type="first">R</forename><surname>Bommasani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><forename type="middle">A</forename><surname>Hudson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Adeli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Altman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Arora</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Von Arx</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">S</forename><surname>Bernstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Bohg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Bosselut</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Brunskill</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2108.07258</idno>
+		<title level="m">On the opportunities and risks of foundation models</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Language models are few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Mann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Ryder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Subbiah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">D</forename><surname>Kaplan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Dhariwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Neelakantan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Shyam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Sastry</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Askell</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bubeck</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Chandrasekaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Eldan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gehrke</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Horvitz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Kamar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><forename type="middle">T</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Lundberg</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.12712</idno>
+		<title level="m">Sparks of artificial general intelligence: Early experiments with gpt-4</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Scatterbrain: Unifying sparse and low-rank attention</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Dao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Winsor</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Rudra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Ré</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<monogr>
+		<author>
+			<persName><forename type="first">X</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Sra</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2312.06528</idno>
+		<title level="m">Transformers implement functional gradient descent to learn non-linear functions in context</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<monogr>
+		<title level="m" type="main">Palm: Scaling language modeling with pathways</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Chowdhery</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Narang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Roberts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Barham</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">W</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Sutton</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Gehrmann</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2204.02311</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">W</forename><surname>Chung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Longpre</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Fedus</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Dehghani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Brahma</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2210.11416</idno>
+		<title level="m">Scaling instruction-finetuned language models</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">An evaluation toolkit for universal sentence representations</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Conneau</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Kiela</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Senteval</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the Eleventh International Conference on Language Resources and Evaluation (LREC 2018)</title>
+		<meeting>the Eleventh International Conference on Language Resources and Evaluation (LREC 2018)</meeting>
+		<imprint>
+			<publisher>European Language Resources Association (ELRA)</publisher>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Hao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Sui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Wei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.10559</idno>
+		<title level="m">Why can gpt learn in-context? language models secretly perform gradient descent as meta optimizers</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">Learning parities with neural networks</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Daniely</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Malach</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="20356" to="20365"/>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Vitality: Unifying low-rank and sparse approximation for vision transformer acceleration with a linear taylor attention</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Dass</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE International Symposium on High-Performance Computer Architecture (HPCA)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Pre-training of deep bidirectional transformers for language understanding</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Devlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-W</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Toutanova</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bert</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</title>
+		<meeting>the 2019 Conference of the North American Chapter of the Association for Computational Linguistics: Human Language Technologies</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<monogr>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Dong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Sui</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2301.00234</idno>
+		<title level="m">A survey for in-context learning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">Lighter and better: low-rank decomposed selfattention networks for next-item recommendation</title>
+		<author>
+			<persName><forename type="first">X</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Lian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">X</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J.-R</forename><surname>Wen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 44th international ACM SIGIR conference on research and development in information retrieval</title>
+		<meeting>the 44th international ACM SIGIR conference on research and development in information retrieval</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Khot</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lapata</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.10142</idno>
+		<title level="m">Improving language model negotiation with self-play and incontext learning from ai feedback</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<monogr>
+		<author>
+			<persName><forename type="first">P</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Geng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Yue</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.15010</idno>
+		<title level="m">Llama-adapter v2: Parameter-efficient visual instruction model</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Making pre-trained language models better few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fisch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</title>
+		<meeting>the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Making pre-trained language models better few-shot learners</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Fisch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</title>
+		<meeting>the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">What can transformers learn in-context? a case study of simple function classes</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Garg</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Tsipras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">S</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Valiant</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Transformer feed-forward layers are key-value memories</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Geva</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Schuster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Berant</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Levy</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="5484" to="5495"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Song</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2405.03251</idno>
+		<title level="m">Exploring the frontiers of softmax: Provable optimization, applications in diffusion model, and beyond</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<monogr>
+		<title level="m" type="main">Fourier circuits in neural networks: Unlocking the potential of large language models in mathematical reasoning and modular arithmetic</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.09469</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<monogr>
+		<title level="m" type="main">Convbasis: A new paradigm for efficient attention inference and gradient computation in transformers</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Yin</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2405.05219</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<title level="m" type="main">Tensor attention training: Provably efficient learning of higherorder transformers</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2405.16411</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Song</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2405.16418</idno>
+		<title level="m">Unraveling the smoothness properties of diffusion models: A gaussian mixture perspective</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">How do transformers learn in-context beyond simple functions? a case study on learning with representations</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Guo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Savarese</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Bai</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Low-rank adaptation of large language models</title>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">J</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Wallis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Allen-Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lora</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<monogr>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2310.05249</idno>
+		<title level="m">In-context convergence of transformers</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<monogr>
+		<title level="m" type="main">Opt-iml: Scaling language model instruction meta learning through the lens of generalization</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Iyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><forename type="middle">V</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Pasunuru</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Mihaylov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Simig</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Shuster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">S</forename><surname>Koura</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.12017</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">Vision transformers provably learn spatial structure</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jelassi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Sander</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<monogr>
+		<title level="m" type="main">Demonstrate-search-predict: Composing retrieval and language models for knowledgeintensive nlp</title>
+		<author>
+			<persName><forename type="first">O</forename><surname>Khattab</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Santhanam</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><forename type="middle">L</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Hall</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Potts</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zaharia</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2212.14024</idno>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">The power of scale for parameter-efficient prompt tuning</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Lester</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Al-Rfou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Constant</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2021 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2021 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<analytic>
+		<title level="a" type="main">A theoretical understanding of shallow vision transformers: Learning, generalization, and sample complexity</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P.-Y</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Transformers as multi-task feature selectors: Generalization analysis of in-context learning</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Wan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Cui</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P.-Y</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">NeurIPS 2023 Workshop on Mathematics of Modern Machine Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<analytic>
+		<title level="a" type="main">Prefix-tuning: Optimizing continuous prompts for generation</title>
+		<author>
+			<persName><forename type="first">X</forename><forename type="middle">L</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</title>
+		<meeting>the 59th Annual Meeting of the Association for Computational Linguistics and the 11th International Joint Conference on Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<analytic>
+		<title level="a" type="main">Transformers as algorithms: Generalization and stability in in-context learning</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><forename type="middle">E</forename><surname>Ildiz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Papailiopoulos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Oymak</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th International Conference on Machine Learning, Proceedings of Machine Learning Research</title>
+		<meeting>the 40th International Conference on Machine Learning, Machine Learning Research</meeting>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">How do transformers learn topic structure: Towards a mechanistic understanding</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Risteski</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 40th International Conference on Machine Learning, Proceedings of Machine Learning Research</title>
+		<meeting>the 40th International Conference on Machine Learning, Machine Learning Research</meeting>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<analytic>
+		<title level="a" type="main">Dissecting chain-of-thought: Compositionality through in-context filtering and learning</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Sreenivasan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Giannou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Papailiopoulos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Oymak</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-seventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">Understanding the robustness of self-supervised learning through topic modeling</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Weng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Ge</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<monogr>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mahankali</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">B</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Ma</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.03576</idno>
+		<title level="m">One step of gradient descent is provably the optimal in-context learner with one layer of linear self-attention</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">Fine-tuning language models with just forward passes</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Malladi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Nichani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Damian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">D</forename><surname>Lee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Arora</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<analytic>
+		<title level="a" type="main">An isserlis' theorem for mixed gaussian variables: Application to the auto-bispectral density</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Michalowicz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Nichols</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Bucholtz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Olson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Statistical Physics</title>
+		<imprint>
+			<date type="published" when="2009">2009</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<monogr>
+		<author>
+			<persName><forename type="first">S</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Hajishirzi</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Metaicl</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2110.15943</idno>
+		<title level="m">Learning to learn in context</title>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b55">
+	<analytic>
+		<title level="a" type="main">Rethinking the role of demonstrations: What makes in-context learning work</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Min</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Lyu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Holtzman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Artetxe</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Hajishirzi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2022 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b56">
+	<analytic>
+		<title level="a" type="main">Crosstask generalization via natural language crowdsourcing instructions</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Khashabi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Baral</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Hajishirzi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 60th Annual Meeting of the Association for Computational Linguistics</title>
+		<meeting>the 60th Annual Meeting of the Association for Computational Linguistics</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b57">
+	<monogr>
+		<title level="m" type="main">Show your work: Scratchpads for intermediate computation with language models</title>
+		<author>
+			<persName><forename type="first">M</forename><surname>Nye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">J</forename><surname>Andreassen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Gur-Ari</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Michalewski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Austin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Bieber</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Lewkowycz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Luan</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2112.00114</idno>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b58">
+	<analytic>
+		<title level="a" type="main">Sparse coding with an overcomplete basis set: A strategy employed by v1?</title>
+		<author>
+			<persName><forename type="first">B</forename><surname>Olshausen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Field</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Vision Research</title>
+		<imprint>
+			<biblScope unit="volume">37</biblScope>
+			<biblScope unit="page" from="3311" to="3325"/>
+			<date type="published" when="1997">1997</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b59">
+	<monogr>
+		<author>
+			<persName><surname>Openai</surname></persName>
+		</author>
+		<idno>arxiv:2303.08774</idno>
+		<ptr target="https://openai.com/blog/chatgpt"/>
+		<title level="m">Introducing ChatGPT</title>
+		<imprint>
+			<date type="published" when="2022">2022. 2023-09-10. 2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">GPT-4 technical report</note>
+</biblStruct>
+
+<biblStruct xml:id="b60">
+	<analytic>
+		<title level="a" type="main">Training language models to follow instructions with human feedback</title>
+		<author>
+			<persName><forename type="first">L</forename><surname>Ouyang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Almeida</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Wainwright</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Mishkin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Agarwal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Slama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ray</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b61">
+	<analytic>
+		<title level="a" type="main">What in-context learning 'learns' in-context: Disentangling task recognition and task learning</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Findings of Association for Computational Linguistics (ACL)</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b62">
+	<monogr>
+		<author>
+			<persName><forename type="first">A</forename><surname>Panigrahi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Malladi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Arora</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.01189</idno>
+		<title level="m">Trainable transformer in transformer</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b63">
+	<monogr>
+		<author>
+			<persName><forename type="first">M</forename><surname>Pourreza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Rafiei</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2304.11015</idno>
+		<title level="m">Din-sql: Decomposed incontext learning of text-to-sql with self-correction</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b64">
+	<analytic>
+		<title level="a" type="main">Pretraining task diversity and the emergence of non-bayesian in-context learning for regression</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Raventos</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Paul</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Ganguli</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-seventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b65">
+	<analytic>
+		<title level="a" type="main">The mechanistic basis of data dependence and abrupt learning in an in-context classification task</title>
+		<author>
+			<persName><forename type="first">G</forename><surname>Reddy</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b66">
+	<analytic>
+		<title level="a" type="main">Linear transformers are secretly fast weight programmers</title>
+		<author>
+			<persName><forename type="first">I</forename><surname>Schlag</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Irie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Schmidhuber</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b67">
+	<analytic>
+		<title level="a" type="main">Large language models can be easily distracted by irrelevant context</title>
+		<author>
+			<persName><forename type="first">F</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Misra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Scales</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Dohan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">H</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Schärli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b68">
+	<analytic>
+		<title level="a" type="main">A theoretical analysis on feature learning in neural networks: Emergence from inputs and advantage over fixed features</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b69">
+	<analytic>
+		<title level="a" type="main">The trade-off between universality and label efficiency of representations from contrastive learning</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Raghuram</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Jha</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Eleventh International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b70">
+	<analytic>
+		<title level="a" type="main">Domain generalization via nuclear norm regularization</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Ming</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Fan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Sala</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Conference on Parsimony and Learning (Proceedings Track)</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b71">
+	<analytic>
+		<title level="a" type="main">Provable guarantees for neural networks via gradient feature learning</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-seventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023d</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b72">
+	<analytic>
+		<title level="a" type="main">Blackbox tuning for language-model-as-a-service</title>
+		<author>
+			<persName><forename type="first">T</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Shao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Qiu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b73">
+	<analytic>
+		<title level="a" type="main">Scan and snap: Understanding training dynamics and token composition in 1-layer transformer</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Du</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b74">
+	<monogr>
+		<title level="m" type="main">Demystifying multilayer transformers via joint dynamics of mlp and attention</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Joma</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b75">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lavril</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Izacard</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Martinet</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M.-A</forename><surname>Lachaux</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Lacroix</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Rozière</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Goyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Hambro</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Azhar</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2302.13971</idno>
+		<title level="m">Llama: Open and efficient foundation language models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b76">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Touvron</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Martin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Stone</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Albert</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Almahairi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Babaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Bashlykov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Batra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Bhargava</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bhosale</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2307.09288</idno>
+		<title level="m">Llama 2: Open foundation and finetuned chat models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b77">
+	<analytic>
+		<title level="a" type="main">Attention is all you need</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vaswani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Shazeer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Parmar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Uszkoreit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Jones</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">N</forename><surname>Gomez</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ł</forename><surname>Kaiser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Polosukhin</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in neural information processing systems</title>
+		<imprint>
+			<date type="published" when="2017">2017</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b78">
+	<analytic>
+		<title level="a" type="main">Sparse coding and decorrelation in primary visual cortex during natural vision</title>
+		<author>
+			<persName><forename type="first">W</forename><forename type="middle">E</forename><surname>Vinje</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><forename type="middle">L</forename><surname>Gallant</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Science</title>
+		<imprint>
+			<biblScope unit="volume">287</biblScope>
+			<biblScope unit="issue">5456</biblScope>
+			<biblScope unit="page" from="1273" to="1276"/>
+			<date type="published" when="2000">2000</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b79">
+	<analytic>
+		<title level="a" type="main">Transformers learn in-context by gradient descent</title>
+		<author>
+			<persName><forename type="first">Von</forename><surname>Oswald</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Niklasson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Randazzo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Sacramento</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Mordvintsev</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zhmoginov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Vladymyrov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b80">
+	<analytic>
+		<title level="a" type="main">GLUE: A multi-task benchmark and analysis platform for natural language understanding</title>
+		<author>
+			<persName><forename type="first">A</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Michael</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Hill</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bowman</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2018 EMNLP Workshop BlackboxNLP: Analyzing and Interpreting Neural Networks for NLP</title>
+		<meeting>the 2018 EMNLP Workshop BlackboxNLP: Analyzing and Interpreting Neural Networks for NLP</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b81">
+	<analytic>
+		<title level="a" type="main">Super-naturalinstructions: Generalization via declarative instructions on 1600+ nlp tasks</title>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Alipoormolabashi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Kordi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Mirzaei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Naik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Ashok</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">S</forename><surname>Dhanasekaran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Arunkumar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Stap</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2022 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2022 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="page" from="5085" to="5109"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b82">
+	<analytic>
+		<title level="a" type="main">Finetuned language models are zero-shot learners</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><surname>Guu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">W</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Lester</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">M</forename><surname>Dai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b83">
+	<analytic>
+		<title level="a" type="main">Emergent abilities of large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">R</forename><surname>Bommasani</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>Raffel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Zoph</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Borgeaud</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Yogatama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Metzler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">H</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Hashimoto</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Vinyals</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Dean</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">W</forename><surname>Fedus</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions on Machine Learning Research</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b84">
+	<analytic>
+		<title level="a" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b85">
+	<analytic>
+		<title level="a" type="main">Symbol tuning improves in-context learning in language models</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Hou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><forename type="middle">K</forename><surname>Lampinen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The 2023 Conference on Empirical Methods in Natural Language Processing</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b86">
+	<monogr>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Tay</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Tran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Webson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.03846</idno>
+		<title level="m">Larger language models do in-context learning differently</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b87">
+	<analytic>
+		<title level="a" type="main">On the role of unstructured training data in transformers' in-context learning capabilities</title>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">C</forename><surname>Wibisono</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">NeurIPS 2023 Workshop on Mathematics of Modern Machine Learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b88">
+	<analytic>
+		<title level="a" type="main">The evaluation of the collision matrix</title>
+		<author>
+			<persName><forename type="first">G.-C</forename><surname>Wick</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Physical review</title>
+		<imprint>
+			<date type="published" when="1950">1950</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b89">
+	<analytic>
+		<title level="a" type="main">How many pretraining tasks are needed for in-context learning of linear regression</title>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Braverman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">L</forename><surname>Bartlett</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b90">
+	<analytic>
+		<title level="a" type="main">An explanation of in-context learning as implicit bayesian inference</title>
+		<author>
+			<persName><forename type="first">S</forename><forename type="middle">M</forename><surname>Xie</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Raghunathan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><surname>Ma</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b91">
+	<analytic>
+		<title level="a" type="main">Improving foundation models for few-shot learning via multitask finetuning</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">ICLR 2023 Workshop on Mathematical and Empirical Understanding of Foundation Models</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b92">
+	<analytic>
+		<title level="a" type="main">Do large language models have compositional ability? an investigation into limitations and scalability</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">ICLR 2024 Workshop on Mathematical and Empirical Understanding of Foundation Models</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b93">
+	<analytic>
+		<title level="a" type="main">Towards few-shot adaptation of foundation models via multitask finetuning</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">F</forename><surname>Mu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Liang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b94">
+	<analytic>
+		<title level="a" type="main">Tree of thoughts: Deliberate problem solving with large language models</title>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">I</forename><surname>Shafran</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">T</forename><forename type="middle">L</forename><surname>Griffiths</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Cao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">K</forename><forename type="middle">R</forename><surname>Narasimhan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Thirtyseventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b95">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y.-F</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Madeka</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Foster</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Xing</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Lakkaraju</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Kakade</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2312.04021</idno>
+		<title level="m">A study on the calibration of in-context learning</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b96">
+	<monogr>
+		<author>
+			<persName><forename type="first">R</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Frei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><forename type="middle">L</forename><surname>Bartlett</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2306.09927</idno>
+		<title level="m">Trained transformers learn linear models in-context</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b97">
+	<monogr>
+		<author>
+			<persName><forename type="first">R</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Han</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Gao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Qiao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2303.16199</idno>
+		<title level="m">Llama-adapter: Efficient finetuning of language models with zero-init attention</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b98">
+	<analytic>
+		<title level="a" type="main">Calibrate before use: Improving few-shot performance of language models</title>
+		<author>
+			<persName><forename type="first">Z</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Wallace</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Klein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Singh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">International Conference on Machine Learning</title>
+		<imprint>
+			<publisher>PMLR</publisher>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b99">
+	<analytic>
+		<title level="a" type="main">Step-back prompting enables reasoning via abstraction in large language models</title>
+		<author>
+			<persName><forename type="first">H</forename><forename type="middle">S</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Mishra</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H.-T</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><forename type="middle">H</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Q</forename><forename type="middle">V</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">D</forename><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b100">
+	<analytic>
+		<title level="a" type="main">Less is more for alignment</title>
+		<author>
+			<persName><forename type="first">C</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Iyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Y</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">X</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Efrat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">G</forename><surname>Ghosh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">M</forename><surname>Lewis</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">L</forename><surname>Zettlemoyer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Levy</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lima</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Thirty-seventh Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b101">
+	<monogr>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Nova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Larochelle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Courville</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">B</forename><surname>Neyshabur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">H</forename><surname>Sedghi</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2211.09066</idno>
+		<title level="m">Teaching algorithmic reasoning via in-context learning</title>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b102">
+	<analytic>
+		<title level="a" type="main">What algorithms can transformers learn? a study in length generalization</title>
+		<author>
+			<persName><forename type="first">H</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">A</forename><surname>Bradley</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">E</forename><surname>Littwin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">N</forename><surname>Razin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">O</forename><surname>Saremi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Susskind</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">S</forename><surname>Bengio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">P</forename><surname>Nakkiran</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The 3rd Workshop on Mathematical Reasoning and AI at NeurIPS'23</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>
