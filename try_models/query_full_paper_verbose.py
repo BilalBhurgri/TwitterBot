@@ -121,7 +121,7 @@ def generate_summary(text, tokenizer, model, max_length=200):
         # print(f"Complete text: {complete_text}")
 
         # Decode only the newly generated tokens
-        summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)[:-200]
         print(f"Generated text only: {summary}")
 
         
@@ -129,32 +129,32 @@ def generate_summary(text, tokenizer, model, max_length=200):
         print(f"Generation completed in {generation_time:.2f} seconds")
         
         # Check if outputs is empty or invalid
-        if not hasattr(outputs, 'sequences') or outputs.sequences.size(0) == 0:
-            print("ERROR: Model returned empty outputs")
-            return "Model generation failed to produce output."
+        # if not hasattr(outputs, 'sequences') or outputs.sequences.size(0) == 0:
+        #     print("ERROR: Model returned empty outputs")
+        #     return "Model generation failed to produce output."
             
-        # Decode with detailed logging
-        print("Decoding output...")
+        # # Decode with detailed logging
+        # print("Decoding output...")
         
-        # Check shape of outputs
-        print(f"Output sequence shape: {outputs.sequences.shape}")
+        # # Check shape of outputs
+        # print(f"Output sequence shape: {outputs.sequences.shape}")
         
         # Decode the first sequence
-        full_text = tokenizer.decode(outputs.sequences[0], skip_special_tokens=True)
-        print(f"Full decoded text length: {len(full_text)} characters")
+        # full_text = tokenizer.decode(outputs.sequences[0], skip_special_tokens=True)
+        # print(f"Full decoded text length: {len(full_text)} characters")
         
-        # Extract summary portion
-        if "Summary:" in full_text:
-            summary = full_text.split("Summary:")[-1].strip()
-            print(f"Extracted summary of {len(summary)} characters")
-        else:
-            print("WARNING: 'Summary:' marker not found in output")
-            summary = full_text  # Fall back to full text
+        # # Extract summary portion
+        # if "Summary:" in full_text:
+        #     summary = full_text.split("Summary:")[-1].strip()
+        #     print(f"Extracted summary of {len(summary)} characters")
+        # else:
+        #     print("WARNING: 'Summary:' marker not found in output")
+        #     summary = full_text  # Fall back to full text
             
-        # Check for empty summary
-        if not summary or summary.strip() == "":
-            print("ERROR: Empty summary after extraction")
-            return "Failed to generate a valid summary."
+        # # Check for empty summary
+        # if not summary or summary.strip() == "":
+        #     print("ERROR: Empty summary after extraction")
+        #     return "Failed to generate a valid summary."
             
         return summary
         
