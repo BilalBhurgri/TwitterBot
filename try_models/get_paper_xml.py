@@ -51,7 +51,7 @@ if __name__ == "__main__":
         print("GROBID is running")
     else:
         print("GROBID is not running")
-    # result = process_pdf(args.pdf_path)
+    result = process_pdf(args.pdf_path)
     # Either save to file or process further
-    # with open("output.xml", "w", encoding="utf-8") as out_file:
-    #     out_file.write(result)
+    with open(args.pdf_path.replace(".pdf", "") + ".xml", "w", encoding="utf-8") as out_file:
+        out_file.write(result)
