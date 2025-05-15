@@ -17,3 +17,5 @@ Flask
 requests
 sentencepiece
 accelerate
+pypdf2
+psutil
