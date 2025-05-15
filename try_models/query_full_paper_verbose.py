@@ -2,7 +2,6 @@ import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import argparse
 import os
-import pdfplumber
 import gc
 import psutil
 import time
@@ -27,7 +26,7 @@ def print_memory_usage(label=""):
         print(f"[{label}] GPU Memory: {gpu_allocated:.2f} MB allocated")
 
 def load_paper(paper_path):
-    text = parse_paper.extract_p_tags_text_better(paper_path)
+    text = parse_paper.extract_text_from_xml(paper_path)
     return text
 
 def generate_summary(text, tokenizer, model, max_length=200):
@@ -246,4 +245,4 @@ def main():
         traceback.print_exc()
 
 if __name__ == "__main__":
-    test_load_paper()
+    main()
