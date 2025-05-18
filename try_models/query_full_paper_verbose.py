@@ -174,16 +174,16 @@ Paper text:
         )
 
         # Get the sequences
-        sequences = outputs.sequences
+        # sequences = outputs.sequences
         
-        # Get input length in tokens
+        # # Get input length in tokens
         input_length = inputs.input_ids.shape[1]
         
-        # Extract only the newly generated tokens for the first sequence
-        generated_tokens = sequences[0, input_length:]
+        # # Extract only the newly generated tokens for the first sequence
+        # generated_tokens = sequences[0, input_length:]
 
         # Decode only the newly generated tokens
-        summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        summary = tokenizer.decode(outputs[0, input_length: ].tolist(), skip_special_tokens=True)
         
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
