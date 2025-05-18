@@ -3,7 +3,7 @@ import requests
 import os
 import argparse
 
-grobid_url = "http://localhost:8070"
+grobid_url = "http://localhost:8080"
 
 def process_pdf(pdf_path):
     """Extract structured data from a PDF using GROBID"""
@@ -44,6 +44,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Extract text from a PDF using GROBID')
     parser.add_argument('--pdf_path', type=str, required=True, help='Path to the PDF file')
     args = parser.parse_args()
+    print("Using GROBID URL:", grobid_url)
 
     status_url = f"{grobid_url}/api/isalive"
     response = requests.get(status_url)

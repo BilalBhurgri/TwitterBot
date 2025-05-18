@@ -4,6 +4,7 @@ import time
 import threading
 import subprocess
 import os
+import sys
 import arxiv
 import smtplib
 import uuid
@@ -12,7 +13,8 @@ from flask import Flask, request
 from email.message import EmailMessage
 from dotenv import load_dotenv
 from bot.bot import main, post_tweet
-# from try_models.simple_update_db import process_paper
+import docker
+from try_models.simple_update_db import process_paper
 
 # For timezone handling
 from zoneinfo import ZoneInfo
@@ -121,6 +123,11 @@ def fetch_recent_papers(max_papers):
     try:
         subprocess.run(['python', 'try_models/simple_update_db.py', '--name', 'db/papers2/chroma.sqlite3', '--input', 'paper_urls/recent_papers.txt'], check=True)
         print("Successfully processed papers with simple_update_db.py")
+        
+        # Process PDFs through GROBID and clean math notation
+        subprocess.run(['python', 'try_models/process_papers.py'], check=True)
+        print("Successfully processed PDFs through GROBID and cleaned math notation")
+        
     except subprocess.CalledProcessError as e:
         print(f"Error running simple_update_db.py: {str(e)}")
     print("Fetched recent papers")
@@ -147,6 +154,7 @@ def schedule_daily_tasks():
         
         # Bot gathers latest papers
         t = get_random_time_between(6)
+        t = datetime.datetime.now(LOCAL_TZ) + datetime.timedelta(seconds=5)
         if t > now:
             print("Scheduling task at:", t)
             # execute task
@@ -171,5 +179,14 @@ def schedule_daily_tasks():
         time.sleep((next_midnight - datetime.datetime.now(LOCAL_TZ)).total_seconds())
 
 if __name__ == "__main__":
+    client = docker.from_env()
+    container = client.containers.run(
+        "lfoppiano/grobid:0.8.2",
+        ports={"8070/tcp": 8080, "8071/tcp": 8081},
+        remove=True,
+        init=True,
+        ulimits=[docker.types.Ulimit(name="core", soft=0, hard=0)],
+        detach=True
+    )
     threading.Thread(target=schedule_daily_tasks, daemon=True).start()
     app.run(host="0.0.0.0", port=os.getenv('PORT_NO'))
