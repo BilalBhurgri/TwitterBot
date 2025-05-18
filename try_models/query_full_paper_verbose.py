@@ -130,6 +130,71 @@ def generate_summary(text, tokenizer, model, max_length=200):
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
 
+def generate_summary_mistral(text, tokenizer, model, max_length=7000):
+    """Generate a summary using Mistral model - uses 8K context window"""
+    if not text or text.strip() == "":
+        print("ERROR: Cannot generate summary from empty text")
+        return "No text was provided for summarization."
+    
+    # Truncate text if needed
+    max_chars = max_length
+    if len(text) > max_chars:
+        print(f"Truncating text from {len(text)} to {max_chars} characters")
+        text = text[:max_chars]
+    
+    # Create a prompt
+    prompt = f"""<s>[INST] Write a concise 200-word summary of this research paper. Focus on key findings and contributions. Write it like a tweet - engaging and accessible to a general audience. Do not include phrases like "this paper" or "the authors". Only use English.
+
+Paper text:
+{text} [/INST]</s>"""
+
+    print(f"Prompt created with {len(prompt)} characters")
+    
+    try:
+        # Tokenize with conservative limits
+        print("Tokenizing input...")
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=20000)
+        inputs = inputs.to(model.device)
+        
+        print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
+        
+        # Generate summary with verbose logging
+        print("Starting generation...")
+        start_time = time.time()
+        
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=400,
+            do_sample=True,
+            temperature=0.7,
+            top_p=0.95,
+            top_k=30,
+            repetition_penalty=1.1,
+            pad_token_id=tokenizer.eos_token_id
+        )
+
+        # Get the sequences
+        sequences = outputs.sequences
+        
+        # Get input length in tokens
+        input_length = inputs.input_ids.shape[1]
+        
+        # Extract only the newly generated tokens for the first sequence
+        generated_tokens = sequences[0, input_length:]
+
+        # Decode only the newly generated tokens
+        summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        
+        generation_time = time.time() - start_time
+        print(f"Generation completed in {generation_time:.2f} seconds")
+        
+        return summary
+        
+    except Exception as e:
+        print(f"ERROR during generation: {e}")
+        traceback.print_exc()
+        return f"Error generating summary: {str(e)}"
+
 def test_load_paper():
     parser = argparse.ArgumentParser(description='Generate paper summary using Qwen/Qwen3-1.7B')
     parser.add_argument('--paper_path', required=True, help='Path to the paper PDF file')
@@ -206,7 +271,11 @@ def main():
         
         # Generate summary
         print("Generating summary...")
-        summary = generate_summary(paper_text, tokenizer, model)
+        if 'mistral' in model_name.lower():
+            summary = generate_summary_mistral(paper_text, tokenizer, model)
+        else:
+            # qwen code
+            summary = generate_summary(paper_text, tokenizer, model)
         
         # Verify summary
         if not summary or summary.strip() == "":
