@@ -1,0 +1,135 @@
+# Coherent Video Inpainting Using Optical Flow-Guided Efficient Diffusion
+
+## 1. Conventional Video Inpainting
+
+Conventional video inpainting mainly focu of tasks: object removal and background ject removal aims to eliminate u from video frames. And background restor involves seamlessly reconstructing missin background with coherent content.
+
+Given the fact that it's more simple to co stead of directly filling masked regions [3 transformer-based models prim tical flow to propagate features or pixels f ing outcomes. Specifically, E 2 FGVI in to-end framework with flow-guided feat FGT combines decoupled spatiotem with a flow-guided content propagation. Pr vances this field by merging dual-domain a mask-guided transformer.
+
+Although propainter inpainting framework using optical Flow-guided Efficient Diffusion (FloED) for higher video coherence. Specifically, FloED employs a dual-branch architecture, where the timeagnostic flow branch restores corrupted flow first, and the multi-scale flow adapters provide motion guidance to the main inpainting branch. Besides, a training-free latent interpolation method is proposed to accelerate the multi-step denoising process using flow warping. With the flow attention cache mechanism, FLoED efficiently reduces the computational cost of incorporating optical flow. Extensive experiments on background restoration and object re-
+
+## 1. Introduction
+
+Text-guided video inpainting aims to predict corrupted regions with text-aligned and temporally coherent contents, which has drawn widespread attention and applications. Conventional transformer-based methods fundamentally lack textually semantic controllability when users require precise semantic alignment between textual descriptions and generated video results.
+
+In recent years, diffusion models have demonstrated extraordinary capability in generating realistic and text-aligned content. Thus, diffusion-based solutions have made substantial progress in the realm of text-guided image inpainting. However, directly applying these methods to video inpainting falls short in maintaining the necessary temporal consistency. Although rapid developments in text-to-video (T2V) generative diffusion models have successfully facilitated text-guided video inpainting by leveraging motion modules for temporal consistency, it still remains an area with substantial scope for further improvement. Meanwhile, current diffusion-based solutions struggle to produce satisfactory results in both Background Restoration (BR) and Object Removal (OR) scenarios. Both BR and OR need to generate background content semantically aligned with textual descriptions, while ensuring spatial-temporal coherence between synthesized content and contextual video semantics.
+
+As evidenced in Fig. , state-of-the-art methods like Co-CoCo exhibit spatial-temporal disharmony where inpainted regions demonstrate incompatible texture patterns or lighting conditions with surrounding contexts. We further hypothesize that this disharmony can be mitigated by integrating motion guidance that aligns with the scene. In this regard, optical flow, a key modality for capturing motion information, provides valuable guidance and enhances temporal consistency, potentially alleviating the observed inconsistencies. Notably, integrating optical flow into video inpainting requires additional operations, including flow estimation and flow completion and effective incorporation, all of which incur extra computational costs. Thus, diffusion models inherently suffer from efficiency due to the multi-step denoising process. Consequently, when we leverage optical flow, it is essential to consider efficiency enhancements tailored to the multi-step characteristics of diffusion models.
+
+Based on the above analysis, we propose a coherent video inpainting framework using optical Flow-guided Efficient Diffusion, called FloED. By leveraging motion information, our approach seeks to enhance both the per-formance and efficiency of diffusion-based techniques in BR and OR applications. Based on the Animatediff , we fine-tune the motion module in the first stage to effectively align its temporal modeling capacity with the video inpainting task. Built on this primary inpainting branch, our innovations focus on three key aspects: (1) We design a time-agnostic flow branch that completes corrupted flow while maintaining consistent channel numbers with the primary branch. Next, we integrate the multi-scale flow adapters that inject flow features into the decoder blocks of the primary U-Net architecture, enabling FloED to utilize motion information more effectively. (2) Building on the observation that adjacent latent features share similar motion patterns and diffusion models fundamentally involve multi-step sampling processes, we introduce a training-free latent interpolation technique, which leverages warping operation guided by optical flow to effectively accelerate the multi-step denoising process during early denoising stage. Furthermore, by incorporating the flow attention cache mechanism during the remain denoising stage as a complementary speed-up solution, we efficiently minimize the additional computational burden typically introduced by flow adapters and the flow branch. (3) Recognizing that state-of-the-art image inpainting models significantly outperform video inpainting diffusion models, we utilize an anchor frame strategy to enhance the quality of video inpainting outcomes.
+
+Currently, there is no comprehensive benchmark for evaluating diffusion-based generative approaches in video inpainting. This deficiency presents a substantial challenge, as it limits the ability to rigorously assess and compare the efficacy of various inpainting methodologies. To bridge this gap, we have developed an extensive benchmark that meticulously encompasses both BR and OR tasks. Our main contributions are as follows:
+
+• Novel video inpainting model. We propose a dedicated dual-branch architecture that integrates optical flow guidance through flow adapters, thereby enhancing spatialtemporal consistency with compatible outcomes. • Efficient denoising process. We introduce a training-free latent interpolation technique that leverages optical flow to speed up the multi-step denoising process. Complemented by the flow attention cache mechanism, FloED efficiently reduces the additional computational costs introduced by the flow. • State-of-the-art performance. We conducted extensive experiments on OR and BR tasks, including both quantitative and qualitative evaluations, to validate that FloED outperforms other state-of-the-art text-guided diffusion methods in terms of both performance and efficiency.
+
+## 3. Preliminaries
+
+LDM leverages a pre-trained Variational Autoencoder (VAE) to operate in the latent space instead of pixel space. The diffusion forward process is imposing noise on a clean latent z 0 for T times. A property of the forward process is that it admits sampling z t at random timestep t:
+
+where ᾱt " ś t s"1 p1 ´betas q, beta s is the variance schedule for the timestep s.
+
+The backward process applies a trained UNet ϵ theta for denoising: p theta pz t´1 |z t q " N pz t´1 ; µ theta pz t , tq, Σ theta pz t , tqq, where distribution parameters µ theta and Σ theta are computed by the denoising model theta. To train a conditional LDM, the objective is given by:
+
+where ϵ theta pz t , t, cq is the predicted noise based on z t , the time step t and the condition c. Once trained, we could leverage the deterministic sampling of DDIM to denoise z t : z t´1 " ? alpha t´1 ẑtÑ0 lo omo on predicted 'z0' b1 ´alphat´1 ´sigma2 t ϵ theta pz t , t, cq loooooooooooooooomoooooooooooooooon direction pointing to zt `sigmat ϵ t lo omo on random noise ,
+
+where sigma t are hyper-parameters. The term z t tÑ0 represents the predicted z 0 at time step t, For conciseness and to circumvent any potential confusion with the concept of optical flow, we subsequently refer to ẑtÑ0 as ẑ0 . The precise formulation is as follows:
+
+ẑtÑ0 " Ppz t , ϵ theta q " pz t ´?1 ´alphat ϵ theta pz t , t, cqq{ ? alpha t . (4)
+
+## 4. Methods
+
+Given a text prompt P and original video sequence V 0 " tx 0 , x 1 , . . . , x N ´1u P R N ˆ3ˆHˆW and a binary mask sequence m " tm 0 , m 1 , . . . , m N ´1u P R N ˆ1ˆHˆW , corrupted frames V m are obtained by applying the Hadamard product as follows: V m " V 0 d m. We aim to generate a set of spatiotemporally consistent inpainted outcomes with text-aligned contents which demonstrate compatible texture patterns and lighting conditions with surrounding context.
+
+## 4.1. Network Overview
+
+An overview of our proposed model, FLoED, is depicted in Fig. . For the architecture, FloED adopt pretrained Stable Diffusion Inpainting backbone [1] as the primary branch, while incorporating motion modules initialized from Ani-mateDiff v3 . The training process of FloED can be divided into two stages.
+
+In the first stage, we fine-tune the motion modules to align their temporal modeling capacity with video inpainting. In the second stage, FloED incorporates a dedicated flow branch to complete corrupted flows estimated from masked frames, alongside multi-scale flow adapters that inject hierarchical motion information into the primary inpainting branch (Sec. 4.2). To further enhance video inpainting results, we implement an anchor frame strategy to leverage the priority of the image inpainting diffusion model [2] (Sec. 4.3). Furthermore, we introduce a trainingfree denoising acceleration technique that leverages optical flow for latent interpolation, compensated with a flow attention caching mechanism in the reference phase. We substantially enhance efficiency while significantly reducing the additional computational overhead the flow introduces. (Sec. 4.4).
+
+Notably, noised video latent V t , down-sampled binary mask m, corrupted video latent V m are concatenated along the channel axis as input.
+
+## 4.2. Flow Guidance in Video inpainting
+
+Considering the flow guidance, FloED first employs a pretrained flow generator RAFT to obtain the corrupted flow from V m , which is annotated as "Corrupted Flow Estimation" in Fig. .
+
+Flow Completion Branch. To reconstruct the corrupted flow, the framework incorporates a dedicated flow completion branch that architecturally aligns with the primary inpainting backbone. Specifically, it selectively aggregate the initial ResNet module from each corresponding block in the primary branch, to ensure channel-wise compatibility. And we exclude the time-step from ResNet to obtain the time-agnostic flow completion branch which creates stable flow feature regardless of diffusion progression. As shown in Fig , this flow completion branch enables comprehensive motion guidance by injecting compatible motion information into up-blocks of the primary UNet branch with multi-scale flow adapters.
+
+Flow Adapter. Our flow adapter is inspired by IP-Adapter , which is consisted with a separated crossattention layer. The reconstructed flow features are fed into the cross attention for motion guidance. Notably, FloED strategically positions the flow adapter between the text cross-attention and motion modules to enable flowaware latent modulation. This critical design further addresses misalignment caused by text-driven generation, because the multi-scale flow adapters dynamically adjusts latent features from the text cross-attention layer using optical flow priors, ensuring synthesized content maintains spatialtemporal compatibility with surrounding contexts. And in the second stage, we also continually fine-tune the motion modules.
+
+The reconstructed optical loss L flow is introduced in the second stage. (F represents the ground truth flow)
+
+## 4.3. Anchor Frame Strategy
+
+Recognizing that state-of-the-art image inpainting models developed in academia far surpass their video inpainting counterparts, we introduce an anchor frame strategy that leverages these advanced image techniques to substantially improve video inpainting performance. As illustrated in Fig. , for a given video sequence V 0 , we select an additional frame from the beginning of the sequence to serve as an anchor frame. We then utilize a pre-trained textto-image (T2I) inpainting model [2] to reconstruct its corrupted region in advance. Subsequently, we concatenate the inpainted anchor frame with the noised video frames V t . This approach provides additional texture guidance to the video frames during the denoising process. After denoising, the anchor frame is discarded. This strategy leverages the superior performance of image inpainting models to improve the overall quality of video inpainting.
+
+## 4.4. Efficient Inference for FloED
+
+Based on multi-step sampling processes of diffusion, we further propose a training-free latent interpolation technique that leverages optical flow to speed up the denoising process. This approach is complemented by a flow attention cache mechanism during the inference phase.
+
+Flow Attention Cache. Unlike the primary branch, the flow branch is independent of timestep. During the inference phase, we utilize the flow branch exclusively for flow completion in the first step and then use these completed flows for all subsequent steps. Regarding the multi-scale flow adapters, they introduce additional computations by calculating the flow attention at every denoising step and multiple resolutions. To optimize this process, we establish a cache mechanism by computing the keys and values only during the first step and storing them in the memory bank (right part of Fig. ). For the remaining steps, the cached keys and values are directly retrieved from the memory bank, eliminating the need for repeated calculations and enhancing efficiency.
+
+Training-Free Denoising Speed-up. Since adjacent feature latent exhibit similar motion patterns and diffusion models generate high-level content early in the denoising process , we aim to speed-up the denoising process by interpolating latent using the completed flow. Notably, this technique is entirely training-free.
+
+Specifically, as illustrated in Fig. , the initial step involves performing the standard denoising process for completing flow and caching flow attention. Subsequently, starting from step t ´1, the noisy latent z is divided into two subsets based on parity. The latent interpolation process then follows a two-step alternating loop: even-indexed latents (shown in red) undergo denoising, while odd-indexed latents (shown in green) are obtained by warping operations using bi-directional optical flows. In the next step, only the interpolated latents (green) are denoised, and the red latents are generated through a similar warping process. Due to the negligible time cost of warping latent, the latency of denoising is halved by processing only half of the frame latent at each sampling timestep. Notably, the warping operation needs to be conducted at z 0 (as per Equation ).
+
+Ideally, this process could be iterated until the final denoising step. However, since we are operating in latent space, completed optical flow provides only coarse-grained guidance, corresponding to the early stage of the diffusion process. Therefore, we restrict latent interpolation to the initial S denoising steps, during which the overall structure of the image is established . Additionally, to minimize flow errors, we perform warp operations exclusively between adjacent frames. Furthermore, to mitigate potential occlusion issues in flow warping, we perform the copypaste operation in each denoising step (see in appendix).
+
+## 5. Experiments
+
+## 5.1. Implementation Details.
+
+Dataset and Benchmark. We utilize the Open-Sora-Plan dataset , splitting videos at scene cuts to obtain 421,396 high-quality video clips paired with captions. We further developed an evaluation benchmark comprising 100 previ- BR OR PSNR ↑ SSIM ↑ VFID ↓ E warp ↓ TC ↑ TA ↑ VC 22.81 0 ously unseen videos sourced from Pexels and Pixabay platforms, with 50 designated for object removal (OR) and 50 for background restoration (BR). For BR task, we use synthetic random masks that focus on the background. For the OR task, object masks are obtained by applying Segment-Anything (SAM) to each frame. Each video is manually selected to ensure a diverse range of motion amplitudes and camera movement speeds, while guaranteeing 4K resolution and 100 frames in total. For the caption, we generate the corresponding video prompts using VideoGPT , while manually revising appropriate background prompts for OR.
+
+Training and Inference Details. We employed a two stage training strategy with a resolution of 512 and 16-frame video sequences. And we generated mask sequences with random directions, and shapes to simulate BR and OR tasks.
+
+The first stage is trained on 8 NVIDIA A800 GPUs for 5 epochs with a batch size of 8. And second stage is trained on 8 NVIDIA A800 GPUs for 30 epochs with a batch size of 128, which is achieved through gradient accumulation the lambda is set to 0.1 during the second stage. During inference, we use DDIM and empirically define the speed-up step S as 5 (25 steps in total).
+
+## 5.2. Comparisons
+
+We present comprehensive comparisons with open-sourced text-guided diffusion-based approaches, including Video-Composer , CoCoCo and DiffuEraser .
+
+Qualitative Comparisons. As demonstrated in Fig. , VideoComposer, CoCoCo and DiffuEraser exhibit persistent limitations especially in OR tasks, frequently generating visual artifacts and content hallucinations that disrupt semantic consistency with scene context. In contrast, FloED inpaints the mask region with compatible contents and demonstrates precise text-conditioned generation capabilities, achieving superior temporal consistency and overall coherence in both BR and OR tasks. Quantitative Comparisons. We take metric evaluation and user studies to demonstrate quantitative comparisons.
+
+(1) Metric evaluation. For BR tasks, we employ the PSNR , VFID , and SSIM to quantify basic quality. Additionally, we assess temporal consistency using flow warping error in conjunction with Temporal Consistency (TC) . TC is measured by the cosine similarity between consecutive frames in the CLIP-Image feature space. For OM tasks, since ground truth data is unavailable for evaluating the aforementioned metrics, we utilize Text Alignment (TA) as an evaluation metric, which also leverages the CLIP score. For consistency, all metric evaluations were conducted at a resolution of 512512. As shown in Tab. 1, FloED outperforms other methods in all the metrics, which demonstrates state-of-the-art performance.
+
+(2) User study. Since CLIP scores do not always align with human perception , we conducted a comprehensive user
+
+62.27% 56.40% 20.13% 21.33% 11.20% 14.53% 6.40% 7.74% 0.00 0.10 0.20 0.30 0.40 0.50 0.60 0.70 Background Restoration Object Removal Ours DiffuEraser CoCoCo VC Figure 6. We conduct reliable User Study with randomized order to assess inpainting outcomes of 4 methods.
+
+study in which 15 annotators evaluated the inpainting results across both BR and OR tasks (100 videos), temporal consistency, text alignment, and context compatibility to select the best one among 4 methods.As illustrated in Fig. , our model was highly favored, achieving the highest scores in both B and O.
+
+## 5.3. Ablation Studies
+
+Flow-related Ablation Studies. We conduct flow-related ablation studies to validate the motion guidance, with experimental results shown in Fig. .
+
+(1) Flow completion. Using an object removal scenario as a case study, completed optical flow results demonstrate that the corrupted flow undergoes context-aware inpainting with spatially and temporally coherent content which maintains alignment with the surrounding environment (comparing B with C). And the reconstructed results further validate the completion capability of our time-agnostic flow branch.
+
+(2) Flow adapter. These reconstructed flows provide crucial motion guidance to the primary inpainting branch, effectively enhancing context compatibility and achieving higher video coherence through multi-scale flow adapters.
+
+Comparing the outcomes of D with E, black artifacts and incompatible lighting condition can be largely reduced.
+
+The experimental findings demonstrate that the multi-scale flow adapters' injection of motion guidance significantly improves environmental consistency in generated content, which in turn enhances temporal coherence and overall quality. Meanwhile, we also conduct the quantitative architecture ablation study in Tab. 2. Compared with anchor frame strategy, the multi-scale flow adapters demonstrate superior efficacy in enhancing framework's performance, confirming their critical role in FloED. More ablation study results are provided in the Appendix. Flow Branch Latent Interpolation Flow Cache Average time per frame(s) ---0.1287 1 st step --0.1491 1 st step 2 nd " 6 th -0.1342 (↓ 9.9%) 1 st step 2 nd " 6 th 6 nd " 25 th 0.1291 (↓ 13.4%)
+
+Table 3. Efficiency ablation study (432 ˆ240). The second row represents variant with no flow-related module involved (blue).
+
+(3) Flow warping operation. Instructively, our ablation study F reveals that applying flow warping to the intermediate noise estimate ϵ during latent interpolation leads to cumulative error propagation with blurriness results compared to baseline D. To circumvent this, we reformulate the warping operation in the clean latent space z 0 (as per Equation 4).
+
+Efficiency. In this section, we conduct the efficiency experiments with single H800 NVIDIA GPU under FP16 setting. And FloED's denoising process is executed for 25 steps with the classifier-free guidance scale (CFG) ą 1.
+
+(1) Latent interpolation steps. As discussed in Sec. 4.4, we apply latent interpolation exclusively during the initial phase. Thus, we conduct a speeding steps study in Fig. .
+
+As depicted in Fig. , continuously increasing the acceleration step results in a sharp decline in performance when the speeding steps S beyond the early stage of the denoising process. Our experimental findings demonstrate that utilizing flow-guided latent interpolation for the initial 5 steps, we can minimize denoising time with only a slight compromise in performance.
+
+(2) Efficiency ablation study. As presented in Tab. training, during the testing phase, we only need to utilize the flow branch in the first step of the denoising process to complete the damaged optical flow and cache the memory bank.
+
+For the remaining denoising steps, we can directly use the completed flow for latent interpolation and the cached K, V for flow guidance. Thus, we determined an optimal solution: applying latent interpolation for the initial 5 steps (2 nd " 6 th ) and leveraging flow caching for the remaining steps for complement, resulting in 13.4% speed-up in the resolution of 432ˆ240. Compared to the pure variant, which does not incorporate flow completion and flow attention, these efficiency benefits nearly offset the additional computational burden, incurring minimal cost.
+
+(3) Efficiency comparisons. As shown the Tab. 4, under the same denoising steps, FloED outperform other diffusion-based counterparts, such as CoCoCo and Dif-fuEraser, across all resolutions, demonstrating its state-ofthe-art efficiency.
+
+Discussion. This paper focuses on text-guided video inpainting, primarily comparing with diffusion-based solutions.
+
+Our FloED also demonstrates superior performance over conventional flow-guided methods like ProPainter , with detailed comparisons provided in the Appendix. Furthermore, FloED's latent interpolation can be directly extended to other diffusion-based approaches (e.g., CoCoCo ) for accelerated processing. However, we note that the strategy of pre-completing corrupted optical flow might restrict its transferability across different application scenarios.
+
+## 6. Conclusion
+
+In this paper, we introduced FloED, a coherent video inpainting framework that effectively integrates optical flow guidance into diffusion models to enhance temporal consistency and computational efficiency. By employing a dualbranch architecture, FloED first reconstructs corrupted flow, which then guides the inpainting process through multiscale flow adapters. Additionally, our training-free latent interpolation technique and flow attention cache significantly reduce the computational overhead typically associated with optical flow integration. Experimental results demonstrate that FloED achieves state-of-the-art performance in both background restoration and object removal, showcasing its superior ability to maintain temporal consistency and content coherence in video inpainting.

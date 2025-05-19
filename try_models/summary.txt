@@ -1,0 +1,540 @@
+
+    INSTRUCTIONS:
+    Write a 200 word summary of this paper like a twitter post. Focus on key findings and contributions.
+    DO NOT repeat the paper text verbatim.
+    DO NOT include phrases like "this paper" or "the authors".
+    ONLY USE ENGLISH!
+    Ignore figures and math symbols, only look at the english text.
+
+    EXAMPLE:
+    🧵 New defense drop for LLMs: Adversarial Suffix Filtering (ASF) 🚨
+
+Jailbreaks via adversarial suffixes—those sneaky token strings that hijack model behavior—have been a persistent threat, even in black-box scenarios.
+
+ASF introduces a lightweight, model-agnostic pipeline to tackle this. It preprocesses inputs, detects, and filters out adversarial suffixes without needing access to the model's internals. Think of it as a sanitizer that preserves the original prompt's intent while stripping malicious additions.
+
+Key takeaways:
+
+- Reduces attack success rates to below 4% across various models.
+- Maintains model performance on benign prompts.
+- Operates effectively in both black-box and white-box settings.
+
+This approach offers a practical layer of defense, especially crucial as LLMs become more integrated into real-world applications. For those deploying LLMs in the wild, ASF provides a scalable solution to enhance security without compromising functionality.
+
+Paper: https://arxiv.org/pdf/2505.09602
+
+#AI #LLMSecurity #PromptInjection #AdversarialDefense
+
+    PAPER TEXT:
+    Why Larger Language Models Do In-context Learning Differently?
+Zhenmei Shi1Junyi Wei1Zhuoyan Xu1Yingyu Liang1 2
+Abstract
+Large language models (LLM) have emerged as
+a powerful tool for AI, with the key ability of in-
+context learning (ICL), where they can perform
+well on unseen tasks based on a brief series of task
+examples without necessitating any adjustments
+to the model parameters. One recent interesting
+mysterious observation is that models of different
+scales may have different ICL behaviors: larger
+models tend to be more sensitive to noise in the
+test context. This work studies this observation
+theoretically aiming to improve the understanding
+of LLM and ICL. We analyze two stylized set-
+tings: (1) linear regression with one-layer single-
+head linear transformers and (2) parity classifica-
+tion with two-layer multiple attention heads trans-
+formers (non-linear data and non-linear model).
+In both settings, we give closed-form optimal so-
+lutions and find that smaller models emphasize
+important hidden features while larger ones cover
+more hidden features; thus, smaller models are
+more robust to noise while larger ones are more
+easily distracted, leading to different ICL behav-
+iors. This sheds light on where transformers pay
+attention to and how that affects ICL. Prelimi-
+nary experimental results on large base and chat
+models provide positive support for our analysis.
+1. Introduction
+As large language models (LLM), e.g., ChatGPT (OpenAI,
+2022) and GPT4 (OpenAI, 2023), are transforming AI devel-
+opment with potentially profound impact on our societies,
+it is critical to understand their mechanism for safe and
+efficient deployment. An important emergent ability (Wei
+et al., 2022b; An et al., 2023), which makes LLM success-
+ful, is in-context learning (ICL), where models are given
+a few exemplars of input–label pairs as part of the prompt
+1University of Wisconsin-Madison,2The University of Hong
+Kong. Correspondence to: Zhenmei Shi, Yingyu Liang <zhmeishi,
+yliang@cs.wisc.edu, yingyul@hku.hk >.
+Proceedings of the 41stInternational Conference on Machine
+Learning , Vienna, Austria. PMLR 235, 2024. Copyright 2024 by
+the author(s).before evaluating some new input. More specifically, ICL is
+a few-shot (Brown et al., 2020) evaluation method without
+updating parameters in LLM. Surprisingly, people find that,
+through ICL, LLM can perform well on tasks that have never
+been seen before, even without any finetuning. It means
+LLM can adapt to wide-ranging downstream tasks under
+efficient sample and computation complexity. The mecha-
+nism of ICL is different from traditional machine learning,
+such as supervised learning and unsupervised learning. For
+example, in neural networks, learning usually occurs in gra-
+dient updates, whereas there is only a forward inference
+in ICL and no gradient updates. Several recent works, try-
+ing to answer why LLM can learn in-context, argue that
+LLM secretly performs or simulates gradient descent as
+meta-optimizers with just a forward pass during ICL empir-
+ically (Dai et al., 2022; V on Oswald et al., 2023; Malladi
+et al., 2023) and theoretically (Zhang et al., 2023b; Ahn
+et al., 2023; Mahankali et al., 2023; Cheng et al., 2023; Bai
+et al., 2023; Huang et al., 2023; Li et al., 2023b; Guo et al.,
+2024; Wu et al., 2024). Although some insights have been
+obtained, the mechanism of ICL deserves further research
+to gain a better understanding.
+Recently, there have been some important and surprising
+observations (Min et al., 2022; Pan et al., 2023; Wei et al.,
+2023b; Shi et al., 2023a) that cannot be fully explained by
+existing studies. In particular, Shi et al. (2023a) finds that
+LLM is not robust during ICL and can be easily distracted
+by an irrelevant context. Furthermore, Wei et al. (2023b)
+shows that when we inject noise into the prompts, the larger
+language models may have a worse ICL ability than the
+small language models, and conjectures that the larger lan-
+guage models may overfit into the prompts and forget the
+prior knowledge from pretraining, while small models tend
+to follow the prior knowledge. On the other hand, Min et al.
+(2022); Pan et al. (2023) demonstrate that injecting noise
+does not affect the in-context learning that much for smaller
+models, which have a more strong pretraining knowledge
+bias. To improve the understanding of the ICL mechanism,
+to shed light on the properties and inner workings of LLMs,
+and to inspire efficient and safe use of ICL, we are interested
+in the following question:
+Why do larger language models do in-context learning
+differently?
+1arXiv:2405.19592v1  [cs.LG]  30 May 2024
+Why Larger Language Models Do In-context Learning Differently?
+To answer this question, we study two settings: (1) one-
+layer single-head linear self-attention network (Schlag et al.,
+2021; V on Oswald et al., 2023; Akyurek et al., 2023; Ahn
+et al., 2023; Zhang et al., 2023b; Mahankali et al., 2023;
+Wu et al., 2024) pretrained on linear regression in-context
+tasks (Garg et al., 2022; Raventos et al., 2023; V on Oswald
+et al., 2023; Akyurek et al., 2023; Bai et al., 2023; Ma-
+hankali et al., 2023; Zhang et al., 2023b; Ahn et al., 2023;
+Li et al., 2023c; Huang et al., 2023; Wu et al., 2024), with
+rank constraint on the attention weight matrices for studying
+the effect of the model scale; (2) two-layer multiple-head
+transformers (Li et al., 2023b) pretrained on sparse parity
+classification in-context tasks, comparing small or large
+head numbers for studying the effect of the model scale. In
+both settings, we give the closed-form optimal solutions.
+We show that smaller models emphasize important hidden
+features while larger models cover more features, e.g., less
+important features or noisy features. Then, we show that
+smaller models are more robust to label noise and input
+noise during evaluation, while larger models may easily
+be distracted by such noises, so larger models may have a
+worse ICL ability than smaller ones.
+We also conduct in-context learning experiments on five
+prevalent NLP tasks utilizing various sizes of the Llama
+model families (Touvron et al., 2023a;b), whose results are
+consistent with previous work (Min et al., 2022; Pan et al.,
+2023; Wei et al., 2023b) and our analysis.
+Our contributions and novelty over existing work:
+•We formalize new stylized theoretical settings for
+studying ICL and the scaling effect of LLM. See Sec-
+tion 4 for linear regression and Section 5 for parity.
+•We characterize the optimal solutions for both settings
+(Theorem 4.1 and Theorem 5.1).
+•The characterizations of the optimal elucidate differ-
+ent attention paid to different hidden features, which
+then leads to the different ICL behavior (Theorem 4.2,
+Theorem 4.3, Theorem 5.2).
+•We further provide empirical evidence on large base
+and chat models corroborating our theoretical analysis
+(Figure 1, Figure 2).
+Note that previous ICL analysis paper may only focus on
+(1) the approximation power of transformers (Garg et al.,
+2022; Panigrahi et al., 2023; Guo et al., 2024; Bai et al.,
+2023; Cheng et al., 2023), e.g., constructing a transformer
+by hands which can do ICL, or (2) considering one-layer
+single-head linear self-attention network learning ICL on
+linear regression (V on Oswald et al., 2023; Akyurek et al.,
+2023; Mahankali et al., 2023; Zhang et al., 2023b; Ahn et al.,
+2023; Wu et al., 2024), and may not focus on the robustnessanalysis or explain the different behaviors. In this work,
+(1) we extend the linear model linear data analysis to the
+non-linear model and non-linear data setting, i.e., two-layer
+multiple-head transformers leaning ICL on sparse parity
+classification and (2) we have a rigorous behavior difference
+analysis under two settings, which explains the empirical
+observations and provides more insights into the effect of
+attention mechanism in ICL.
+3. Preliminary
+Notations. We denote [n] :={1,2, . . . , n }. For a positive
+semidefinite matrix A, we denote ∥x∥2
+A:=x⊤Axas the
+norm induced by a positive definite matrix A. We denote
+∥ · ∥Fas the Frobenius norm. diag() function will map a
+vector to a diagonal matrix or map a matrix to a vector with
+its diagonal terms.
+In-context learning. We follow the setup and notation of
+the problem in Zhang et al. (2023b); Mahankali et al. (2023);
+Ahn et al. (2023); Huang et al. (2023); Wu et al. (2024). In
+the pretraining stage of ICL, the model is pretrained on
+prompts. A prompt from a task τis formed by Nexamples
+(xτ,1, yτ,1), . . . , (xτ,N, yτ,N)and a query token xτ,qfor
+prediction, where for any i∈[N]we have yτ,i∈Rand
+xτ,i,xτ,q∈Rd. The embedding matrix Eτ, the label vector
+yτ, and the input matrix Xτare defined as:
+Eτ:=
+xτ,1xτ,2. . .xτ,Nxτ,q
+yτ,1yτ,2. . . y τ,N 0
+∈R(d+1)×(N+1),
+yτ:=[yτ,1, . . . , y τ,N]⊤∈RN, y τ,q∈R,
+Xτ:=[xτ,1, . . . ,xτ,N]⊤∈RN×d,xτ,q∈Rd.
+Given prompts represented as Eτ’s and the corresponding
+true labels yτ,q’s, the pretraining aims to find a model whose
+output on Eτmatches yτ,q. After pretraining, the evaluation
+stage applies the model to a new test prompt (potentially
+from a different task) and compares the model output to the
+true label on the query token.
+Note that our pretraining stage is also called learning to
+learn in-context (Min et al., 2021) or in-context training
+warmup (Dong et al., 2022) in existing work. Learning to
+learn in-context is the first step to understanding the mecha-
+nism of ICL in LLM following previous works (Raventos
+et al., 2023; Zhou et al., 2023b; Zhang et al., 2023b; Ma-
+hankali et al., 2023; Ahn et al., 2023; Huang et al., 2023; Li
+et al., 2023b; Wu et al., 2024).
+Linear self-attention networks. The linear self-attention
+network has been widely studied (Schlag et al., 2021;
+V on Oswald et al., 2023; Akyurek et al., 2023; Ahn et al.,
+2023; Zhang et al., 2023b; Mahankali et al., 2023; Wu et al.,
+2024; Ahn et al., 2024), and will be used as the learning
+model or a component of the model in our two theoreticalsettings. It is defined as:
+fLSA,θ(E) =
+E+WPVE·E⊤WKQE
+ρ
+, (1)
+where θ= (WPV,WKQ),E∈R(d+1)×(N+1)is the em-
+bedding matrix of the input prompt, and ρis a normalization
+factor set to be the length of examples, i.e., ρ=Nduring
+pretraining. Similar to existing work, for simplicity, we
+have merged the projection and value matrices into WPV,
+and merged the key and query matrices into WKQ, and
+have a residual connection in our LSA network. The pre-
+diction of the network for the query token xτ,qwill be the
+bottom right entry of the matrix output, i.e., the entry at lo-
+cation (d+ 1),(N+ 1) , while other entries are not relevant
+to our study and thus are ignored. So only part of the model
+parameters are relevant. To see this, let us denote
+WPV=WPV
+11 wPV
+12
+(wPV
+21)⊤wPV
+22
+∈R(d+1)×(d+1),
+WKQ=WKQ
+11 wKQ
+12
+(wKQ
+21)⊤wKQ
+22
+∈R(d+1)×(d+1),
+where WPV
+11,WKQ
+11∈Rd×d;wPV
+12,wPV
+21,wKQ
+12,wKQ
+21∈
+Rd; and wPV
+22, wKQ
+22∈R. Then the prediction is:
+byτ,q=fLSA,θ(E)(d+1),(N+1) (2)
+= 
+(wPV
+21)⊤wPV
+22EE⊤
+ρ
+WKQ
+11
+(wKQ
+21)⊤
+xτ,q.
+4. Linear Regression
+In this section, we consider the linear regression task for in-
+context learning which is widely studied empirically (Garg
+et al., 2022; Raventos et al., 2023; V on Oswald et al., 2023;
+Akyurek et al., 2023; Bai et al., 2023) and theoretically (Ma-
+hankali et al., 2023; Zhang et al., 2023b; Ahn et al., 2023;
+Li et al., 2023c; Huang et al., 2023; Wu et al., 2024).
+Data and task. For each task τ, we assume for any i∈[N]
+tokens xτ,i,xτ,qi.i.d.∼ N (0,Λ), where Λis the covariance
+matrix. We also assume a d-dimension task weight wτi.i.d.∼
+N(0, Id×d)and the labels are given by yτ,i=⟨wτ,xτ,i⟩
+andyτ,q=⟨wτ,xτ,q⟩.
+Model and loss. We study a one-layer single-head linear
+self-attention transformer (LSA) defined in Equation (1)
+and we use byτ,q:=fLSA,θ(E)(d+1),(N+1)as the prediction.
+We consider the mean square error (MSE) loss so that the
+empirical risk over Bindependent prompts is defined as
+bL(fθ) :=1
+2BBX
+τ=1(byτ,q− ⟨wτ,xτ,q⟩)2.
+Measure model scale by rank. We first introduce a lemma
+from previous work that simplifies the MSE and justifies our
+3
+Why Larger Language Models Do In-context Learning Differently?
+measurement of the model scale. For notation simplicity,
+we denote U=WKQ
+11, u=wPV
+22.
+Lemma 4.1 (Lemma A.1 in Zhang et al. (2023b)) .Let
+Γ := 
+1 +1
+N
+Λ +1
+Ntr(Λ) Id×d∈Rd×d. Let
+L(fLSA,θ) = lim
+B→∞bL(fLSA,θ)
+=1
+2Ewτ,xτ,1,...,xτ,N,xτ,qh
+(byτ,q− ⟨wτ,xτ,q⟩)2i
+,
+˜ℓ(U, u) = tr1
+2u2ΓΛUΛU⊤−uΛ2U⊤
+,
+we have L(fLSA,θ) =˜ℓ(U, u) +C, where Cis a constant
+independent with θ.
+Lemma 4.1 tells us that the loss only depends on uU. If we
+consider non-zero u, w.l.o.g, letting u= 1, then we can see
+that the loss only depends on U∈Rd×d,
+L(fLSA,θ) = tr1
+2ΓΛUΛU⊤−Λ2U⊤
+.
+Note that U=WKQ
+11, then it is natural to measure the
+size of the model by rank of U. Recall that we merge the
+key matrix and the query matrix in attention together, i.e.,
+WKQ= (WK)⊤WQ. Thus, a low-rank Uis equivalent
+to the constraint WK,WQ∈Rr×dwhere r≪d. The
+low-rank key and query matrix are practical and have been
+widely studied (Hu et al., 2022; Chen et al., 2021; Bhojana-
+palli et al., 2020; Fan et al., 2021; Dass et al., 2023; Shi
+et al., 2023c). Therefore, we use r= rank( U)to measure
+the scale of the model, i.e., larger rrepresenting larger mod-
+els. To study the behavior difference under different model
+scale, we will analyze Uunder different rank constraints.
+4.1. Low Rank Optimal Solution
+Since the token covariance matrix Λis positive semidefi-
+nite symmetric, we have eigendecomposition Λ =QDQ⊤,
+where Qis an orthonormal matrix containing eigenvec-
+tors of ΛandDis a sorted diagonal matrix with non-
+negative entries containing eigenvalues of Λ, denoting as
+D= diag([ λ1, . . . , λ d]), where λ1≥ ··· ≥ λd≥0. Then,
+we have the following theorem.
+Theorem 4.1 (Optimal rank- rsolution for regression) .
+Recall the loss function ˜ℓin Lemma 4.1. Let
+U∗, u∗= argmin
+U∈Rd×d,rank(U)≤r,u∈R˜ℓ(U, u).
+ThenU∗=cQV∗Q⊤, u=1
+c, where cis any nonzero
+constant, and V∗= diag([ v∗
+1, . . . , v∗
+d])satisfies for any
+i≤r, v∗
+i=N
+(N+1)λi+tr(D)and for any i > r, v∗
+i= 0.Proof sketch of Theorem 4.1. We defer the full proof to Ap-
+pendix B.1. The proof idea is that we can decompose the
+loss function into different ranks, so we can keep the direc-
+tion by their sorted “variance”, i.e.,
+argmin
+U∈Rd×d,rank(U)≤r,u∈R˜ℓ(U, u) =dX
+i=1Tiλ2
+i
+v∗
+i−1
+Ti2
+,
+where Ti= 
+1 +1
+N
+λi+tr(D)
+N. We have that v∗
+i≥0
+for any i∈[d]and if v∗
+i>0, we have v∗
+i=1
+Ti. Denote
+g(x) =x2
+1
+(1+1
+N)x+tr(D)
+N
+. We get the conclusion by
+g(x)is an increasing function on [0,∞).
+Theorem 4.1 gives the closed-form optimal rank- rsolution
+of one-layer single-head linear self-attention transformer
+learning linear regression ICL tasks. Let fLSA,θdenote the
+optimal rank- rsolution corresponding to the U∗, u∗above.
+In detail, the optimal rank- rsolution fLSA,θsatisfies
+W∗PV=0d×d0d
+0⊤
+d u
+,W∗KQ=U∗0d
+0⊤
+d0
+.(3)
+What hidden features does the model pay attention to?
+Theorem 4.1 shows that the optimal rank- rsolution indeed
+is the truncated version of the optimal full-rank solution,
+keeping only the most important feature directions (i.e.,
+the first reigenvectors of the token covariance matrix). In
+detail, (1) for the optimal full-rank solution, we have for
+anyi∈[d], v∗
+i=N
+(N+1)λi+tr(D); (2) for the optimal rank- r
+solution, we have for any i≤r, v∗
+i=N
+(N+1)λi+tr(D)and
+for any i > r, v∗
+i= 0. That is, the small rank- rmodel
+keeps only the first reigenvectors (viewed as hidden feature
+directions) and does not cover the others, while larger ranks
+cover more hidden features, and the large full rank model
+covers all features.
+Recall that the prediction depends on U∗xτ,q =
+cQV∗Q⊤xτ,q; see Equation (2) and (3). So the optimal
+rank-rmodel only uses the components on the first reigen-
+vector directions to do the prediction in evaluations. When
+there is noise distributed in all directions, a smaller model
+can ignore noise and signals along less important directions
+but still keep the most important directions. Then it can be
+less sensitive to the noise, as empirically observed. This
+insight is formalized in the next subsection.
+4.2. Behavior Difference
+We now formalize our insight into the behavior difference
+based on our analysis on the optimal solutions. We consider
+the evaluation prompt to have Mexamples (may not be
+equal to the number of examples Nduring pretraining for
+a general evaluation setting), and assume noise in labels to
+4
+Why Larger Language Models Do In-context Learning Differently?
+facilitate the study of the behavior difference (our results
+can be applied to the noiseless case by considering noise
+levelσ= 0). Formally, the evaluation prompt is:
+bE:=x1x2. . .xMxq
+y1y2. . . y M 0
+∈R(d+1)×(M+1)
+=x1 . . . xM xq
+⟨w,x1⟩+ϵ1. . .⟨w,xM⟩+ϵM 0
+,
+where wis the weight for the evaluation task, and for any
+i∈[M], the label noise ϵii.i.d.∼ N (0, σ2).
+Recall Qare eigenvectors of Λ, i.e., Λ = QDQ⊤and
+D= diag([ λ1, . . . , λ d]). In practice, we can view the large
+variance part of x(toprdirections in Q) as a useful signal
+(like words “positive”, “negative”), and the small variance
+part (bottom d−rdirections in Q) as the less important or
+useless information (like words “even”, “just”).
+Based on such intuition, we can decompose the evaluation
+task weight waccordingly: w=Q(s+ξ), where the r-dim
+truncated vector s∈Rdhassi= 0for any r < i≤d, and
+the residual vector ξ∈Rdhasξi= 0 for any 1≤i≤r.
+The following theorem (proved in Appendix B.2) quantifies
+the evaluation loss at different model scales rwhich can
+explain the scale’s effect.
+Theorem 4.2 (Behavior difference for regression) .Let
+w=Q(s+ξ)∈Rdwhere s, ξ∈Rdare truncated and
+residual vectors defined above. The optimal rank- r
+solution fLSA,θin Theorem 4.1 satisfies:
+L(fLSA,θ;bE)
+:=Ex1,ϵ1,...,xM,ϵM,xq
+fLSA,θ(bE)− ⟨w,xq⟩2
+=1
+M∥s∥2
+(V∗)2D3+1
+M 
+∥s+ξ∥2
+D+σ2
+tr 
+(V∗)2D2
++∥ξ∥2
+D+X
+i∈[r]s2
+iλi(λiv∗
+i−1)2.
+Implications. IfNis large enough with Nλr≫tr(D)
+(which is practical as we usually pretrain networks on long
+text), then
+L(fLSA,θ;bE)≈∥ξ∥2
+D+1
+M 
+(r+ 1)∥s∥2
+D+r∥ξ∥2
+D+rσ2
+.
+The first term ∥ξ∥2
+Dis due to the residual features not cov-
+ered by the network, so it decreases for larger rand becomes
+0for full-rank r=d. The second term1
+M(·)is significant
+since we typically have limited examples in evaluation, e.g.,
+M= 16≪N. Within it, (r+ 1)∥s∥2
+Dcorresponds to the
+firstrdirections, and rσ2corresponds to the label noise.
+These increase for larger r. So there is a trade-off between
+the two error terms when scaling up the model: for largerrthe first term decreases while the second term increases.
+This depends on whether more signals are covered or more
+noise is kept when increasing the rank r.
+To further illustrate the insights, we consider the special
+case when the model already covers all useful signals in the
+evaluation task: w=Qs, i.e., the label only depends on
+the top rfeatures (like “positive”, “negative” tokens). Our
+above analysis implies that a larger model will cover more
+useless features and keep more noise, and thus will have
+worse performance. This is formalized in the following
+theorem (proved in Appendix B.2).
+Theorem 4.3 (Behavior difference for regression, special
+case) .Let0≤r≤r′≤dandw=Qswhere sisr-dim
+truncated vector. Denote the optimal rank- rsolution as
+f1and the optimal rank- r′solution as f2. Then,
+L(f2;bE)− L(f1;bE)
+=1
+M 
+∥s∥2
+D+σ2
+r′X
+i=r+1Nλi
+(N+ 1)λi+ tr(D)2
+.
+Implications. By Theorem 4.3, in this case,
+L(f2;bE)− L(f1;bE)≈r′−r
+M∥s∥2
+D
+|{z}
+input noise+r′−r
+Mσ2
+|{z}
+label noise.
+We can decompose the above equation to input noise and
+label noise, and we know that ∥s∥2
+D+σ2only depends on
+the intrinsic property of evaluation data and is independent
+of the model size. When we have a larger model (larger r′),
+we will have a larger evaluation loss gap between the large
+and small models. It means larger language models may
+be easily affected by the label noise and input noise and
+may have worse in-context learning ability, while smaller
+models may be more robust to these noises as they only
+emphasize important sig
+     """
+Okay, let's break down the paper. The main focus is on why larger language models (LLMs) exhibit different in-context learning (ICL) behaviors compared to smaller ones. The authors use two stylized settings: linear regression with single-head transformers and parity classification with multiple attention heads. They derive closed-form solutions showing that smaller models prioritize important features, while larger models capture more features, including less important or noisy ones. This leads to differences in ICL robustness. Experimental results confirm this, with larger models being more susceptible to noise. The paper contributes theoretical insights into attention mechanisms and scaling effects, offering a framework to understand and predict ICL behavior across different model sizes.
+
+Now, condensing this into a concise Twitter-style summary without markdown, focusing on key findings and contributions:
+
+The paper explores why larger LLMs behave differently in in-context learning (ICL). It analyzes two scenarios: linear regression with single-head transformers and parity classification with multi-head models. Key findings: smaller
