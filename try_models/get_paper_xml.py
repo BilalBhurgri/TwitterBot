@@ -6,7 +6,7 @@ import argparse
 grobid_url = "http://localhost:8070"
 
 def process_pdf(pdf_path):
-    """Extract structured data from a PDF using GROBID"""
+    """Extract structured data from a PDF using GROBID, this returns text directly"""
     # Endpoint for full text processing
     process_url = f"{grobid_url}/api/processFulltextDocument"
     
@@ -38,6 +38,7 @@ def process_pdf(pdf_path):
             "error": f"GROBID request failed with status code {response.status_code}",
             "details": response.text
         }
+
 
 # Example usage
 if __name__ == "__main__":
