@@ -66,9 +66,8 @@ def generate_summary(text, tokenizer, model, max_length=200):
     print(f"Prompt created with {len(prompt)} characters")
     
     try:
-        # Tokenize with conservative limits
         print("Tokenizing input...")
-        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=7000)
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=max_chars)
         inputs = inputs.to(model.device)
         
         print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
@@ -92,14 +91,15 @@ def generate_summary(text, tokenizer, model, max_length=200):
 
         # Get the sequences
         sequences = outputs.sequences
+        # # print(f"Shape of sequences: {sequences.shape}")
 
-        # Get input length in tokens
+        # # Get input length in tokens
         input_length = inputs.input_ids.shape[1]
-        
-        # Extract only the newly generated tokens for the first sequence
+        # print(f"Input length: {input_length}")
+        # # Extract only the newly generated tokens for the first sequence
         generated_tokens = sequences[0, input_length:]
 
-        # Decode only the newly generated tokens
+        # # Decode only the newly generated tokens
         summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
         
         generation_time = time.time() - start_time
