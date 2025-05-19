@@ -26,8 +26,14 @@ def print_memory_usage(label=""):
         print(f"[{label}] GPU Memory: {gpu_allocated:.2f} MB allocated")
 
 def load_paper(paper_path):
-    text = parse_paper.extract_text_from_xml(paper_path)
-    return text
+    """Read the contents of a text file."""
+    try:
+        with open(paper_path, 'r', encoding='utf-8') as f:
+            text = f.read()
+        return text
+    except Exception as e:
+        print(f"Error reading text file: {str(e)}")
+        return None
 
 def generate_summary(text, tokenizer, model, max_length=200):
     """Generate a summary with extensive debugging"""
@@ -194,7 +200,7 @@ Paper text:
 
 def main():
     parser = argparse.ArgumentParser(description='Generate paper summary using Qwen/Qwen3-1.7B')
-    parser.add_argument('--paper_path', required=True, help='Path to the paper PDF file')
+    parser.add_argument('--paper_path', required=True, help='Path to the paper\'s text file')
     parser.add_argument('--output_path', default=None, help='Path to save the summary')
     parser.add_argument('--model_name', default="Qwen/Qwen3-1.7B", help='Model to use (default: Qwen/Qwen3-1.7B)')
     args = parser.parse_args()
