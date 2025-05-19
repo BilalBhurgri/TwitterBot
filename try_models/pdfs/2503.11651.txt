@@ -1,0 +1,209 @@
+# VGGT: Visual Geometry Grounded Transformer
+
+## 1. Introduction
+
+We consider the problem of estimating the 3D attributes of a scene, captured in a set of images, utilizing a feedforward neural network. Traditionally, 3D reconstruction has been approached with visual-geometry methods, utilizing iterative optimization techniques like Bundle Adjustment (BA) . Machine learning has often played an important complementary role, addressing tasks that cannot be solved by geometry alone, such as feature matching and monocular depth prediction. The integration has become increasingly tight, and now state-of-the-art Structure-from-Motion (SfM) methods like VGGSfM combine machine learning and visual geometry end-to-end via differentiable BA. Even so, visual geometry still plays a major role in 3D reconstruction, which increases complexity and computational cost.
+
+As networks become ever more powerful, we ask if, finally, 3D tasks can be solved directly by a neural network, eschewing geometry post-processing almost entirely. Recent contributions like DUSt3R and its evolution MASt3R have shown promising results in this direction, but these networks can only process two images at once and rely on post-processing to reconstruct more images, fusing pairwise reconstructions.
+
+In this paper, we take a further step towards removing the need to optimize 3D geometry in post-processing. We do so by introducing Visual Geometry Grounded Transformer (VGGT), a feed-forward neural network that performs 3D reconstruction from one, a few, or even hundreds of input views of a scene. VGGT predicts a full set of 3D attributes, including camera parameters, depth maps, point maps, and 3D point tracks. It does so in a single forward pass, in seconds. Remarkably, it often outperforms optimization-based alternatives even without further processing. This is a substantial departure from DUSt3R, MASt3R, or VGGSfM, which still require costly iterative post-optimization to obtain usable results.
+
+We also show that it is unnecessary to design a special network for 3D reconstruction. Instead, VGGT is based on a fairly standard large transformer , with no particular 3D or other inductive biases (except for alternating between frame-wise and global attention), but trained on a large number of publicly available datasets with 3D annotations. VGGT is thus built in the same mold as large models for natural language processing and computer vision, such as GPTs , CLIP , DINO , and Stable Diffusion . These have emerged as versatile backbones that can be fine-tuned to solve new, specific tasks. Similarly, we show that the features computed by VGGT can significantly enhance downstream tasks like point tracking in dynamic videos, and novel view synthesis.
+
+There are several recent examples of large 3D neural networks, including DepthAnything , MoGe , and LRM . However, these models only focus on a single 3D task, such as monocular depth estimation or novel view synthesis. In contrast, VGGT uses a shared backbone to predict all 3D quantities of interest together. We demonstrate that learning to predict these interrelated 3D attributes enhances overall accuracy despite potential redundancies. At the same time, we show that, during inference, we can derive the point maps from separately predicted depth and camera parameters, obtaining better accuracy compared to directly using the dedicated point map head.
+
+To summarize, we make the following contributions: (1) We introduce VGGT, a large feed-forward transformer that, given one, a few, or even hundreds of images of a scene, can predict all its key 3D attributes, including camera intrinsics and extrinsics, point maps, depth maps, and 3D point tracks, in seconds. We demonstrate that VGGT's predictions are directly usable, being highly competitive and usually better than those of state-of-the-art methods that use slow post-processing optimization techniques. We also show that, when further combined with BA post-processing, VGGT achieves state-of-the-art results across the board, even when compared to methods that specialize in a subset of 3D tasks, often improving quality substantially.
+
+We make our code and models publicly available at . We believe that this will facilitate further research in this direction and benefit the computer vision community by providing a new foundation for fast, reliable, and versatile 3D reconstruction.
+
+## 3. Method
+
+We introduce VGGT, a large transformer that ingests a set of images as input and produces a variety of 3D quantities as output. We start by introducing the problem in Sec. 3.1, followed by our architecture in Sec. 3.2 and its prediction heads in Sec. 3.3, and finally the training setup in Sec. 3.4.
+
+## 3.1. Problem definition and notation
+
+The input is a sequence (I i ) N i=1 of N RGB images I i R 3HW , observing the same 3D scene. VGGT's transformer is a function that maps this sequence to a corresponding set of 3D annotations, one per frame:
+
+The transformer thus maps each image I i to its camera parameters g i R 9 (intrinsics and extrinsics), its depth map D i R HW , its point map P i R 3HW , and a grid T i R CHW of C-dimensional features for point tracking. We explain next how these are defined. For the camera parameters g i , we use the parametrization from and set g = [q, t, f ] which is the concatenation of the rotation quaternion q R 4 , the translation vector t R 3 , and the field of view f R 2 . We assume that the camera's principal point is at the image center, which is common in SfM frameworks .
+
+We denote the domain of the image I i with = {1, . . . , H} {1, . . . , W }, i.e., the set of pixel locations. The depth map D i associates each pixel location y with its corresponding depth value D i (y) R + , as observed from the i-th camera. Likewise, the point map P i associates each pixel with its corresponding 3D scene point P i (y) R 3 . Importantly, like in DUSt3R , the point maps are viewpoint invariant, meaning that the 3D points P i (y) are defined in the coordinate system of the first camera g 1 , which we take as the world reference frame.
+
+Finally, for keypoint tracking, we follow track-anypoint methods such as . Namely, given a fixed query image point y q in the query image I q , the network outputs a track T ⋆ (y q ) = (y i ) N i=1 formed by the corresponding 2D points y i R 2 in all images I i .
+
+Note that the transformer f above does not output the tracks directly but instead features T i R CHW , which are used for tracking. The tracking is delegated to a separate module, described in Sec. 3.3, which implements a function M j=1 ,
+
+It ingests the query point y q and the dense tracking features T i output by the transformer f and then computes the track. The two networks f and T are trained jointly end-to-end.
+
+Order of Predictions. The order of the images in the input sequence is arbitrary, except that the first image is chosen as the reference frame. The network architecture is designed to be permutation equivariant for all but the first frame.
+
+Over-complete Predictions. Notably, not all quantities predicted by VGGT are independent. For example, as shown by DUSt3R , the camera parameters g can be inferred from the invariant point map P , for instance, by solving the Perspective-n-Point (PnP) problem . As shown in the top row, our method successfully predicts the geometric structure of an oil painting, while DUSt3R predicts a slightly distorted plane. In the second row, our method correctly recovers a 3D scene from two images with no overlap, while DUSt3R fails. The third row provides a challenging example with repeated textures, while our prediction is still high-quality. We do not include examples with more than 32 frames, as DUSt3R runs out of memory beyond this limit.
+
+Furthermore, the depth maps can be deduced from the point map and the camera parameters. However, as we show in Sec. 4.5, tasking VGGT with explicitly predicting all aforementioned quantities during training brings substantial performance gains, even when these are related by closed-form relationships. Meanwhile, during inference, it is observed that combining independently estimated depth maps and camera parameters produces more accurate 3D points compared to directly employing a specialized point map branch.
+
+## 3.2. Feature Backbone
+
+Following recent works in 3D deep learning , we design a simple architecture with minimal 3D inductive biases, letting the model learn from ample quantities of 3D-annotated data. In particular, we implement the model f as a large transformer . To this end, each input image I is initially patchified into a set of K tokens 1 t I R KC through DINO . The combined set of image tokens from all frames, i.e., t I = N i=1 {t I i }, is subsequently processed through the main network structure, alternating frame-wise and global self-attention layers.
+
+Alternating-Attention. We slightly adjust the standard transformer design by introducing Alternating-Attention 1 The number of tokens depends on the image resolution.
+
+(AA), making the transformer focus within each frame and globally in an alternate fashion. Specifically, frame-wise self-attention attends to the tokens t I k within each frame separately, and global self-attention attends to the tokens t I across all frames jointly. This strikes a balance between integrating information across different images and normalizing the activations for the tokens within each image. By default, we employ L = 24 layers of global and frame-wise attention. In Sec. 4, we demonstrate that our AA architecture brings significant performance gains. Note that our architecture does not employ any cross-attention layers, only self-attention ones.
+
+## 3.3. Prediction heads
+
+Here, we describe how f predicts the camera parameters, depth maps, point maps, and point tracks. First, for each input image I i , we augment the corresponding image tokens t I i with an additional camera token t g i R 1C ′ and four register tokens
+
+Here, the camera token and register tokens of the first frame (t g 1 := tg , t R 1 := tR ) are set to a different set of learnable tokens t g , t R than those of all other frames (t which are also learnable. This allows the model to distinguish the first frame from the rest, and to represent the 3D predictions in the coordinate frame of the first camera. Note that the refined camera and register tokens now become frame-specific--this is because our AA transformer contains frame-wise self-attention layers that allow the transformer to match the camera and register tokens with the corresponding tokens from the same image. Following common practice, the output register tokens tR i are discarded while tI i , tg i are used for prediction.
+
+Coordinate Frame. As noted above, we predict cameras, point maps, and depth maps in the coordinate frame of the first camera g 1 . As such, the camera extrinsics output for the first camera are set to the identity, i.e., the first rotation quaternion is q 1 = [0, 0, 0, 1] and the first translation vector is t 1 = [0, 0, 0]. Recall that the special camera and register tokens t g 1 := t g , t R 1 := t R allow the transformer to identify the first camera.
+
+Camera Predictions. The camera parameters (ĝ i ) N i=1 are predicted from the output camera tokens ( tg i ) N i=1 using four additional self-attention layers followed by a linear layer. This forms the camera head that predicts the camera intrin-sics and extrinsics.
+
+## Dense Predictions. The output image tokens tI
+
+i are used to predict the dense outputs, i.e., the depth maps D i , point maps P i , and tracking features T i . More specifically, tI i are first converted to dense feature maps F i R C ′′ HW with a DPT layer . Each F i is then mapped with a 3 3 convolutional layer to the corresponding depth and point maps D i and P i . Additionally, the DPT head also outputs dense features T i R CHW , which serve as input to the tracking head. We also predict the aleatoric uncertainty
+
+for each depth and point map, respectively. As described in Sec. 3.4, the uncertainty maps are used in the loss and, after training, are proportional to the model's confidence in the predictions.
+
+Tracking. In order to implement the tracking module T , we use the CoTracker2 architecture , which takes the dense tracking features T i as input. More specifically, given a query point y j in a query image I q (during training, we always set q = 1, but any other image can be potentially used as a query), the tracking head T predicts the set of 2D points
+
+) M j=1 in all images I i that correspond to the same 3D point as y. To do so, the feature map T q of the query image is first bilinearly sampled at the query point y j to obtain its feature. This feature is then correlated with all other feature maps T i , i ̸ = q to obtain a set of correlation maps. These maps are then processed by self-attention layers to predict the final 2D points ŷi , which are all in correspondence with y j . Note that, similar to VG-GSfM , our tracker does not assume any temporal ordering of the input frames and, hence, can be applied to any set of input images, not just videos.
+
+## 3.4. Training
+
+Training Losses. We train the VGGT model f end-to-end using a multi-task loss:
+
+(
+
+We found that the camera (L camera ), depth (L depth ), and point-map (L pmap ) losses have similar ranges and do not need to be weighted against each other. The tracking loss L track is down-weighted with a factor of lambda = 0.05. We describe each loss term in turn.
+
+The camera loss L camera supervises the cameras ĝ:
+
+, comparing the predicted cameras ĝi with the ground truth g i using the Huber loss | • | ϵ .
+
+The depth loss L depth follows DUSt3R and implements the aleatoric-uncertainty loss weighing the discrepancy between the predicted depth Di and the ground-truth depth D i with the predicted uncertainty map ΣD i . Differently from DUSt3R, we also apply a gradientbased term, which is widely used in monocular depth estimation. Hence, the depth loss is
+
+where ⊙ is the channel-broadcast element-wise product. The point map loss is defined analogously but with the point-map uncertainty
+
+Finally, the tracking loss is given by L track = M j=1 N i=1 ∥y j,i -ŷj,i ∥. Here, the outer sum runs over all ground-truth query points y j in the query image I q , y j,i is y j 's ground-truth correspondence in image I i , and ŷj,i is the corresponding prediction obtained by the application M j=1 , (T i ) N i=1 ) of the tracking module. Additionally, following CoTracker2 , we apply a visibility loss (binary cross-entropy) to estimate whether a point is visible in a given frame.
+
+Ground Truth Coordinate Normalization. If we scale a scene or change its global reference frame, the images of the scene are not affected at all, meaning that any such variant is a legitimate result of 3D reconstruction. We remove this ambiguity by normalizing the data, thus making a canonical choice and task the transformer to output this particular variant. We follow and, first, express all quantities in the coordinate frame of the first camera g 1 . Then, we compute the average Euclidean distance of all 3D points in the point map P to the origin and use this scale to normalize the camera translations t, the point map P , and the depth map D. Importantly, unlike , we do not apply such normalization to the predictions output by the transformer; instead, we force it to learn the normalization we choose from the training data.
+
+Implementation Details. By default, we employ L = 24 layers of global and frame-wise attention, respectively. The model consists of approximately 1.2 billion parameters in total. We train the model by optimizing the training loss with the AdamW optimizer for 160K iterations. We use a cosine learning rate scheduler with a peak learning rate of 0.0002 and a warmup of 8K iterations. For every batch, we randomly sample 2-24 frames from a random training scene. The input frames, depth maps, and point maps are resized to a maximum dimension of 518 pixels. The aspect ratio is randomized between 0.33 and 1.0. We also randomly apply color jittering, Gaussian blur, and grayscale augmentation to the frames. The training runs on 64 A100 GPUs over nine days. We employ gradient norm clipping with a threshold of 1.0 to ensure training stability. We leverage bfloat16 precision and gradient checkpointing to improve GPU memory and computational efficiency.
+
+Training Data. The model was trained using a large and diverse collection of datasets, including: Co3Dv2 , BlendMVS , DL3DV , MegaDepth , Kubric , WildRGB , ScanNet , Hyper-Sim , Mapillary , Habitat , Replica , MVS-Synth , PointOdyssey , Virtual KITTI , Aria Synthetic Environments , Aria Digital Twin , and a synthetic dataset of artist-created assets similar to Objaverse . These datasets span various domains, including indoor and outdoor environments, and encompass synthetic and real-world scenarios. The 3D annotations for these datasets are derived from multiple sources, such as direct sensor capture, synthetic engines, or SfM techniques . The combination of our datasets is broadly comparable to those of MASt3R in size and diversity.
+
+## 4. Experiments
+
+This section compares our method to state-of-the-art approaches across multiple tasks to show its effectiveness.
+
+## 4.1. Camera Pose Estimation
+
+We first evaluate our method on the CO3Dv2 and RealEstate10K datasets for camera pose estimation, as shown in Tab. 1. Following , we randomly select 10 images per scene and evaluate them using the standard metric AUC@30, which combines RRA and RTA. RR and RT calculate the relative angular errors in rotation and translation, respectively, for each image pair. These angu- Table . Two-View matching comparison on ScanNet-1500 . Although our tracking head is not specialized for the twoview setting, it outperforms the state-of-the-art two-view matching method Roma. Measured in AU.
+
+ods across all metrics on both datasets, including those that employ computationally expensive post-optimization steps, such as Global Alignment for DUSt3R/MASt3R and Bundle Adjustment for VGGSfM, typically requiring more than 10 seconds. In contrast, VGGT achieves superior performance while only operating in a feed-forward manner, requiring just 0.2 seconds on the same hardware. Compared to concurrent works (indicated by ‡ ), our method demonstrates significant performance advantages, with speed similar to the fastest variant Fast3R . Furthermore, our model's performance advantage is even more pronounced on the RealEstate10K dataset, which none of the methods presented in Tab. 1 were trained on. This validates the superior generalization of VGGT.
+
+Our results also show that VGGT can be improved even further by combining it with optimization methods from visual geometry optimization like BA. Specifically, refining the predicted camera poses and tracks with BA further improves accuracy. Note that our method directly predicts close-to-accurate point/depth maps, which can serve as a good initialization for BA. This eliminates the need for triangulation and iterative refinement in BA as done by , making our approach significantly faster (only around 2 seconds even with BA). Hence, while the feed-forward mode of VGGT outperforms all previous alternatives (whether they are feed-forward or not), there is still room for improvement since post-optimization still brings benefits.
+
+## 4.2. Multi-view Depth Estimation
+
+Following MASt3R , we further evaluate our multiview depth estimation results on the DTU dataset. We report the standard DTU metrics, including Accuracy (the smallest Euclidean distance from the prediction to ground truth), Completeness (the smallest Euclidean distance from the ground truth to prediction), and their average Overall (i.e., Chamfer distance). In Tab. 2, DUSt3R and our VGGT are the only two methods operating without the knowledge of ground truth cameras. MASt3R derives depth maps by triangulating matches using the ground truth cameras. Net use ground truth cameras to construct cost volumes.
+
+## Meanwhile, deep multi-view stereo methods like GeoMVS-
+
+Our method substantially outperforms DUSt3R, reducing the Overall score from 1.741 to 0.382. More importantly, it achieves results comparable to methods that know ground-truth cameras at test time. The significant performance gains can likely be attributed to our model's multiimage training scheme that teaches it to reason about multiview triangulation natively, instead of relying on ad hoc alignment procedures, such as in DUSt3R, which only averages multiple pairwise camera triangulations.
+
+## 4.3. Point Map Estimation
+
+We also compare the accuracy of our predicted point cloud to DUSt3R and MASt3R on the ETH3D dataset. For each scene, we randomly sample 10 frames. The predicted point cloud is aligned to the ground truth using the Umeyama algorithm. The results are reported after filtering out invalid points using the official masks. We report Accuracy, Completeness, and Overall (Chamfer distance) for point map estimation. As shown in Tab. 3, although DUSt3R and MASt3R conduct expensive optimization (global alignment--around 10 seconds per scene), our method still outperforms them significantly in a simple feed-forward regime at only 0.2 seconds per reconstruction.
+
+Meanwhile, compared to directly using our estimated point maps, we found that the predictions from our depth and camera heads (i.e., unprojecting the predicted depth maps to 3D using the predicted camera parameters) yield higher accuracy. We attribute this to the benefits of decomposing a complex task (point map estimation) into simpler subproblems (depth map and camera prediction), even though camera, depth maps, and point maps are jointly supervised during training.
+
+We present a qualitative comparison with DUSt3R on inthe-wild scenes in Fig. and further examples in Fig.
+
+## 4.4. Image Matching
+
+Two-view image matching is a widely-explored topic in computer vision. It represents a specific case of rigid point tracking, which is restricted to only two views, and hence a suitable evaluation benchmark to measure our tracking accuracy, even though our model is not specialized for this task. We follow the standard protocol on the ScanNet dataset and report the results in Tab. 4.
+
+For each image pair, we extract the matches and use them to estimate an essential matrix, which is then decomposed to a relative camera pose. The final metric is the relative pose accuracy, measured by AUC. For evaluation, we use ALIKED to detect keypoints, treating them as query points y q . These are then passed to our tracking branch T to find correspondences in the second frame. We adopt the evaluation hyperparameters (e.g., the number of matches, RANSAC thresholds) from Roma . Despite not being explicitly trained for two-view matching, Tab. 4 shows that VGGT achieves the highest accuracy among all baselines.
+
+## 4.5. Ablation Studies
+
+Feature Backbone. We first validate the effectiveness of our proposed Alternating-Attention design by comparing it against two alternative attention architectures: (a) global self-attention only, and (b) cross-attention. To ensure a fair comparison, all model variants maintain an identical number of parameters, using a total of 2L attention layers. For the cross-attention variant, each frame independently attends to tokens from all other frames, maximizing cross-frame information fusion although significantly increasing the runtime, particularly as the number of input frames grows. The hyperparameters such as the hidden dimension and the number of heads are kept the same. Point map estimation accuracy is chosen as the evaluation metric for our ablation study, as it reflects the model's joint understanding of scene geometry and camera parameters. Results in Tab. 5 demonstrate that our Alternating-Attention architecture outperforms both baseline variants by a clear margin. Additionally, our other preliminary exploratory experiments consistently showed that architectures using crossattention generally underperform compared to those exclusively employing self-attention.
+
+Multi-task Learning. We also verify the benefit of training a single network to simultaneously learn multiple 3D quantities, even though these outputs may potentially overlap (e.g., depth maps and camera parameters together can produce point maps). As shown in Tab. 6, there is a noticeable decrease in the accuracy of point map estimation when training without camera, depth, or track estimation. Notably, incorporating camera parameter estimation clearly enhances point map accuracy, whereas depth estimation contributes only marginal improvements.
+
+## 4.6. Finetuning for Downstream Tasks
+
+We now show that the VGGT pre-trained feature extractor can be reused in downstream tasks. We show this for feedforward novel view synthesis and dynamic point tracking.
+
+Feed-forward Novel View Synthesis is progressing rapidly . Most existing methods take images with known camera parameters as input and predict the target image corresponding to a new camera viewpoint. Instead of relying on an explicit 3D representation, we follow LVSM and modify VGGT to directly output the target image. However, we do not assume known camera parameters for the input frames. We follow the training and evaluation protocol of LVSM closely, e.g., using 4 input views and adopting Plücker rays to represent target viewpoints. We make a simple modification to VGGT. As before, the input images are converted into tokens by DINO. Then, for the target views, we use a convolutional layer to encode their Plücker ray images into tokens. These tokens, representing both the input images and the target views, are concatenated and processed by the AA transformer. Subsequently, a DPT head is used to regress the RGB colors for the target views. It is important to note that we do not input the Plücker rays for the source images. Hence, the model is not given the camera parameters for these input frames. LVSM was trained on the Objaverse dataset . We use a similar internal dataset of approximately 20% the size of Objaverse. Further details on training and evaluation can be found in . As shown in Tab. 7, despite not requiring the input camera parameters and using less training data than LVSM, our model achieves competitive results on the GSO dataset . We expect that better results would be obtained using a larger training dataset. Qualitative examples are shown in Fig. .
+
+Dynamic Point Tracking has emerged as a highly competitive task in recent years , and it serves as another downstream application for our learned features. Following standard practices, we report these point-tracking metrics: Occlusion Accuracy (OA), which comprises the binary accuracy of occlusion predictions; delta vis avg , comprising the
+
+Method Kinetics RGB-S DAVIS AJ delta vis avg OA AJ delta vis avg OA AJ delta vis avg OA TAPTR [63] 49.0 64.4 85.2 60.8 76.2 87.0 63.0 76.1 91.1 LocoTrack [13] 52.9 66.8 85.3 69.7 83.2 89.5 62.9 75.3 87.2 BootsTAPIR [26] 54.6 68.4 86.5 70.8 83.0 89.9 61.4 73.6 88.7 CoTracker [56] 49.6 64.3 83.3 67.4 78.9 85.2 61.8 76.1 88.3 CoTracker + Ours 57.2 69.0 88.9 72.1 84.0 91.6 64.7 77.5 91.4
+
+Table . Dynamic Point Tracking Results on the TAP-Vid benchmarks. Although our model was not designed for dynamic scenes, simply fine-tuning CoTracker with our pretrained weights significantly enhances performance, demonstrating the robustness and effectiveness of our learned features. mean proportion of visible points accurately tracked within a certain pixel threshold; and Average Jaccard (AJ), measuring tracking and occlusion prediction accuracy together.
+
+We adapt the state-of-the-art CoTracker2 model by substituting its backbone with our pretrained feature backbone. This is necessary because VGGT is trained on unordered image collections instead of sequential videos. Our backbone predicts the tracking features T i , which replace the outputs of the feature extractor and later enter the rest of the CoTracker2 architecture, that finally predicts the tracks. We finetune the entire modified tracker on Kubric . As illustrated in Tab. 8, the integration of pretrained VGGT significantly enhances CoTracker's performance on the TAP-Vid benchmark . For instance, VGGT's tracking features improve the delta vis avg metric from 78.9 to 84.0 on the TAP-Vid RGB-S dataset. Despite the TAP-Vid benchmark's inclusion of videos featuring rapid dynamic motions from various data sources, our model's strong performance demonstrates the generalization capability of its features, even in scenarios for which it was not explicitly designed.
+
+## 5. Discussions
+
+Limitations. While our method exhibits strong generalization to diverse in-the-wild scenes, several limitations remain. First, the current model does not support fisheye or panoramic images. Additionally, reconstruction performance drops under conditions involving extreme input rotations. Moreover, although our model handles scenes with minor non-rigid motions, it fails in scenarios involving substantial non-rigid deformation.
+
+However, an important advantage of our approach is its flexibility and ease of adaptation. Addressing these limitations can be straightforwardly achieved by fine-tuning the model on targeted datasets with minimal architectural modifications. This adaptability clearly distinguishes our method from existing approaches, which typically require extensive re-engineering during test-time optimization to accommodate such specialized scenarios. Runtime and Memory. As shown in Tab. 9, we evaluate inference runtime and peak GPU memory usage of the feature backbone when processing varying numbers of input frames. Measurements are conducted using a single NVIDIA H100 GPU with flash attention v3 . Images have a resolution of 336 518.
+
+We focus on the cost associated with the feature backbone since users may select different branch combinations depending on their specific requirements and available resources. The camera head is lightweight, typically accounting for approximately 5% of the runtime and about 2% of the GPU memory used by the feature backbone. A DPT head uses an average of 0.03 seconds and 0.2 GB GPU memory per frame.
+
+When GPU memory is sufficient, multiple frames can be processed efficiently in a single forward pass. At the same time, in our model, inter-frame relationships are handled only within the feature backbone, and the DPT heads make independent predictions per frame. Therefore, users constrained by GPU resources may perform predictions frame by frame. We leave this trade-off to the user's discretion.
+
+We recognize that a naive implementation of global selfattention can be highly memory-intensive with a large number of tokens. Savings or accelerations can be achieved by employing techniques used in large language model (LLM) deployments. For instance, Fast3R employs Tensor Parallelism to accelerate inference with multiple GPUs, which can be directly applied to our model.
+
+Patchifying. As discussed in Sec. 3.2, we have explored the method of patchifying images into tokens by utilizing either a 14 14 convolutional layer or a pretrained DI-NOv2 model. Empirical results indicate that the DINOv2 model provides better performance; moreover, it ensures much more stable training, particularly in the initial stages. The DINOv2 model is also less sensitive to variations in hyperparameters such as learning rate or momentum. Consequently, we have chosen DINOv2 as the default method for patchifying in our model.
+
+Differentiable BA. We also explored the idea of using differentiable bundle adjustment as in VGGSfM . In small-scale preliminary experiments, differentiable BA demonstrated promising performance. However, a bottleneck is its computational cost during training. Enabling differentiable BA in PyTorch using Theseus typically makes each training step roughly 4 times slower, which is expensive for large-scale training. While customizing a framework to expedite training could be a potential solution, it falls outside the scope of this work. Thus, we opted not to include differentiable BA in this work, but we recognize it as a promising direction for large-scale unsupervised training, as it can serve as an effective supervision signal in scenarios lacking explicit 3D annotations.
+
+Single-view Reconstruction. Unlike systems like DUSt3R and MASt3R that have to duplicate an image to create a pair, our model architecture inherently supports the input of a single image. In this case, global attention simply transitions to frame-wise attention. Although our model was not explicitly trained for single-view reconstruction, it demonstrates surprisingly good results. Some examples can be found in Fig. and Fig. . We strongly encourage trying our demo for better visualization.
+
+Normalizing Prediction. As discussed in Sec. 3.4, our approach normalizes the ground truth using the average Euclidean distance of the 3D points. While some methods, such as DUSt3R, also apply such normalization to network predictions, our findings suggest that it is neither necessary for convergence nor advantageous for final model performance. Furthermore, it tends to introduce additional instability during the training phase.
+
+## 6. Conclusions
+
+We present Visual Geometry Grounded Transformer (VGGT), a feed-forward neural network that can directly estimate all key 3D scene properties for hundreds of input views. It achieves state-of-the-art results in multiple 3D tasks, including camera parameter estimation, multiview depth estimation, dense point cloud reconstruction, and 3D point tracking. Our simple, neural-first approach departs from traditional visual geometry-based methods, which rely on optimization and post-processing to obtain accurate and task-specific results. The simplicity and efficiency of our approach make it well-suited for real-time applications, which is another benefit over optimization-based approaches.
+
+## Appendix
+
+In the Appendix, we provide the following: • formal definitions of key terms in Appendix A.
+
+## A. Formal Definitions
+
+In this section, we provide additional formal definitions that further ground the method section.
+
+The camera extrinsics are defined in relation to the world reference frame, which we take to be the coordinate system of the first camera. We thus introduce two functions. The first function gamma(g, p) = p ′ applies the rigid transformation encoded by g to a point p in the world reference frame to obtain the corresponding point p ′ in the camera reference frame. The second function pi(g, p) = y further applies perspective projection, mapping the 3D point p to a 2D image point y. We also denote the depth of the point as observed from the camera g by pi = d R + .
+
+We model the scene as a collection of regular surfaces S i R 3 . We make this a function of the i-th input image as the scene can change over time . The depth at pixel location y is defined as the minimum depth of any 3D point p in the scene that projects to y, i.e., D i (y) = min{pi : p S i pi(g i , p) = y}. The point at pixel location y is then given by P i (y) = gamma(g, p), where p S i is the 3D point that minimizes the expression above, i.e., p S i pi(g i , p) = y pi = D i (y).
+
+## B. Implementation Details
+
+Architecture. As mentioned in the main paper, VGGT consists of 24 attention blocks, each block equipped with one frame-wise self-attention layer and one global selfattention layer. Following the ViT-L model used in DI-NOv2 , each attention layer is configured with a feature dimension of 1024 and employs 16 heads. We use the official implementation of the attention layer from PyTorch, i.e., torch.nn.MultiheadAttention, with flash attention enabled. To stabilize training, we also use QKNorm and LayerScale for each attention layer. The value of Lay-erScale is initialized with 0.01. For image tokenization, we use DINOv2 and add positional embedding. As in , we feed the tokens from the 4-th, 11-th, 17-th, and 23-rd block into DPT for upsampling.
+
+Training. To form a training batch, we first choose a random training dataset (each dataset has a different yet approximately similar weight, as in ), and from the dataset, we then sample a random scene (uniformly). During the training phase, we select between 2 and 24 frames per scene while maintaining the constant total of 48 frames within each batch. For training, we use the respective training sets of each dataset. We exclude training sequences containing fewer than 24 frames. RGB frames, depth maps, and point maps are first isotropically resized, so the longer size has 518 pixels. Then, we crop the shorter dimension (around the principal point) to a size between 168 and 518 pixels while remaining a multiple of the 14-pixel patch size. It is worth mentioning that we apply aggressive color augmentation independently across each frame within the same scene, enhancing the model's robustness to varying lighting conditions. We build ground truth tracks following , which unprojects depth maps to 3D, reprojects points to target frames, and retains correspondences where reprojected depths match target depth maps. Frames with low similarity to the query frame are excluded during batch sampling. In rare cases with no valid correspondences, the tracking loss is omitted.
+
+## C. Additional Experiments
+
+Camera Pose Estimation on IMC We also evaluate using the Image Matching Challenge (IMC) , a camera pose estimation benchmark focusing on phototourism data. Until recently, the benchmark was dominated by classical incremental SfM methods .
+
+Baselines. We evaluate two flavors of our model: VGGT and VGGT + BA. VGGT directly outputs camera pose estimates, while VGGT + BA refines the estimates using an additional Bundle Adjustment stage. We compare to the classical incremental SfM methods such as and to recently-proposed deep methods. Specifically, recently VGGSfM provided the first end-to-end trained deep method that outperformed incremental SfM on the challenging phototourism datasets.
+
+Besides VGGSfM, we additionally compare to recently popularized DUSt3R and MASt3R . It is important to note that DUSt3R and MASt3R utilized a substantial portion of the MegaDepth dataset for training, only excluding scenes 0015 and 0022. The MegaDepth scenes employed in their training have some overlap with the IMC benchmark, although the images are not identical; the same scenes are present in both datasets. For instance, the MegaDepth scene 0024 corresponds to the British Museum, while the British Museum is also a scene in the IMC benchmark. For an apples-to-apples comparison, we adopt the same training split as DUSt3R and MASt3R. In the main paper, to ensure a fair comparison on ScanNet-1500, we exclude the corresponding ScanNet scenes from our training.
+
+## Results.
+
+Table 10 contains the results of our evaluation. Although phototourism data is the traditional focus of SfM Method Test-time Opt. AUC@3 • AUC@5 • AUC@10 • Runtime COLMA [94] ✓ 23.58 32.66 44.79 &gt;10s PixSf [66] ✓ 25.54 34.80 46.73 &gt;20s PixSf [66] ✓ 44.06 56.16 69.61 &gt;20s PixSf [66] ✓ 45.19 57.22 70.47 &gt;20s DFSf [47] ✓ 46.55 58.74 72.19 &gt;10s DUSt3R [129] ✓ 13.46 21.24 35.62 ∼ 7s MASt3R [62] ✓ 30.25 46.79 57.42 ∼ 9s VGGSfM [125] ✓ 45.23 58.89 73.92 ∼ 6s VGGSfMv2 [125] ✓ 59.32 67.78 76.82 ∼ 10s VGG ✗ 39.23 52.74 71.26 0.2s VGGT + B ✓ 66.37 75.16 84.91 1.8s
+
+Table . Camera Pose Estimation on IMC . Our method achieves state-of-the-art performance on the challenging phototropism data, outperforming VGGSfMv2 which ranked first on the latest CVPR'24 IMC Challenge in camera pose (rotation and translation) estimation.
+
+methods, our VGGT's feed-forward performance is on par with the state-of-the-art VGGSfMv2 with AUC@10 of 71.26 versus 76.82, while being significantly faster (0.2 vs. 10 seconds per scene). Remarkably, VGGT outperforms both MASt3R and DUSt3R significantly across all accuracy thresholds while being much faster. This is because MASt3R's and DUSt3R's feed-forward predictions can only process pairs of frames and, hence, require a costly global alignment step. Additionally, with bundle adjustment, VGGT + BA further improves drastically, achieving state-of-the-art performance on IMC, raising AUC@10 from 71.26 to 84.91, and raising AUC@3 from 39.23 to 66.37. Note that our model directly predicts 3D points, which can serve as the initialization for BA. This eliminates the need for triangulation and iterative refinement of BA as in . As a result, VGGT + BA is much faster than .
+
+## D. Qualitative Examples
+
+We further present qualitative examples of single-view reconstruction in Fig. .
