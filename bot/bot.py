@@ -2,7 +2,7 @@ import subprocess, requests, time, json, random, os, tweepy, argparse
 from dotenv import load_dotenv
 from unittest.mock import MagicMock
 from bot.scrape import get_responses, get_responses_text
-from try_models.query import query_and_generate
+from try_models.older_code.query import query_and_generate
 
 parser = argparse.ArgumentParser(description='Generate tweets from paper database')
 parser.add_argument('--folder_name', required=False, help='DB name', default="papers2")
