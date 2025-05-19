@@ -125,7 +125,7 @@ def generate_summary_mistral(text, tokenizer, model, max_length=7000):
         text = text[:max_chars]
     
     # Create a prompt
-    prompt = f"""<s>[INST] You are a helpful AI assistant. Your task is to write a concise 200-word summary of this research paper. Focus on key findings and contributions. Write it like a tweet - engaging and accessible to a general audience. Do not include phrases like "this paper" or "the authors". Only use English.
+    prompt = f"""<s>[INST] Write a concise 200-word summary of this research paper. Focus on key findings and contributions. Write it like a tweet - engaging and accessible to a general audience. Do not include phrases like "this paper" or "the authors". Only use English.
 
 Paper text:
 {text} [/INST]</s>"""
