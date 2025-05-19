@@ -125,7 +125,7 @@ def generate_summary_mistral(text, tokenizer, model, max_length=7000):
         text = text[:max_chars]
     
     # Create a prompt
-    prompt = f"""<s>[INST] Write a concise 200-word summary of this research paper. Focus on key findings and contributions. Write it like a tweet - engaging and accessible to a general audience. Do not include phrases like "this paper" or "the authors". Only use English.
+    prompt = f"""<s>[INST] You are a helpful AI assistant. Your task is to write a concise 200-word summary of this research paper. Focus on key findings and contributions. Write it like a tweet - engaging and accessible to a general audience. Do not include phrases like "this paper" or "the authors". Only use English.
 
 Paper text:
 {text} [/INST]</s>"""
@@ -147,12 +147,15 @@ Paper text:
         outputs = model.generate(
             **inputs,
             max_new_tokens=400,
+            min_new_tokens=50,  # Force at least some generation
             do_sample=True,
-            temperature=0.7,
+            temperature=0.8,  # Slightly higher temperature
             top_p=0.95,
-            top_k=30,
-            repetition_penalty=1.1,
-            pad_token_id=tokenizer.eos_token_id
+            top_k=50,  # Increased top_k
+            repetition_penalty=1.2,  # Increased repetition penalty
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+            num_return_sequences=1
         )
 
         # Get input length in tokens
