@@ -185,7 +185,7 @@ Paper text:
         print(outputs)
         
         # Decode only the newly generated tokens
-        summary = tokenizer.decode(outputs[0, input_length:].tolist(), skip_special_tokens=True)
+        summary = tokenizer.decode(outputs[0])
         
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
