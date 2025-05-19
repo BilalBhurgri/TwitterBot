@@ -157,10 +157,16 @@ Paper text:
 
         # Get input length in tokens
         input_length = inputs.input_ids.shape[1]
+        print(f"Input length: {input_length}")
+        print(f"Output shape: {outputs.shape}")
         
-        print(f"input_length: {input_length}")
+        # Decode the full output first to debug
+        full_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        print(f"Full output: {full_output}")
+        
         # Decode only the newly generated tokens
-        summary = tokenizer.decode(outputs[0, input_length:].tolist(), skip_special_tokens=True)
+        summary = tokenizer.decode(outputs[0, input_length:], skip_special_tokens=True)
+        print(f"Generated summary: {summary}")
         
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
