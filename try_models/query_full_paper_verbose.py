@@ -173,17 +173,13 @@ Paper text:
             pad_token_id=tokenizer.eos_token_id
         )
 
-        # Get the sequences
-        # sequences = outputs.sequences
-        
-        # # Get input length in tokens
+        # Get input length in tokens
         input_length = inputs.input_ids.shape[1]
-        
-        # # Extract only the newly generated tokens for the first sequence
-        # generated_tokens = sequences[0, input_length:]
 
+        print(outputs)
+        
         # Decode only the newly generated tokens
-        summary = tokenizer.decode(outputs[0, input_length: ].tolist(), skip_special_tokens=True)
+        summary = tokenizer.decode(outputs[0, input_length:].tolist(), skip_special_tokens=True)
         
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
@@ -194,15 +190,6 @@ Paper text:
         print(f"ERROR during generation: {e}")
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
-
-def test_load_paper():
-    parser = argparse.ArgumentParser(description='Generate paper summary using Qwen/Qwen3-1.7B')
-    parser.add_argument('--paper_path', required=True, help='Path to the paper PDF file')
-    parser.add_argument('--output_path', default=None, help='Path to save the summary')
-    parser.add_argument('--model_name', default="Qwen/Qwen3-1.7B", help='Model to use (default: Qwen/Qwen3-1.7B)')
-    args = parser.parse_args()
-
-    paper_text = load_paper(args.paper_path)
 
 
 def main():
