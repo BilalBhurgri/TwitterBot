@@ -181,11 +181,110 @@ Paper text:
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
 
+def generate_eval(text, summary, tokenizer, model, max_length=200):
+    """Generate a evaluation with extensive debugging"""
+    if not text or text.strip() == "":
+        print("ERROR: Cannot generate evaluation from empty text")
+        return "No text was provided for evaluation."
+    
+    if not summary or summary.strip() == "":
+        print("ERROR: Cannot generate evaluation from empty summary")
+        return "No summary was provided for evaluation."
+    
+    # Truncate text if needed
+    max_chars = 20000
+    if len(text) > max_chars:
+        print(f"Truncating text from {len(text)} to {max_chars} characters")
+        text = text[:max_chars]
+    
+    # Create a prompt
+    prompt = f"""You will be given one summary tweet written for a research paper.
+
+Your task is to rate the tweet on two metrics. Read these instructions carefully and refer back as needed.
+
+Evaluation Criteria:
+
+1. Factual Consistency (1-3): Does the tweet only contain facts supported by the source text?
+- 1 (Inconsistent): Major errors or many minor errors
+- 2 (Overall consistent): At most one minor error
+- 3 (Consistent): All facts supported
+
+2. Engagingness (1-3): Is the tweet interesting to most audiences?
+- 1 (Dull): Only interesting to specialists
+- 2 (Somewhat interesting): Engages those familiar with the field
+- 3 (Interesting): Engages general audiences regardless of expertise
+
+Evaluation Steps:
+
+1. Read the source text and identify its key points.
+2. Read the tweet. Check for factual consistency and engagingness.
+3. Return two scores as: (Factual Consistency, Engagingness)
+
+Example:
+
+Source Text:
+{text}
+
+Summary:
+{summary}
+
+Evaluation Form:
+(Factual Consistency, Engagingness):
+"""
+
+    print(f"Prompt created with {len(prompt)} characters")
+    
+    try:
+        print("Tokenizing input...")
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=max_chars)
+        inputs = inputs.to(model.device)
+        
+        print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
+        
+        # Generate summary with verbose logging
+        print("Starting generation...")
+        start_time = time.time()
+        
+        # Setting return_dict_in_generate=True to get more debug info
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=400,
+            do_sample=False,
+            pad_token_id=tokenizer.eos_token_id,
+            return_dict_in_generate=True
+        )
+
+        # Get the sequences
+        sequences = outputs.sequences
+        # # print(f"Shape of sequences: {sequences.shape}")
+
+        # # Get input length in tokens
+        input_length = inputs.input_ids.shape[1]
+        # print(f"Input length: {input_length}")
+        # # Extract only the newly generated tokens for the first sequence
+        generated_tokens = sequences[0, input_length:]
+
+        # # Decode only the newly generated tokens
+        eval = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        
+        generation_time = time.time() - start_time
+        print(f"Generation completed in {generation_time:.2f} seconds")
+        
+        return eval
+        
+    except Exception as e:
+        print(f"ERROR during generation: {e}")
+        traceback.print_exc()
+        return f"Error generating summary: {str(e)}"
+
+def generate_eval_mistral(text, summary, tokenizer, model, max_length=7000):
+    return "not implemented"
 
 def main():
     parser = argparse.ArgumentParser(description='Generate paper summary using Qwen/Qwen3-1.7B')
     parser.add_argument('--paper_path', required=True, help='Path to the paper\'s text file')
     parser.add_argument('--output_path', default=None, help='Path to save the summary')
+    parser.add_argument('--eval_path', default=None, help='Path to save the evaluation')
     parser.add_argument('--model_name', default="Qwen/Qwen3-1.7B", help='Model to use (default: Qwen/Qwen3-1.7B)')
     args = parser.parse_args()
     
@@ -264,12 +363,39 @@ def main():
         print("-" * 50)
         print(summary)
         print("-" * 50)
+
+        # Generate evaluation
+        print("Generating evaluation...")
+        if 'mistral' in model_name.lower():
+            eval = generate_eval_mistral(paper_text, summary, tokenizer, model)
+        else:
+            # qwen code
+            eval = generate_eval(paper_text, summary, tokenizer, model)
+        
+        # Verify summary
+        if not eval or eval.strip() == "":
+            print("ERROR: Generated evaluation is empty")
+            return
+            
+        # Print results
+        print("\nGenerated Evaluation:")
+        print("-" * 50)
+        print(eval)
+        print("-" * 50)
         
         if args.output_path:
             try:
                 with open(args.output_path, 'w', encoding='utf-8') as f:
                     f.write(summary)
                 print(f"Summary saved to {args.output_path}")
+            except Exception as e:
+                print(f"ERROR saving output: {e}")
+        
+        if args.eval_path:
+            try:
+                with open(args.eval_path, 'w', encoding='utf-8') as f:
+                    f.write(eval)
+                print(f"Evaluation saved to {args.eval_path}")
             except Exception as e:
                 print(f"ERROR saving output: {e}")
         
