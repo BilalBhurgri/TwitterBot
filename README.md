@@ -62,11 +62,14 @@ You know this has worked when you don't see "Failed to process" errors, and chec
 May 19: only works with Qwen3-1.7B, maybe also Qwen3-4B. mistralai/Mistral-7B-Instruct-v0.1 isn't outputting legible results currently. 
 To add more models, add more functions for each one. Get familiar with the Huggingface generator API, and read the model pages on Huggingface.
 
+May 20: added evaluation logic. NOTE: input should be txt, output paths should be specific file names
+
 Arguments:
 ```python
 parser = argparse.ArgumentParser(description='Generate paper summary using the specified model')
 parser.add_argument('--paper_path', required=True, help='Path to the paper PDF file')
 parser.add_argument('--output_path', default=None, help='Path to save the summary')
+parser.add_argument('--eval_path', default=None, help='Path to save the evaluation')
 parser.add_argument('--model_name', default="Qwen/Qwen3-1.7B", help='Model to use (default: Qwen/Qwen3-1.7B)')
 ```
 
