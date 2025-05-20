@@ -12,7 +12,7 @@ from flask import Flask, request
 from email.message import EmailMessage
 from dotenv import load_dotenv
 from bot.bot import main, post_tweet
-# from try_models.simple_update_db import process_paper
+from try_models.simple_update_db import process_paper
 
 # For timezone handling
 from zoneinfo import ZoneInfo
