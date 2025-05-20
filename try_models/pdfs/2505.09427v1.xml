@@ -1,0 +1,1898 @@
+<?xml version="1.0" encoding="UTF-8"?><TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xsi:schemaLocation="http://www.tei-c.org/ns/1.0 https://raw.githubusercontent.com/kermitt2/grobid/master/grobid-home/schemas/xsd/Grobid.xsd">
+	<teiHeader xml:lang="en">
+		<fileDesc>
+			<titleStmt>
+				<title level="a" type="main">SafePath: Conformal Prediction for Safe LLM-Based Autonomous Navigation</title>
+			</titleStmt>
+			<publicationStmt>
+				<publisher/>
+				<availability status="unknown">
+					<licence/>
+				</availability>
+				<date type="published" when="2025-05-14">14 May 2025</date>
+			</publicationStmt>
+			<sourceDesc>
+				<biblStruct>
+					<analytic>
+						<author>
+							<persName><forename type="first">Achref</forename><surname>Doula</surname></persName>
+							<email>doula@tk.tu-darmstadt.de</email>
+							<affiliation key="aff0">
+								<orgName type="institution">Technical University of Darmstadt</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Max</forename><surname>Mühlhäuser</surname></persName>
+							<affiliation key="aff0">
+								<orgName type="institution">Technical University of Darmstadt</orgName>
+								<address>
+									<country key="DE">Germany</country>
+								</address>
+							</affiliation>
+						</author>
+						<author>
+							<persName><forename type="first">Alejandro</forename><surname>Sanchez Guinea</surname></persName>
+							<email>alejandro.guinea@global.ntt</email>
+							<affiliation key="aff1">
+								<orgName type="institution">NTT Data</orgName>
+								<address>
+									<settlement>Luxembourg</settlement>
+								</address>
+							</affiliation>
+						</author>
+						<title level="a" type="main">SafePath: Conformal Prediction for Safe LLM-Based Autonomous Navigation</title>
+					</analytic>
+					<monogr>
+						<imprint>
+							<date type="published" when="2025-05-14">14 May 2025</date>
+						</imprint>
+					</monogr>
+					<idno type="MD5">7740F6B67DB7615336B6BE4765EEC7AC</idno>
+					<idno type="arXiv">arXiv:2505.09427v1[cs.LG]</idno>
+				</biblStruct>
+			</sourceDesc>
+		</fileDesc>
+		<encodingDesc>
+			<appInfo>
+				<application version="0.8.1" ident="GROBID" when="2025-05-15T10:44+0000">
+					<desc>GROBID - A machine learning software for extracting information from scholarly documents</desc>
+					<ref target="https://github.com/kermitt2/grobid"/>
+				</application>
+			</appInfo>
+		</encodingDesc>
+		<profileDesc>
+			<abstract>
+<div xmlns="http://www.tei-c.org/ns/1.0"><p>Large Language Models (LLMs) show growing promise in autonomous driving by reasoning over complex traffic scenarios to generate path plans. However, their tendencies toward overconfidence, and hallucinations raise critical safety concerns. We introduce SafePath, a modular framework that augments LLM-based path planning with formal safety guarantees using conformal prediction. SafePath operates in three stages. In the first stage, we use an LLM that generates a set of diverse candidate paths, exploring possible trajectories based on agent behaviors and environmental cues. In the second stage, SafePath filters out high-risk trajectories while guaranteeing that at least one safe option is included with a user-defined probability, through a multiple-choice question-answering formulation that integrates conformal prediction. In the final stage, our approach selects the path with the lowest expected collision risk when uncertainty is low or delegates control to a human when uncertainty is high. We theoretically prove that SafePath guarantees a safe trajectory with a user-defined probability, and we show how its human delegation rate can be tuned to balance autonomy and safety. Extensive experiments on nuScenes and Highwayenv show that SafePath reduces planning uncertainty by 77% and collision rates by up to 70%, demonstrating effectiveness in making LLM-driven path planning more safer.</p></div>
+			</abstract>
+		</profileDesc>
+	</teiHeader>
+	<text xml:lang="en">
+		<body>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="1">Introduction</head><p>Safety is a fundamental requirement for autonomous vehicles (AVs) operating in complex urban environments, where uncertainty arising from the unpredictable behavior of pedestrians, cyclists, and other vehicles, combined with dynamic interactions, poses significant challenges. In this context, safety refers to the ability of a planning approach to minimize the likelihood of collisions or other harmful events to an acceptable low threshold, thus preventing catastrophic consequences. Achieving such a safe performance is challenging in dynamic urban environments due to their complexity. Large Language Models (LLMs) have recently emerged as powerful tools for generating navigation strategies in autonomous driving, thanks to their "reasoning" capabilities over complex traffic scenarios <ref type="bibr" target="#b5">(Chen et al., 2024;</ref><ref type="bibr" target="#b11">Fu et al., 2024;</ref><ref type="bibr" target="#b46">Tian et al., 2024)</ref>. However, their tendency to display overconfidence, produce hallucinated outputs, and generate unreliable uncertainty estimates poses significant safety risks <ref type="bibr" target="#b54">(Xu et al., 2024;</ref><ref type="bibr" target="#b53">Xiong et al.)</ref>. Such vulnerabilities are especially problematic in realworld domains, where even minor errors can lead to severe consequences.</p><p>To ensure the reliable use of LLMs for path planning in autonomous driving, we propose SafePath, the first approach, to the best of our knowledge, to integrate LLM-based path generation with conformal prediction to provide formal safety guarantees on the generated paths. SafePath consists of three stages. First, the Path Generation stage uses an LLM to produce a set of candidate paths by reasoning over the AV goals and environmental cues, such as traffic rules and agent behaviors. Second, in the Uncertainty-Aware Path Selection stage, we refine the set of candidate paths and filter out risky paths. To achieve this, we introduce a multiple choice question-answering (MCQA) procedure that leverages a second LLM and conformal prediction (CP) <ref type="bibr" target="#b41">(Shafer and Vovk, 2008)</ref>, to estimate uncertainty and guarantee that the refined set of paths includes, with a user-defined probability, at least one path that meets safety requirements.</p><p>Third, the Path Decision stage determines which path to execute by examining how similar the paths in the refined set from the second stage are. If the set contains a single path, indicating low uncertainty, the path is adopted directly. If the set contains multiple paths that exhibit high similarity, SafePath selects the one with the lowest expected collision risk. Only when paths diverge significantly, indicating high uncertainty, SafePath delegates control to a human to ensure safety.</p><p>We provide a theoretical analysis proving that SafePath guarantees, with user-defined probability, that the selected trajectory is safe. To empirically validate our approach, we conduct a comprehensive evaluation across two complementary settings: nuScenes <ref type="bibr" target="#b3">(Caesar et al., 2020)</ref>, which supports open-loop planning from rich, annotated urban scenes, and highway-env <ref type="bibr" target="#b20">(Leurent, 2018)</ref>, which enables closed-loop testing with real-time agent interaction. This combination allows us to assess SafePath's performance in both static reasoning and dynamic control regimes. The results of our evaluation show that SafePath, under fully autonomous settings, achieves a reduction in planning uncertainty of up to 77% and a drop in collision rates by up to 70% compared to state-of-the-art planning methods.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="2">Related work</head><p>Motion Planning for Autonomous Navigation.</p><p>Motion planning is a central challenge in autonomous driving, requiring predictive navigation in dynamic, often congested environments. Early solutions predominantly relied on rulebased heuristics that maintained strict adherence to lane-keeping, safety distances, and traffic regulations <ref type="bibr" target="#b24">(Ma et al., 2015;</ref><ref type="bibr" target="#b9">Ding et al., 2019;</ref><ref type="bibr" target="#b29">Nilsson et al., 2015</ref><ref type="bibr" target="#b30">Nilsson et al., , 2016;;</ref><ref type="bibr" target="#b32">Palatti et al., 2021)</ref>. While interpretable, these systems struggled to accommodate unexpected or extreme scenarios, limiting their robustness <ref type="bibr" target="#b50">(Wang et al., 2018)</ref>. More recent data-driven approaches, including imitation learning <ref type="bibr" target="#b34">(Pulver et al., 2021;</ref><ref type="bibr" target="#b2">Bronstein et al., 2022;</ref><ref type="bibr" target="#b7">Cheng et al., 2024)</ref> and reinforcement learning <ref type="bibr" target="#b21">(Li et al., 2021;</ref><ref type="bibr" target="#b31">Osiński et al., 2020;</ref><ref type="bibr" target="#b39">Rosbach et al., 2019;</ref><ref type="bibr" target="#b51">Wang et al., 2021)</ref>, leverage largescale datasets to learn adaptive policies capable of responding to evolving conditions. However, their black-box character can impede transparency and trust, which is critical in safety-sensitive domains <ref type="bibr" target="#b28">(Muhammad et al., 2020)</ref>.</p><p>Large Language Models (LLMs) introduce a further dimension of explainability, providing rationale-based explanations of prospective maneuvers <ref type="bibr">(Mao et al., a;</ref><ref type="bibr" target="#b46">Tian et al., 2024;</ref><ref type="bibr" target="#b5">Chen et al., 2024;</ref><ref type="bibr" target="#b11">Fu et al., 2024;</ref><ref type="bibr" target="#b6">Chen et al., 2025)</ref>. However, LLMs may occasionally hallucinate or exhibit unwarranted overconfidence <ref type="bibr" target="#b53">(Xiong et al.;</ref><ref type="bibr" target="#b54">Xu et al., 2024)</ref>, jeopardizing safety if not adequately con-strained. The approach proposed in this work combines LLMs with conformal prediction, preserving the explainability gains of language-based planning while mitigating overconfident or incorrect outputs that could lead to unsafe actions. Uncertainty Management in Autonomous Driving. Urban driving involves uncertainties caused by changing traffic conditions, sensor noise, and incomplete knowledge of other agent intentions <ref type="bibr" target="#b45">(Taş and Stiller, 2018;</ref><ref type="bibr" target="#b42">Sharma et al., 2020;</ref><ref type="bibr" target="#b55">Yamada et al., 2023)</ref>. Probabilistic approaches based on Bayesian inference <ref type="bibr" target="#b27">(Michelmore et al., 2020;</ref><ref type="bibr" target="#b58">Zheng et al., 2024;</ref><ref type="bibr" target="#b4">Caprio et al., 2024)</ref> and stochastic formulations, including POMDPs <ref type="bibr" target="#b1">(Brechtel et al., 2014)</ref>, model these uncertainties but can be computationally heavy and rely on assumptions about underlying data distributions. Redundancy and ensemble-based strategies <ref type="bibr" target="#b44">(Tang et al., 2022)</ref>, as well as uncertainty-aware reinforcement learning <ref type="bibr" target="#b8">(Diehl et al., 2023;</ref><ref type="bibr" target="#b37">Rezaee et al., 2021;</ref><ref type="bibr" target="#b14">Hsu et al., 2023;</ref><ref type="bibr" target="#b51">Wang et al., 2021)</ref>, offer additional means of handling unpredictable environments but often lack formal statistical guarantees.</p><p>Conformal prediction avoids strict distributional assumptions and provides statistically valid confidence bounds on its predictions <ref type="bibr" target="#b23">(Lindemann et al., 2023;</ref><ref type="bibr" target="#b19">Lekeufack et al., 2024)</ref>, making it promising for safety-critical planning. Recent efforts to integrate conformal prediction with LLMs (Ren et al.; <ref type="bibr" target="#b48">Wang et al., 2024</ref><ref type="bibr" target="#b49">Wang et al., , 2023;;</ref><ref type="bibr" target="#b22">Liang et al., 2024;</ref><ref type="bibr" target="#b43">Sun et al., 2024)</ref> show its potential for improving reliability. In this work, We build on these insights by leveraging conformal prediction to mitigate LLM overconfidence, yielding motion plans with explicit safety guarantees in the face of uncertainty.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="3">Background on Conformal Prediction</head><p>Conformal prediction is a statistical framework that transforms the outputs of a deep learning model into prediction sets guaranteed to contain the true outcome with a probability 1 -α, where α is userdefined error rate <ref type="bibr" target="#b47">(Vovk et al., 2005;</ref><ref type="bibr" target="#b19">Lekeufack et al., 2024)</ref>. Unlike point estimates, the prediction sets explicitly quantify uncertainty by including all plausible candidates, making CP ideal for safetycritical systems where overconfidence must be mitigated. While we later apply CP to the selection of safe paths in autonomous navigation, we first introduce its general form here. Constructing Conformal Prediction Sets. Let X be the input space and Y the label space. Suppose we have a trained predictive model f θ that provides (possibly overconfident) scores over Y. Conformal prediction seeks to construct, for any new input x test ∈ X , a prediction set C(x test ) ⊆ Y such that the true label y test is included with probability at least 1 -α. Formally,</p><formula xml:id="formula_0">P y test ∈ C(x test ) ≥ 1 -α,<label>(1)</label></formula><p>where α is a user-specified error rate. Two key components underlie CP:</p><formula xml:id="formula_1">• Calibration Set. A dataset D cal = {(x i , y i )} n i=1</formula><p>of exchangeable samples, drawn from the same distribution as the training and test data.</p><p>• Non-Conformity Score. A function S(x, y) that measures how "atypical" a label y is for the input x.</p><p>Examples include 1 -max(model probabilities) or modelspecific loss values. By computing S(x i , y i ) for each (x i , y i ) ∈ D cal , we obtain an empirical distribution of scores. The (1 -α)-quantile of these scores, denoted q, then serves as a threshold for constructing prediction sets at test time. Constructing Prediction Sets. Given a new input x test with unknown y test , the prediction set is:</p><formula xml:id="formula_2">C(x test ) = y ∈ Y : S(x test , y) ≤ q . (2)</formula><p>A fundamental result, stated in Theorem 3.1 ensures that under mild assumptions, specifically, exchangeability in D cal and the new sample x test , this construction satisfies the coverage criterion in Equation <ref type="formula" target="#formula_0">1</ref>.</p><formula xml:id="formula_3">Theorem 3.1 (Conformal Prediction) Let D cal = {(x i , y i )} n</formula><p>i=1 be a calibration set of exchangeable samples, and let S be a chosen non-conformity score. For each (x i , y i ) ∈ D cal , compute S(x i , y i ) and let q be the (1 -α)-quantile of these scores. Then for a new input x test , C(x test ) = y ∈ Y : S(x test , y) ≤ q</p><p>(3)</p><formula xml:id="formula_4">satisfies P y test ∈ C(x test ) ≥ 1 -α.</formula><p>4 Approach</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.1">Approach Overview</head><p>SafePath ensures the safe use of LLMs in autonomous path planning by providing formal safety guarantees on the output of the LLM-generated paths. As illustrated in Figure <ref type="figure" target="#fig_0">1</ref>, SafePath consists of three sequential stages: Path Generation, Uncertainty-Aware Path Selection, and Path Decision.</p><p>In the Path Generation stage, the AV employs a first language model, LLM 1 , to generate a diverse set of candidate paths based on its mission goals and the current environmental state, which includes perception data and predicted movements of surrounding agents. Each candidate path is accompanied by a rationale, enhancing interpretability and transparency in the decision-making process.</p><p>The Uncertainty-Aware Path Selection stage refines the generated set of paths to address the inherent variability and uncertainty in LLM outputs. This refinement process employs a second LLM, LLM 2 , to select paths from the generated candidates. We frame this selection as a multiple choice question-answering task, where LLM 2 receives the relevant scenario context and chooses the most suitable path among the candidates. The structured and bounded MCQA formulation enables us to apply conformal prediction to calibrate the selection process and account for uncertainty. After conformal prediction, the output of this stage is a prediction set of paths that is guaranteed to include at least one path that meets the required safety criteria, with a user-defined probability.</p><p>In the Path Decision stage, the autonomous vehicle (AV) evaluates the prediction set obtained from the previous stage to determine the final decision for execution. If the set contains a single path, the AV adopts it immediately. If the set contains multiple paths that are sufficiently similar-indicating a consensus among safe trajectories-the AV will autonomously proceed using the path deemed to have the lowest expected collision risk. In scenarios where the set contains multiple diverging paths, reflecting a high degree of uncertainty, the system defers to human oversight to resolve the ambiguity.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.2">Path Generation</head><p>In the Path Generation stage, the AV employs a fine-tuned LLM that utilizes chain-of-thought reasoning (CoT) <ref type="bibr" target="#b52">(Wei et al., 2022)</ref> to generate a set of candidate paths based on its current state, perception data, and mission goals. Let x = {x percept , x pred , x goal } represent the AV's perception data, predicted movements of other agents, and mission objectives. By leveraging chain-ofthought reasoning, the LLM explores various possible trajectories, considering the AV's goals and the behavior of surrounding agents.</p><p>Formally, the LLM generates a set of k candidate paths P = {p 1 , p 2 , . . . , p k } and their associated rationales R = {r 1 , r 2 , . . . , r k } through chain-ofthought reasoning:</p><formula xml:id="formula_5">{(p i , r i )} k i=1 = LLM 1 (x)<label>(4)</label></formula><p>Each path p i represents a potential trajectory for the AV, while r i provides the detailed reasoning process that led to the selection of that path. The CoT rationale enhances transparency and can be used for further analysis or to explain decisions to human operators. Furthermore, several works, such as <ref type="bibr" target="#b5">(Chen et al., 2024;</ref><ref type="bibr" target="#b11">Fu et al., 2024;</ref><ref type="bibr" target="#b52">Wei et al., 2022)</ref>, have demonstrated that generating rationales alongside the output leads to more reliable and interpretable results. We provide the full text of the prompts we use to generate the candidate path in Appendix A.6.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.3">Uncertainty-Aware Path Selection</head><p>Despite fine-tuning, LLM 1 , may generate unsafe paths due to overconfident or hallucinated outputs <ref type="bibr" target="#b12">(Gekhman et al., 2024)</ref>. To address this limitation, SafePath integrates conformal prediction to provide statistical guarantees that the selected path set contains at least one safe trajectory with probability 1 -α. However, a critical challenge arises from the unstructured nature of LLM-generated paths, which vary in semantic detail and lack a predefined hypothesis space, both essential for conformal prediction guarantees. We first formalize what we mean by a safe path:</p><p>Definition 4.1 (Safe Path) A path p is considered safe if it satisfies the following constraints: Collision Avoidance: p ensures no intersections with other agents or static obstacles in the environment.</p><p>Rule Compliance: p adheres to all traffic laws and operational constraints. Safety Margins: p maintains a safe distance from other agents, given their predicted trajectories.</p><p>Let S x denote the set of safe paths given a scenario x. For our calibrations and guarantees to hold, we assume:</p><p>Assumption 4.1 The driving datasets used to train and calibrate the planning models contain only safe paths.</p><p>Assumption 4.1 ensures that the models and calibration processes are based on safe driving behaviors, which is reasonable given that training data for autonomous vehicles are curated to reflect correct and safe operations and used to train models that do so.</p><p>To reconcile unstructured LLM outputs with conformal prediction's requirements, we reformulate path selection as a multiple-choice questionanswering (MCQA) task. Each candidate path p i ∈ P is assigned a distinct label l p i (e.g., "A," "B," "C"). Then we prompt a second LLM, LLM 2 to select a single letter corresponding to the most suitable path l * , given the scenario description x, the set of paths P , and their rationale R:</p><formula xml:id="formula_6">l * = LLM 2 (P, R, x).</formula><p>(5)</p><p>Casting path selection as a multiple choice task restricts the response space of LLM 2 to a finite set of options, which enables the computation of logitbased probabilities even for closed-source LLMs through their APIs. By extracting the logits, it is possible to compute non-conformity scores to construct statistically valid prediction sets. Under Assumption 4.1, we now define a non-conformity score s p i for each path p i using the Least Ambiguous Classification (LAC) score <ref type="bibr" target="#b40">(Sadinle et al., 2019)</ref> <ref type="foot" target="#foot_0">foot_0</ref> :</p><formula xml:id="formula_7">s p i = 1 -Softmax logit(l p i ) ,<label>(6)</label></formula><p>where logit(l p i ) is the logit corresponding to the label l p i . Using a held-out calibration set D cal = {(x i , p i )} n i=1 , we compute s p i for each calibration point, then let q be the (1 -α) quantile of these scores:</p><formula xml:id="formula_8">q = Quantile s i n i=1 , ⌈(n + 1)(1 -α)⌉ n ,<label>(7)</label></formula><p>where ⌈•⌉ is the ceiling function. For a new situation x test , we compute the non-conformity score s p i for every candidate path p i , and collect all paths whose scores do not exceed q:</p><formula xml:id="formula_9">C = { p i ∈ P : s p i ≤ q}.</formula><p>This prediction set C contains, with probability at least 1 -α, a correct (and thus safe) path for the new scenario. Concretely, we have: Theorem 4.1 (Prediction Set Safety Guarantee) Let C ⊆ P be the prediction set generated above at confidence level 1-α, and suppose Assumption 4.1 holds. Then,</p><formula xml:id="formula_10">P ∃ p ∈ C ∩ S x ≥ 1 -α. (<label>8</label></formula><formula xml:id="formula_11">)</formula><p>Theorem 4.1 states that the prediction set C produced by conformal prediction will, with high probability, contain at least one path that meets the safety requirements of Definition 4.1. We prove Theorem 4.1 by leveraging the statistical guarantees of conformal prediction, which ensures that the prediction set includes the true path with probability at least 1 -α and datasets are assumed to contain safe paths. The detailed proof is provided in Appendix A.1.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="4.4">Path Decision</head><p>Once we have a prediction set C of candidate paths, we determine which path to execute. If C contains a single path, i.e., |C| = 1, the AV adopts it immediately since it is included with probability 1 -α of being safe. Otherwise, we evaluate how similar the paths in C are to each other.</p><p>Definition 4.2 (δ-Equivalence) Two paths p i , p j ∈ P are δ-equivalent if their similarity, as measured by a function Sim :</p><formula xml:id="formula_12">P × P → [0, 1], satisfies: Sim(p i , p j ) ≥ δ,<label>(9)</label></formula><p>where δ ∈ [0, 1] is a predefined threshold. This ensures that paths with small deviations, both in geometry and operational characteristics, are considered interchangeable in terms of safety and functionality<ref type="foot" target="#foot_2">foot_2</ref> .</p><p>If all pairs of paths in C are δ-equivalent (i.e., the set C effectively contains similar paths), the AV selects the path with the lowest expected collision based on predictions in the visual scene description. We define Collision(p) as the fraction of agents with which p intersects out of the total number of agents:</p><p>Collision(p) = #{agents collided with p} #{all agents in the scene} .</p><p>(10) Hence, the final path is chosen according to</p><formula xml:id="formula_13">p final = arg min p∈C Collision(p).<label>(11)</label></formula><p>If, on the other hand, there exists at least one pair (p i , p j ) with Sim(p i , p j ) &lt; δ, the AV defers to a human operator to avoid committing to highly divergent or conflicting trajectories.</p><p>SafePath Guarantee. By combining the coverage property from Theorem 4.1 with the final decision mechanism, we obtain:</p><p>Theorem 4.2 (SafePath Guarantee) Let C be the prediction set generated in the Uncertainty-Aware Path Selection (Section 4.3) at confidence level 1α, and suppose</p><formula xml:id="formula_14">P ∃ p ∈ C ∩ S x ≥ 1 -α.</formula><p>Let p final be the path chosen according to the pathdecision procedure above. Then,</p><formula xml:id="formula_15">P p final ∈ S x ≥ 1 -α.<label>(12)</label></formula><p>In other words, once the prediction set is guaranteed to contain a safe path with probability at least 1 -α, the additional selection or sampling steps (including possible human intervention) preserve that probability. Hence, SafePath produces a single final path that is safe with the same high probability. We provide a full proof of Theorem 4.2 in Appendix A.1. The complete SafePath algorithm is shown in Algorithm 1.</p><p>Algorithm 1 SafePath Algorithm </p><formula xml:id="formula_16">{(p i , r i )} k i=1 = LLM 1 (x) 6: Stage 2: Uncertainty-Aware Path Selection 7:</formula><p>Frame the selection as a multiple choice question-answering task  Delegate to human to take over the control.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>22:</head><p>end if 23: end if Implications. The usage of the path decision stage reduces the prediction set to a size of 1 which has the advantage of reducing uncertainty and providing the planner with a feasible path, rather than a set. The parameter δ icontrols how strictly paths must match in similarity: a higher value prompts more human intervention when predictions diverge, preventing overconfident choices, while a lower δ preserves greater autonomy by allowing the AV to select among less similar paths.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5">Evaluation</head><p>To empirically validate SafePath, we structure our evaluation around three core goals: (1) understanding how delegation can be adaptively controlled, (2) assessing the statistical validity and efficiency of our conformal prediction layer, and (3) benchmarking overall planning safety in diverse settings.</p><p>We begin by examining the effect of the pathsimilarity threshold δ, which governs human delegation and autonomy. Next, we evaluate SafePath's coverage performance across different confidence levels (α) using conformal prediction, and compare it to state-of-the-art conformal methods. Finally, we assess collision-avoidance performance in both open-loop and closed-loop settings: openloop tests SafePath's reasoning from static inputs, while closed-loop evaluates SafePath in interactive scenarios where decisions influence future states.</p><p>Additional results are in the Appendix, including additional metrics (App. A.2), aggregation strategies (App. A.3), other LLMs (App. A.4), and qualitative examples (App. A.5).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.1">Dataset and Simulation Environments</head><p>We evaluate SafePath using two complementary testbeds covering distinct planning modes. For open-loop evaluation, we use nuScenes <ref type="bibr" target="#b3">(Caesar et al., 2020)</ref>, a real-world dataset comprising 1,000 driving scenes, and over 40,000 annotated frames.</p><p>For closed-loop evaluation, we use highway-env <ref type="bibr" target="#b20">(Leurent, 2018)</ref>, a simulation environment that supports interactive agent control. It includes scenarios such as highways, intersections, and roundabouts, allowing SafePath to be tested in settings where each decision affects future states.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.2">Implementation</head><p>We use gpt-3.5-turbo-0125 for both path generation (LLM1) and path selection (LLM2). LLM1 is fine-tuned on nuScenes for one epoch (cost: $120 via OpenAI API), while LLM2 remains frozen. Both LLMs use system prompts with few-shot examples (Appendix A.6).</p><p>Conformal prediction is calibrated using 5,000 held-out training samples. Path similarity is com-0 . 6 0 . 7 0 . 8 5 0 . 9 1 0 . 9 3 0 . 9 5 </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Similarity Threshold</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.3">Effects of Path Similarity Threshold δ</head><p>We analyze how the similarity threshold δ affects human delegation (HuD). Higher δ enforces stricter agreement among paths, increasing intervention when candidates differ. Figure <ref type="figure" target="#fig_3">2</ref> shows HuD rates across α ∈ 0.05, 0.1, 0.2, 0.3, where α is the conformal prediction error tolerance. As δ increases, SafePath requires greater path similarity, leading to more frequent human intervention. At α = 0.10, increasing δ from 0.85 to 0.95 raises HuD from 0.00 to 0.35, indicating stricter caution. Yet, HuD remains bounded, and autonomy is preserved at or below δ = 0.85. Notably, δ has a stronger impact on HuD than α; for example, at δ = 0.95, raising α from 0.10 to 0.30 only reduces HuD from 0.35 to 0.32.</p><p>Unless otherwise stated, we set δ = 0.85 to ensure HuD = 0, enabling fully autonomous operation in all remaining experiments.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.4">Conformal Prediction Evaluation</head><p>We evaluate the conformal prediction step to assess SafePath's ability to construct prediction sets that reliably include the correct path. For this experiment only, the ground-truth trajectory is added to the candidate set to directly measure coverage. Evaluation is performed across confidence levels (α) using δ = 0.85 (no human delegation).</p><p>Baselines. We compare SafePath against adaptive predictive sets (APS) <ref type="bibr" target="#b38">(Romano et al., 2020)</ref>, which guarantees conditional coverage, regularized adaptive predictive sets (RAPS) <ref type="bibr" target="#b0">(Angelopoulos et al., 2021)</ref>, which aims to reduce set sizes, and "knowNo" (Ren et al.), a planning framework with conformal prediction and human delegation. We run experiments at multiple α values, corresponding to different target coverage rates 1 -α.</p><p>Metrics. In this evaluation we use the following metrics that are proper for conformal prediction.</p><p>• Deviation from Target Coverage (DTC). The deviation from the target coverage rate (DTC) quantifies the discrepancy between the achieved coverage, Cov approach , and the desired target coverage, Cov target = 1 -α.</p><p>• Set Size (SS). This metric represents the average set size of the prediction sets. The higher the cardinality of the set, the higher the uncertainty.</p><p>• Human Delegation Rate (HuD). This metric represents the rate of cases that are delegated to humans in case of high uncertainty.</p><p>Results Analysis. Table <ref type="table" target="#tab_2">1</ref> shows that SafePath achieves consistent performance across all confidence levels (α). Its path decision stage reduces the effective prediction set size (SS) to 1.00 by selecting the path with the lowest expected collision risk when candidates are sufficiently similar, eliminating the need for human intervention.</p><p>In terms of Deviation from Target Coverage (DTC), SafePath remains close to zero and on par with APS and RAPS. At α = 0.2, for example, SafePath yields a DTC of -0.03, compared to -0.08 for APS and -0.05 for RAPS, confirming reliable coverage with the specified confidence.</p><p>SafePath also has a clear advantage in Human Delegation rate (HuD): with δ = 0.85, it achieves HuD = 0.00 at all α values, ensuring fully autonomous operation. In contrast, KnowNo delegates 100% of decisions, as it lacks a mechanism to control delegation frequency under uncertainty.</p><p>While APS and RAPS maintain low DTC, their prediction sets are larger (SS ≈ 2.6-4.5), reflecting higher uncertainty and no internal aggregation strategy. SafePath's δ-equivalence mechanism effectively consolidates paths into a single decision, reducing uncertainty by 77%.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.5">Comparison with State-of-the-Art</head><p>We evaluate SafePath on the nuScenes benchmark, using collision rate as the primary metric. Ad- 0.07 4.70 1.0 0.12 4.25 1.0 0.16 3.59 1.0 0.15 2.88 1.0 0.15 2.24 1.0 SafePath (HuD = 0) -0.03 1.00 0.00 -0.03 1.00 0.00 -0.05 1.00 0.00 -0.08 1.00 0.00 -0.13 1.00 0.00  <ref type="bibr" target="#b15">(Hu et al., 2021)</ref> 0.06 0.17 1.07 0.43 UniAD <ref type="bibr" target="#b16">(Hu et al., 2023)</ref> 0.05 0.17 0.71 0.31 VAD-Base <ref type="bibr" target="#b57">(Jiang et al., 2023)</ref> 0.07 0.17 0.41 0.22 VLP-VAD <ref type="bibr" target="#b33">(Pan et al., 2024)</ref> 0.12 0.17 0.42 0.23 DriveVLM <ref type="bibr" target="#b46">(Tian et al., 2024)</ref>  ditional metrics (e.g., L2) are reported in Appendix A.2. Table <ref type="table" target="#tab_3">2</ref> shows that SafePath achieves the lowest average collision rate (0.13%) among all methods, reducing collisions by 52% compared to DriveVLM (0.27%) and 70% compared to GPT-Driver (0.44%). It also consistently outperforms others across time horizons; at 3 seconds, it achieves 0.24% collision, 47% lower than DriveVLM (0.45%) and far below GPT-Driver (1.10%). These results demonstrate SafePath's ability to anticipate collisions more effectively, while operating fully autonomously (HuD = 0%).</p><formula xml:id="formula_17">α = 0.1 α = 0.2 α = 0.3 α = 0.4 α = 0.</formula></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.6">Ablation: Impact of LLM2 and Conformal Prediction</head><p>The results of the ablation study in 0.08 0.18 0.34 0.20 SafePath (Stages 1+2+3) 0.04 0.12 0.24 0.13 Table <ref type="table" target="#tab_4">3</ref>: Effects of the conformal prediction and the Uncertainty-Aware Path choice stage on the collision rates at α = 0.3 and no human intervention (δ = 0.85). </p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>GPT-Driver</head></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.7">Closed-Loop Simulation</head><p>We evaluate SafePath in a closed-loop setting using the highway-env environments: highway, intersection, and roundabout. Across 10 simulation sequences (100 frames each, 1000 decisions total), we measure average success rate and time to collision, comparing against GPT-Driver ( <ref type="bibr">Mao et al., b)</ref>. As shown in Figure <ref type="figure" target="#fig_4">3</ref>, SafePath achieves a 98% success rate vs. 73% for GPT-Driver, and a longer time to collision (100 vs. 85 frames), indicating more robust autonomous operation.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="6">Conclusion</head><p>This work introduced SafePath, an approach for safety-centric path planning under uncertainty in autonomous driving, by combining LLMs, conformal prediction, and selective human intervention. SafePath provides formal safety guarantees and demonstrated significant improvements in prediction uncertainty, collision rates, and reduced human intervention compared to state-of-the-art methods.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="7">Limitations</head><p>While SafePath demonstrates strong performance on large-scale datasets, such as nuScenes and simulators such as Highway-env, real-world deployment remains a critical next step. Our results provide a solid foundation, but further validation in controlled environments is essential to evaluate both performance and user acceptance. Controlled experiments, such as those conducted on test tracks or in virtual reality setups <ref type="bibr" target="#b10">(Doula et al., 2023)</ref>, can simulate diverse real-world scenarios, enabling a rigorous assessment of SafePath's applicability and reliability. The reliance on LLMs for both path generation and selection introduces computational overhead, raising concerns about real-time feasibility. In our current implementation, we relied on APIs, which reduces computational overhead and provides an interface with closed-source LLM such as gpt -4.o, and on lower precision to perform tests with local LLMs, as we show in Appendix A.4. Furthermore, the theoretical guarantees provided by CP rely on the exchangeability assumption and the representativeness of the calibration dataset <ref type="bibr" target="#b47">(Vovk et al., 2005;</ref><ref type="bibr" target="#b19">Lekeufack et al., 2024)</ref>. While the nuScenes dataset covers challenging scenarios, extending the approach to handle out-of-distribution data (OOD), will enhance its robustness. SafePath is flexible in those terms and is not constrained to a single non-conformity score, making it adaptive to scoring functions that handle OOD <ref type="bibr" target="#b13">(Gibbs and Candes, 2021;</ref><ref type="bibr" target="#b18">Kaur et al., 2022)</ref>. Proof A.1 Conformal prediction constructs prediction sets that contain the true output with a specified probability 1 -α, under the assumption of exchangeability between the calibration data and the test data. In our context, the "true output" refers to a safe path. By calibrating the confidence scores of the second LLM using a dataset of known safe paths, we ensure that the prediction set C includes the correct (safe) path with probability at least 1 -α. Therefore, the probability that C contains at least one safe path is at least 1 -α.</p><p>A.1.2 Proof for Theorem 4.2</p><p>Proof A.2 From Theorem 4.1, the prediction set C contains at least one safe path with probability at least 1 -α.</p><p>The Path Decision stage proceeds as follows: Case 1: If |C| = 1, the single path p in C is selected for execution. Since p is in C, and C contains at least one safe path with probability at least 1 -α, the selected path is safe with the same probability. Case 2: If |C| &gt; 1 and the paths in C are δequivalent (i.e., Sim(p i , p j ) ≥ δ for all p i , p j ∈ C), the approach aggregates these paths to produce a final path p final . Given that at least one path in C is safe (from Theorem 4.1) and the paths are highly similar, the sampled path p final will also be safe with probability at least 1 -α. This is because the sampling from δ-equivalent paths that are close in terms of safety characteristics preserves the safety properties. Case 3: If the paths in C are not δ-equivalent, indicating significant divergence among candidate paths or if C is an empty set, the approach delegates the decision to a human operator. Human intervention is assumed to result in a safe action, as the operator can use additional context and judgment not available to the autonomous system.</p><p>In all cases, the SafePath approach ensures that the path executed by the AV is safe with probability at least 1 -α. The combination of statistical guarantees from conformal prediction and the structured decision-making process in the Path Decision stage provides robust safety assurances.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.2 More Results Using L2 Metric</head><p>The L2 metric evaluates the distance between the planned and ground-truth trajectories. While L2 distance is commonly used as a performance metric in open-loop predictions, it is important to note that it does not serve as a definitive indicator of the effectiveness of a planning strategy <ref type="bibr" target="#b57">(Zhai et al., 2023)</ref>. This limitation arises from two primary reasons. First, the planned trajectory may differ from the trajectory of the ego-vehicle used to record the dataset, even if both are valid. Second, studies have shown that simple two-layer fully connected neural networks can accurately predict trajectory distributions using only the ego-vehicle's past paths, without incorporating information about the surrounding environment <ref type="bibr" target="#b57">(Zhai et al., 2023)</ref>. This reduces the metric's ability to meaningfully capture the planner's capability to consider and react to complex external factors. For completeness, we report the results of SafePath on the L2 metric in Table <ref type="table" target="#tab_5">4</ref>. The reported results are obtained using α=0.50 and δ=0.90 leading to HuD = 0%. while maintaining competitive trajectory accuracy. In terms of trajectory accuracy measured by the L2 distance, SafePath has an average L2 error of 0.84 meters. While this is higher than the lowest L2 errors reported by methods such as DriveVLM <ref type="bibr" target="#b46">(Tian et al., 2024)</ref> (0.40m) and VLP-VAD <ref type="bibr" target="#b57">(Jiang et al., 2023)</ref> (0.50m), it is comparable to GPT-Driver <ref type="bibr">(Mao et al., b)</ref> (0.84m) and better than earlier methods like FF <ref type="bibr" target="#b15">(Hu et al., 2021)</ref> (1.43m). This suggests that SafePath maintains acceptable trajectory accuracy while emphasizing safety.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.3 Effects of Different Path Decision Strategies</head><p>In our experiments, we evaluated the impact of various path decision strategies when the prediction set contains multiple δ-equivalent paths. The strategies examined are:</p><p>1. Random Sampling: Randomly selecting a path from the prediction set.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Method</head><p>L2 (m) ↓ 1s 2s 3s Avg. NMP <ref type="bibr" target="#b56">(Zeng et al., 2019)</ref> --2.31 -SA-NMP <ref type="bibr" target="#b56">(Zeng et al., 2019)</ref> --2.05 -FF <ref type="bibr" target="#b15">(Hu et al., 2021)</ref> 0.55 1.20 2.54 1.43 UniAD <ref type="bibr" target="#b16">(Hu et al., 2023)</ref> 0.48 0.96 1.65 1.03 VAD-Base (open loop) <ref type="bibr" target="#b57">(Jiang et al., 2023)</ref> 0.41 0.70 1.05 0.72 VLP-VAD (open loop) <ref type="bibr" target="#b33">(Pan et al., 2024)</ref> 0.26 0.47 0.78 0.50 DriveVLM (base, open loop) <ref type="bibr" target="#b46">(Tian et al., 2024)</ref> 0.18 0.34 0.68 0.40 GPT-Driver <ref type="bibr">(Mao et al., b)</ref> 0.27 0.74 1.52 0.84 SafePath (ours) 0.31 0.53 0.79 0.54  2. Average: Computing the pointwise average of the paths in the prediction set.</p><p>3. Weighted Average: Averaging the paths weighted by their softmax scores.</p><p>4. Best Path: Selecting the path with the highest softmax probability (i.e., lowest nonconformity score).</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head n="5.">Minimum Collision Sampling:</head><p>Choosing the path with the minimum expected collision probability based on input prompts.</p><p>Tables <ref type="table" target="#tab_6">5</ref> and<ref type="table">6</ref> present the results of these strategies at (α = 0.3, δ = 0.85) and (α = 0.5, δ = 0.85), respectively, reporting the L2 trajectory error and collision rates at 1 s, 2 s, and 3 s horizons.</p><p>The Average and Weighted Average strategies consistently achieve the lowest L2 trajectory errors across both settings of α. Specifically, these strategies yield average L2 errors of 0.71 m and 0.72 m at α = 0.3 and α = 0.5, respectively. This suggests that aggregating paths, whether equally or weighted by confidence scores, leads to more accurate trajectory predictions. The minimal difference between the Average and Weighted Average strategies implies that the softmax confidence scores do not significantly influence the aggregation outcome in terms of trajectory accuracy.</p><p>In contrast, the Minimum Collision Sampling strategy achieves the lowest collision rates, with average collision rates of 0.20% at α = 0.3 and 0.13% at α = 0.5. This indicates that explicitly selecting the path with the lowest expected collision probability effectively enhances safety. However, this strategy results in higher L2 errors (average of 0.84 m), suggesting a trade-off between minimizing collision risk and maintaining trajectory accuracy.</p><p>The Random Sampling and Best Path strategies exhibit higher L2 errors and collision rates compared to the averaging strategies and Minimum Collision Sampling. The Best Path strategy, which selects the path with the highest softmax probability, does not perform as well as anticipated. This could be due to calibration issues with the softmax scores or a weak correlation between the confidence scores and actual collision risk. These findings raise concerns about the reliability of using softmax probabilities as indicators of path safety and highlight the need for better calibration of these confidence measures.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>These observations highlight a trade-off between</head><p>Path Decesion (α = 0.5, δ = 0.85) It is important to consider that while averaging paths can produce smoother trajectories, this approach might inadvertently smooth out necessary evasive maneuvers that individual paths would have taken to avoid obstacles, potentially increasing collision risk. Therefore, careful evaluation of how path aggregation impacts safety-critical behaviors is essential.</p><p>Overall, the results indicate that no single strategy universally outperforms the others across all metrics. The selection of an appropriate path decision strategy depends on the specific priorities and constraints of the autonomous navigation task. For applications where safety and collision avoidance are highly important, strategies like Minimum Collision Sampling are preferable.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.4 Effect of LLM Models on the Conformal Prediction Performance</head><p>We evaluate the performance of SafePath with different LLMs at the Uncertainty Aware Path Selection stage. LLMs can be biased when it comes to MCQA (Ren et al.), which can limit the effects of the conformal prediction operation, especially if the calibration set is limited. So it is crucial to investigate the performance of several LLMs to guide future research. Table <ref type="table" target="#tab_8">7</ref> presents the results of conformal prediction 3 LLM models: gpt -4.o, falcon -7B, and llama3.1 -7Binstruct. The evaluation of conformal prediction performance across three large language models (LLMs)-GPT -4.o, falcon -7B, and llama3.1 -7Binstruct-highlights the interplay between deviation from target coverage (DTC) and prediction set size (SS) under varying significance levels (α). These metrics reflect the accuracy and efficiency of uncertainty-aware path planning, critical for autonomous systems operating under uncertainty.</p><p>GPT -4.o consistently achieves the most stable alignment with target coverage, exhibiting minimal DTC values that remain within a small range across α levels. Its ability to maintain compact prediction sets, particularly at higher α levels, underscores its efficiency in balancing coverage and set size. In contrast, falcon -7B displays variability in DTC, transitioning from under-to over-coverage as α increases, with a fixed SS that indicates limited adaptability. llama3.1 -7Binstruct shows improvement in DTC with increasing α, though its larger SS values at lower α levels suggest inefficiencies in stricter confidence scenarios.</p><p>Overall, GPT -4.o emerges as the most robust model, demonstrating strong calibration and efficient prediction set sizing. The observed variability in falcon -7B and inefficiencies in llama3.1 -7Binstruct highlight opportunities for refining their calibration strategies. These results emphasize the importance of selecting and optimizing LLMs for conformal prediction in applications where accuracy and efficiency are paramount.</p><p>We present results evaluating the performance of three LLMs-GPT -4.o, falcon -7B, and llama3.1 -7Binstruct-on the nuScenes dataset for trajectory planning under uncertainty, in Table <ref type="table" target="#tab_9">8</ref>. Using L2 trajectory errors (in meters) and collision rates (in percentages) as evaluation metrics, we assess these models over 1, 2, and 3second prediction horizons, with an average metric computed across all horizons. The experimental setup corresponds to α = 0.7 and δ = 0.85, emphasizing moderately conservative predictions to balance safety and efficiency.</p><formula xml:id="formula_18">α = 0.1 α = 0.2 α = 0.3 α = 0.4 α = 0.</formula><p>The results show that GPT -4.o achieves the best overall performance, with an average L2 error of 0.83m and the lowest collision rate of 0.13%. These metrics indicate its ability to produce precise and safe trajectories across all time horizons. Falcon -7B performs similarly in terms of L2 error (0.85m average) but has a higher collision rate (0.18%), suggesting a slight trade-off in safety. Llama3.1 -7Binstruct shows higher L2 error (0.91m average) and collision rates (0.30%), reflecting weaker performance in trajectory accuracy and safety.</p><p>These findings highlight GPT -4.o as the most effective model for trajectory planning in uncertain environments, excelling in both accuracy and safety. While falcon -7B and llama3.1 -7Binstruct demonstrate potential, their higher collision rates suggest opportunities for improvement in managing safety-critical scenarios. These results provide valuable insights for optimizing LLM-based planning under uncertainty.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.5 Additional Qualitative Results</head><p>In this section, we present further qualitative results to illustrate SafePath's performance across various scenarios and configurations. Figure <ref type="figure" target="#fig_6">4</ref> showcases candidate paths generated during the Path Generation stage under diverse situations, including maneuvers such as acceleration (Figure <ref type="figure" target="#fig_6">4a</ref>) and turning scenarios (Figure <ref type="figure" target="#fig_6">4b</ref>). These examples highlight the ability of the approach to propose multiple viable trajectories tailored to the ego vehicle's goals and the dynamic environmental conditions.</p><p>Figure <ref type="figure" target="#fig_7">5</ref> compares the candidate paths generated in the Path Generation stage with the paths selected using different sampling and path aggregation strategies after constructing the prediction set. Successive frames demonstrate how SafePath refines candidate trajectories to align closely with the ground-truth path while minimizing uncertainty and collision risk. These comparisons underscore the importance of the chosen aggregation strategy, particularly in maintaining trajectory accuracy and safety across dynamic time steps.</p><p>Overall, these qualitative results highlight SafePath's flexibility and robustness in handling diverse navigation scenarios, ensuring safe path selection while adapting to the evolving environment.</p></div>
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>A.6 Prompts</head><p>In the following, we describe the prompts used to fine-tune and query the large language models (LLMs) for trajectory planning and decisionmaking in the context of autonomous vehicles. Each figure illustrates a specific prompt designed to guide the LLMs through distinct stages of the task, ensuring consistency, safety, and adaptability in path generation and selection under uncertainty.</p><p>Figure <ref type="figure">6</ref> presents the system message used in the trajectory generation phase. The prompt defines the role of the model as a planner tasked with generating four unique, collision-free trajectories over a 3-second horizon. It specifies the inputs, including perception data, historical trajectory, ego-vehicle states, and the mission goal, as well as the expected structure of the output, which includes reasoning, meta-actions, and the planned trajectories.</p><p>Figure <ref type="figure">7</ref> demonstrates a few-shot example pro- Figure <ref type="figure">8</ref> outlines the prompt used for path selection. This stage requires the LLM to evaluate pre-generated trajectory options and select the optimal path based on the mission goal and situational context. The prompt emphasizes concise decisionmaking, instructing the model to base its choice on reasoning derived from the input data while maintaining alignment with safety and feasibility criteria.  </p></div><figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_0"><head>Figure 1 :</head><label>1</label><figDesc>Figure 1: Overview of SafePath for autonomous vehicle path planning with LLMs. The approach consists of three stages: (1) Path Generation, where LLM 1 generates a set of candidate paths P based on the autonomous vehicle's goals and environmental state derived from a textual scene description; (2) Uncertainty-Aware Path Selection, where LLM 2 refines the paths in P by framing the problem as a multiple-choice question-answering task and performing a conformal prediction step to construct a prediction set C that includes a safe path with user-defined probability 1 -α; and (3) Path Decision, which evaluates the selected path(s) based on uncertainty levels to determine if the vehicle can proceed autonomously by selecting the path with the least expected collision risk or if human intervention is required due to high uncertainty. The prompts shown in the Figure (Task Prompt, Multiple-Choice Question Formulation Prompt) are partial examples for illustration. The complete prompts are provided in Appendix A.6.</figDesc><graphic coords="3,214.01,93.85,89.61,77.07" type="bitmap"/></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_1"><head/><label/><figDesc>each path p i and compute non-conformity scores for each path s p i = 1 -sof tmax(logit(l p i )) 10: Construct prediction set C = {p i | s p i ≤ q} 11: Stage 3: Path Decision 12: if |C| = 0 then 13: Delegate to human to take over the control. 14: else if |C| = 1 then 15: Adopt the single path in C as p final 16: else 17: Compute path similarity 18: if Sim(C) ≥ δ then 19: p final = arg min p∈C Collision(p) 20:</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_3"><head>Figure 2 :</head><label>2</label><figDesc>Figure 2: Human delegation rate as a function of the similarity threshold δ for different α values.</figDesc><graphic coords="7,98.22,69.54,181.31,121.80" type="bitmap"/></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_4"><head>Figure 3 :</head><label>3</label><figDesc>Figure 3: Results of the closed-loop simulation on the Highway-env comparing GPT-Driver to SafePath.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_6"><head>Figure 4 :</head><label>4</label><figDesc>Figure 4: Path generation through several successive samples for different situations.</figDesc><graphic coords="17,72.78,310.75,109.51,82.64" type="bitmap"/></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_7"><head>Figure 5 :</head><label>5</label><figDesc>Figure 5: Predicted paths and path decisions for different situations.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" xml:id="fig_8"><head>Figure 6 :Figure 7 :</head><label>67</label><figDesc>Figure 6: System Message for the path generation stage.</figDesc></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_0"><head/><label/><figDesc>, p 2 , . . . , p k } and rationales R = {r 1 , r 2 , . . . , r k }</figDesc><table><row><cell cols="2">1: Input:</cell><cell>Current</cell><cell>state</cell><cell>x</cell><cell>=</cell></row><row><cell/><cell cols="2">{x percept , x pred , x goal },</cell><cell cols="2">perception</cell><cell>data,</cell></row><row><cell/><cell>mission goals</cell><cell/><cell/><cell/></row><row><cell cols="3">2: Output: Final path p final</cell><cell/><cell/></row><row><cell cols="4">3: Stage 1: Path Generation</cell><cell/></row><row><cell>4:</cell><cell cols="5">Use LLM with chain-of-thought rea-</cell></row><row><cell/><cell cols="5">soning to generate candidate paths</cell></row><row><cell cols="3">P = {p 1 5:</cell><cell/><cell/></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_2"><head>Table 1 :</head><label>1</label><figDesc>Comparison of SafePath, APS<ref type="bibr" target="#b38">(Romano et al., 2020)</ref>,RAPS (Angelopoulos et al., 2021), and KnowNo (Ren  et al.)  across confidence levels (α), using Deviation from Target Coverage (DTC), set size (SS) and Human Delegation Rate (HuD) for KnowNo. All results use δ = 0.85 (HuD = 0). Best results are bolded with light green shading.</figDesc><table><row><cell>Method</cell><cell>1s</cell><cell cols="2">Collision (%) ↓ 2s 3s</cell><cell>Avg.</cell></row><row><cell>NMP (Zeng et al., 2019)</cell><cell>-</cell><cell>-</cell><cell>1.92</cell><cell>-</cell></row><row><cell>SA-NMP (Zeng et al., 2019)</cell><cell>-</cell><cell>-</cell><cell>1.59</cell><cell>-</cell></row><row><cell>FF</cell><cell/><cell/><cell/><cell/></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_3"><head>Table 2 :</head><label>2</label><figDesc/><table><row><cell/><cell>0.10 0.22 0.45 0.27</cell></row><row><cell>GPT-Driver (Mao et al., b)</cell><cell>0.07 0.15 1.10 0.44</cell></row><row><cell>SafePath (ours)</cell><cell>0.04 0.12 0.24 0.13</cell></row></table><note><p>Collision rate performance on the nuScenes dataset. For a fair comparison, we compare our model with 0% human delegation. The best-performing results are highlighted in bold with light green shading.</p></note></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_4"><head>Table 3</head><label>3</label><figDesc/><table><row><cell>demon-</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_5"><head>Table 4 :</head><label>4</label><figDesc>L2 distance (m) performance comparison with deterministic approaches on the nuScenes dataset. For a fair comparison, we compare our model with 0% human delegation (HuD = 0%). The best-performing results are highlighted in bold.</figDesc><table><row><cell>Path Decesion (α = 0.3, δ = 0.85)</cell><cell>1s</cell><cell>L2 (m) 2s 3s</cell><cell>Avg</cell><cell>1s</cell><cell>Collision (%) 2s 3s</cell><cell>Avg</cell></row><row><cell>Random Sampling</cell><cell cols="6">0.48 0.82 1.26 0.85 0.10 0.34 0.67 0.37</cell></row><row><cell>Average</cell><cell cols="6">0.39 0.68 1.06 0.71 0.08 0.24 0.51 0.28</cell></row><row><cell>Conformal Weighted Average</cell><cell cols="6">0.39 0.68 1.06 0.71 0.10 0.24 0.50 0.28</cell></row><row><cell>Conformal Top Path</cell><cell cols="6">0.48 0.82 1.25 0.85 0.12 0.36 0.93 0.47</cell></row><row><cell>minCollision Sampling</cell><cell cols="6">0.48 0.81 1.23 0.84 0.08 0.18 0.34 0.20</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_6"><head>Table 5 :</head><label>5</label><figDesc>Different Path Decision strategies at (α = 0.3, δ = 0.85)</figDesc><table/></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_8"><head>Table 7 :</head><label>7</label><figDesc>Comparison of different LLM models for conformal prediction. Green cases represent best performing approaches.</figDesc><table><row><cell>5</cell></row></table></figure>
+<figure xmlns="http://www.tei-c.org/ns/1.0" type="table" xml:id="tab_9"><head>Table 8 :</head><label>8</label><figDesc>Different Path Decision strategies at (α = 0.5, δ = 0.85)</figDesc><table/></figure>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="1" xml:id="foot_0"><p>It is possible to use other non-conformity scores such as RAPS(Angelopoulos et al.,  </p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" xml:id="foot_1"><p>2021), and APS<ref type="bibr" target="#b38">(Romano et al., 2020)</ref>. However, as we show in Section 5.4, LAC yielded the best results.</p></note>
+			<note xmlns="http://www.tei-c.org/ns/1.0" place="foot" n="2" xml:id="foot_2"><p>In Definition 4.2, Sim is defined as Sim :P × P → [0, 1].In Algorithm 1, we extend this notation to sets, implying that similarity is computed pairwise for all path pairs.</p></note>
+		</body>
+		<back>
+			<div type="annex">
+<div xmlns="http://www.tei-c.org/ns/1.0"><head>Path Selection Prompt</head><p>** Path Selection ** You are the decision maker to choose a path that the autonomous vehicle will follow given the Mission Goal . Consider reasoning to make a choice . Based on the following options .</p><p>select the best plan based on the following situation : Perception and Prediction :</p><p>-pushable_pullable at (0.21 ,12.45) .</p><p>-pushable_pullable at <ref type="bibr">( -2.82 ,1.27)</ref> .</p><p>-bicycle at (14.43 ,7.31) , moving to unknown location .</p><p>-pushable_pullable at (7.31 ,10.39) , moving to (7.29 ,10.38) .</p><p>-car at (6.25 ,6.21) , moving to (8.39 ,5.22) . Ego -States :</p><p>-Velocity (vx , vy ): (0.00 ,0.24) -Heading Angular Velocity ( v_yaw ): ( -0.  </p></div>			</div>
+			<div type="references">
+
+				<listBibl>
+
+<biblStruct xml:id="b0">
+	<analytic>
+		<title level="a" type="main">Uncertainty sets for image classifiers using conformal prediction</title>
+		<author>
+			<persName><forename type="first">Anastasios</forename><surname>Nikolas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Angelopoulos</forename></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Bates</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><forename type="middle">I</forename><surname>Jordan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jitendra</forename><surname>Malik</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">9th International Conference on Learning Representations, ICLR 2021</title>
+		<meeting><address><addrLine>Virtual Event, Austria</addrLine></address></meeting>
+		<imprint>
+			<date type="published" when="2021-05-03">2021. May 3-7, 2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b1">
+	<analytic>
+		<title level="a" type="main">Probabilistic decision-making under uncertainty for autonomous driving using continuous pomdps</title>
+		<author>
+			<persName><forename type="first">Sebastian</forename><surname>Brechtel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tobias</forename><surname>Gindele</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rüdiger</forename><surname>Dillmann</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">17th international IEEE conference on intelligent transportation systems (ITSC)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2014">2014</date>
+			<biblScope unit="page" from="392" to="399"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b2">
+	<analytic>
+		<title level="a" type="main">Hierarchical model-based imitation learning for planning in autonomous driving</title>
+		<author>
+			<persName><forename type="first">Eli</forename><surname>Bronstein</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mark</forename><surname>Palatucci</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dominik</forename><surname>Notz</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Brandyn</forename><surname>White</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Kuefler</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiren</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Supratik</forename><surname>Paul</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Payam</forename><surname>Nikdel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paul</forename><surname>Mougin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongge</forename><surname>Chen</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2022">2022. 2022</date>
+			<biblScope unit="page" from="8652" to="8659"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b3">
+	<analytic>
+		<title level="a" type="main">nuscenes: A multimodal dataset for autonomous driving</title>
+		<author>
+			<persName><forename type="first">Holger</forename><surname>Caesar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Varun</forename><surname>Bankiti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><forename type="middle">H</forename><surname>Lang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sourabh</forename><surname>Vora</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Venice</forename><forename type="middle">Erin</forename><surname>Liong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiang</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anush</forename><surname>Krishnan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Giancarlo</forename><surname>Baldan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oscar</forename><surname>Beijbom</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF conference on computer vision and pattern recognition</title>
+		<meeting>the IEEE/CVF conference on computer vision and pattern recognition</meeting>
+		<imprint>
+			<date type="published" when="2020">2020</date>
+			<biblScope unit="page" from="11621" to="11631"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b4">
+	<analytic>
+		<title level="a" type="main">Credal bayesian deep learning</title>
+		<author>
+			<persName><forename type="first">Michele</forename><surname>Caprio</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Souradeep</forename><surname>Dutta</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jin</forename><surname>Kuk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vivian</forename><surname>Jang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Radoslav</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleg</forename><surname>Ivanov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Insup</forename><surname>Sokolsky</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Lee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Transactions on Machine Learning Research</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b5">
+	<analytic>
+		<title level="a" type="main">Driving with llms: Fusing object-level vector modality for explainable autonomous driving</title>
+		<author>
+			<persName><forename type="first">Long</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleg</forename><surname>Sinavski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jan</forename><surname>Hünermann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alice</forename><surname>Karnsund</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrew</forename><forename type="middle">James</forename><surname>Willmott</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Danny</forename><surname>Birch</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Daniel</forename><surname>Maund</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jamie</forename><surname>Shotton</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE International Conference on Robotics and Automation (ICRA)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2024">2024. 2024</date>
+			<biblScope unit="page" from="14093" to="14100"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b6">
+	<analytic>
+		<title level="a" type="main">Asynchronous large language model enhanced planner for autonomous driving</title>
+		<author>
+			<persName><forename type="first">Yuan</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ziqin</forename><surname>Zi-Han Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yan</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lijun</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Si</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">European Conference on Computer Vision</title>
+		<imprint>
+			<publisher>Springer</publisher>
+			<date type="published" when="2025">2025</date>
+			<biblScope unit="page" from="22" to="38"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b7">
+	<analytic>
+		<title level="a" type="main">Rethinking imitationbased planners for autonomous driving</title>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Cheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yingbing</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaodong</forename><surname>Mei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bowen</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bo</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ming</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2024 IEEE International Conference on Robotics and Automation (ICRA)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="14123" to="14130"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b8">
+	<analytic>
+		<title level="a" type="main">Uncertainty-aware model-based offline reinforcement learning for automated driving</title>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Diehl</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Timo</forename><surname>Sebastian Sievernich</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Martin</forename><surname>Krüger</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Frank</forename><surname>Hoffmann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Torsten</forename><surname>Bertram</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Robotics and Automation Letters</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="issue">2</biblScope>
+			<biblScope unit="page" from="1167" to="1174"/>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b9">
+	<analytic>
+		<title level="a" type="main">A rule-based cooperative merging strategy for connected and automated vehicles</title>
+		<author>
+			<persName><forename type="first">Jishiyu</forename><surname>Ding</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Huei</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yi</forename><surname>Zhang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Intelligent Transportation Systems</title>
+		<imprint>
+			<biblScope unit="volume">21</biblScope>
+			<biblScope unit="issue">8</biblScope>
+			<biblScope unit="page" from="3436" to="3446"/>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b10">
+	<analytic>
+		<title level="a" type="main">Investigating the effects of ar-based visualization of the uncertainty of deep learning models on users of autonomous vehicles</title>
+		<author>
+			<persName><forename type="first">Achref</forename><surname>Doula</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lennart</forename><surname>Schmidt</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Max</forename><surname>Mühlhäuser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alejandro</forename><forename type="middle">Sanchez</forename><surname>Guinea</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE International Symposium on Mixed and Augmented Reality (ISMAR)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2023">2023. 2023</date>
+			<biblScope unit="page" from="253" to="262"/>
+		</imprint>
+	</monogr>
+	<note>can you handle the truth?</note>
+</biblStruct>
+
+<biblStruct xml:id="b11">
+	<analytic>
+		<title level="a" type="main">Drive like a human: Rethinking autonomous driving with large language models</title>
+		<author>
+			<persName><forename type="first">Daocheng</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xin</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Licheng</forename><surname>Wen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Min</forename><surname>Dou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pinlong</forename><surname>Cai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Botian</forename><surname>Shi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yu</forename><surname>Qiao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE/CVF Winter Conference on Applications of Computer Vision Workshops (WACVW)</title>
+		<imprint>
+			<publisher>IEEE Computer Society</publisher>
+			<date type="published" when="2024">2024. 2024</date>
+			<biblScope unit="page" from="910" to="919"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b12">
+	<analytic>
+		<title level="a" type="main">Does fine-tuning LLMs on new knowledge encourage hallucinations?</title>
+		<author>
+			<persName><forename type="first">Zorik</forename><surname>Gekhman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gal</forename><surname>Yona</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roee</forename><surname>Aharoni</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matan</forename><surname>Eyal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amir</forename><surname>Feder</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Roi</forename><surname>Reichart</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonathan</forename><surname>Herzig</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the 2024 Conference on Empirical Methods in Natural Language Processing</title>
+		<meeting>the 2024 Conference on Empirical Methods in Natural Language Processing</meeting>
+		<imprint>
+			<publisher>Association for Computational Linguistics</publisher>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="7765" to="7784"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b13">
+	<analytic>
+		<title level="a" type="main">Adaptive conformal inference under distribution shift</title>
+		<author>
+			<persName><forename type="first">Isaac</forename><surname>Gibbs</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emmanuel</forename><surname>Candes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">34</biblScope>
+			<biblScope unit="page" from="1660" to="1672"/>
+			<date type="published" when="2021">2021</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b14">
+	<analytic>
+		<title level="a" type="main">Interpretable trajectory prediction for autonomous vehicles via counterfactual responsibility</title>
+		<author>
+			<persName><forename type="first">Kai-Chieh</forename><surname>Hsu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Karen</forename><surname>Leung</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxiao</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaime</forename><forename type="middle">F</forename><surname>Fisac</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marco</forename><surname>Pavone</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="5918" to="5925"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b15">
+	<analytic>
+		<title level="a" type="main">Safe local motion planning with self-supervised freespace forecasting</title>
+		<author>
+			<persName><forename type="first">Peiyun</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Aaron</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">John</forename><surname>Dolan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">David</forename><surname>Held</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Deva</forename><surname>Ramanan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2021">2021</date>
+			<biblScope unit="page" from="12732" to="12741"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b16">
+	<analytic>
+		<title level="a" type="main">Planningoriented autonomous driving</title>
+		<author>
+			<persName><forename type="first">Yihan</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiazhi</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Li</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Keyu</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chonghao</forename><surname>Sima</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xizhou</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Siqi</forename><surname>Chai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Senyao</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tianwei</forename><surname>Lin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenhai</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="17853" to="17862"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b17">
+	<analytic>
+		<title level="a" type="main">Vad: Vectorized scene representation for efficient autonomous driving</title>
+		<author>
+			<persName><forename type="first">Bo</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Shaoyu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qing</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bencheng</forename><surname>Liao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiajie</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Helong</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qian</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenyu</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chang</forename><surname>Huang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinggang</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF International Conference on Computer Vision</title>
+		<meeting>the IEEE/CVF International Conference on Computer Vision</meeting>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="8340" to="8350"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b18">
+	<analytic>
+		<title level="a" type="main">idecode: In-distribution equivariance for conformal out-of-distribution detection</title>
+		<author>
+			<persName><forename type="first">Ramneet</forename><surname>Kaur</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Susmit</forename><surname>Jha</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Anirban</forename><surname>Roy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sangdon</forename><surname>Park</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Edgar</forename><surname>Dobriban</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Oleg</forename><surname>Sokolsky</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Insup</forename><surname>Lee</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the AAAI Conference on Artificial Intelligence</title>
+		<meeting>the AAAI Conference on Artificial Intelligence</meeting>
+		<imprint>
+			<date type="published" when="2022">2022</date>
+			<biblScope unit="volume">36</biblScope>
+			<biblScope unit="page" from="7104" to="7114"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b19">
+	<analytic>
+		<title level="a" type="main">Conformal decision theory: Safe autonomous decisions from imperfect predictions</title>
+		<author>
+			<persName><forename type="first">Jordan</forename><surname>Lekeufack</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrea</forename><surname>Anastasios N Angelopoulos</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Bajcsy</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jitendra</forename><surname>Michael I Jordan</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Malik</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2024 IEEE International Conference on Robotics and Automation (ICRA)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="11668" to="11675"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b20">
+	<monogr>
+		<author>
+			<persName><forename type="first">Edouard</forename><surname>Leurent</surname></persName>
+		</author>
+		<ptr target="https://github.com/eleurent/highway-env"/>
+		<title level="m">An environment for autonomous driving decision-making</title>
+		<imprint>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b21">
+	<analytic>
+		<title level="a" type="main">A safe hierarchical planning framework for complex driving scenarios based on reinforcement learning</title>
+		<author>
+			<persName><forename type="first">Jinning</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liting</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianyu</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Masayoshi</forename><surname>Tomizuka</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Zhan</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE International Conference on Robotics and Automation (ICRA)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2021">2021. 2021</date>
+			<biblScope unit="page" from="2660" to="2666"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b22">
+	<analytic>
+		<title level="a" type="main">Introspective planning: Aligning robots' uncertainty with inherent task ambiguity</title>
+		<author>
+			<persName><forename type="first">Kaiqu</forename><surname>Liang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zixu</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaime</forename><surname>Fernández</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fisac</forename></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Thirtyeighth Annual Conference on Neural Information Processing Systems</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b23">
+	<analytic>
+		<title level="a" type="main">Safe planning in dynamic environments using conformal prediction</title>
+		<author>
+			<persName><forename type="first">Lars</forename><surname>Lindemann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Cleaveland</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gihyun</forename><surname>Shim</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">George</forename><forename type="middle">J</forename><surname>Pappas</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Robotics and Automation Letters</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b24">
+	<analytic>
+		<title level="a" type="main">Efficient sampling-based motion planning for on-road autonomous driving</title>
+		<author>
+			<persName><forename type="first">Liang</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianru</forename><surname>Xue</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kuniaki</forename><surname>Kawabata</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jihua</forename><surname>Zhu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Chao</forename><surname>Ma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Nanning</forename><surname>Zheng</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Intelligent Transportation Systems</title>
+		<imprint>
+			<biblScope unit="volume">16</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="1961" to="1976"/>
+			<date type="published" when="2015">2015</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b25">
+	<analytic>
+		<title level="a" type="main">a. Gpt-driver: Learning to drive with gpt</title>
+		<author>
+			<persName><forename type="first">Jiageng</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxi</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junjie</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hang</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yue</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">NeurIPS 2023 Foundation Models for Decision Making Workshop</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b26">
+	<analytic>
+		<title level="a" type="main">Gpt-driver: Learning to drive with gpt</title>
+		<author>
+			<persName><forename type="first">Jiageng</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuxi</forename><surname>Qian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junjie</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hang</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yue</forename><surname>Wang</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">NeurIPS 2023 Foundation Models for Decision Making Workshop</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b27">
+	<analytic>
+		<title level="a" type="main">Uncertainty quantification with statistical guarantees in end-to-end autonomous driving control</title>
+		<author>
+			<persName><forename type="first">Rhiannon</forename><surname>Michelmore</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matthew</forename><surname>Wicker</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luca</forename><surname>Laurenti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Luca</forename><surname>Cardelli</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yarin</forename><surname>Gal</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Marta</forename><surname>Kwiatkowska</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE international conference on robotics and automation (ICRA)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2020">2020. 2020</date>
+			<biblScope unit="page" from="7344" to="7350"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b28">
+	<analytic>
+		<title level="a" type="main">Deep learning for safe autonomous driving: Current challenges and future directions</title>
+		<author>
+			<persName><forename type="first">Khan</forename><surname>Muhammad</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Amin</forename><surname>Ullah</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jaime</forename><surname>Lloret</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Javier</forename><surname>Del Ser</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Victor</forename><surname>Hugo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">C</forename><surname>De Albuquerque</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Intelligent Transportation Systems</title>
+		<imprint>
+			<biblScope unit="volume">22</biblScope>
+			<biblScope unit="issue">7</biblScope>
+			<biblScope unit="page" from="4316" to="4336"/>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b29">
+	<analytic>
+		<title level="a" type="main">Rule-based highway maneuver intention recognition</title>
+		<author>
+			<persName><forename type="first">Julia</forename><surname>Nilsson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonas</forename><surname>Fredriksson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Coelingh</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2015 IEEE 18th International Conference on Intelligent Transportation Systems</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2015">2015</date>
+			<biblScope unit="page" from="950" to="955"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b30">
+	<analytic>
+		<title level="a" type="main">If, when, and how to perform lane change maneuvers on highways</title>
+		<author>
+			<persName><forename type="first">Julia</forename><surname>Nilsson</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonatan</forename><surname>Silvlin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mattias</forename><surname>Brannstrom</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Erik</forename><surname>Coelingh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jonas</forename><surname>Fredriksson</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Intelligent Transportation Systems Magazine</title>
+		<imprint>
+			<biblScope unit="volume">8</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="68" to="78"/>
+			<date type="published" when="2016">2016</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b31">
+	<analytic>
+		<title level="a" type="main">Simulation-based reinforcement learning for real-world autonomous driving</title>
+		<author>
+			<persName><forename type="first">Błażej</forename><surname>Osiński</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Adam</forename><surname>Jakubowski</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Paweł</forename><surname>Zięcina</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Piotr</forename><surname>Miłoś</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christopher</forename><surname>Galias</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Silviu</forename><surname>Homoceanu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Henryk</forename><surname>Michalewski</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE international conference on robotics and automation (ICRA)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2020">2020. 2020</date>
+			<biblScope unit="page" from="6411" to="6418"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b32">
+	<analytic>
+		<title level="a" type="main">Planning for safe abortable overtaking maneuvers in autonomous driving</title>
+		<author>
+			<persName><forename type="first">Jiyo</forename><surname>Palatti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Andrei</forename><surname>Aksjonov</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Gokhan</forename><surname>Alcan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ville</forename><surname>Kyrki</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE International Intelligent Transportation Systems Conference (ITSC)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2021">2021. 2021</date>
+			<biblScope unit="page" from="508" to="514"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b33">
+	<analytic>
+		<title level="a" type="main">Vlp: Vision language planning for autonomous driving</title>
+		<author>
+			<persName><forename type="first">Chenbin</forename><surname>Pan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Burhaneddin</forename><surname>Yaman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tommaso</forename><surname>Nesti</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abhirup</forename><surname>Mallik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alessandro</forename><forename type="middle">G</forename><surname>Allievi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Senem</forename><surname>Velipasalar</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Liu</forename><surname>Ren</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+			<biblScope unit="page" from="14760" to="14769"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b34">
+	<analytic>
+		<title level="a" type="main">Pilot: Efficient planning by imitation learning and optimisation for safe autonomous driving</title>
+		<author>
+			<persName><forename type="first">Henry</forename><surname>Pulver</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Francisco</forename><surname>Eiras</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ludovico</forename><surname>Carozza</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Majd</forename><surname>Hawasly</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefano</forename><forename type="middle">V</forename><surname>Albrecht</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Subramanian</forename><surname>Ramamoorthy</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2021">2021. 2021</date>
+			<biblScope unit="page" from="1442" to="1449"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b35">
+	<monogr>
+		<author>
+			<persName><surname>Reimers</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:1908.10084</idno>
+		<title level="m">Sentence-bert: Sentence embeddings using siamese bert-networks</title>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b36">
+	<analytic>
+		<title level="a" type="main">Robots that ask for help: Uncertainty alignment for large language model planners</title>
+		<author>
+			<persName><forename type="first">Anushri</forename><surname>Allen Z Ren</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alexandra</forename><surname>Dixit</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sumeet</forename><surname>Bodrova</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stephen</forename><surname>Singh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Noah</forename><surname>Tu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Brown</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Leila</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Takayama</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jake</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Varley</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">7th Annual Conference on Robot Learning</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b37">
+	<analytic>
+		<title level="a" type="main">Motion planning for autonomous vehicles in the presence of uncertainty using reinforcement learning</title>
+		<author>
+			<persName><forename type="first">Kasra</forename><surname>Rezaee</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peyman</forename><surname>Yadmellat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Chamorro</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2021">2021. 2021</date>
+			<biblScope unit="page" from="3506" to="3511"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b38">
+	<analytic>
+		<title level="a" type="main">Classification with valid and adaptive coverage</title>
+		<author>
+			<persName><forename type="first">Yaniv</forename><surname>Romano</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Matteo</forename><surname>Sesia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Emmanuel</forename><surname>Candes</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">33</biblScope>
+			<biblScope unit="page" from="3581" to="3591"/>
+			<date type="published" when="2020">2020</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b39">
+	<analytic>
+		<title level="a" type="main">Driving with style: Inverse reinforcement learning in generalpurpose planning for automated driving</title>
+		<author>
+			<persName><forename type="first">Sascha</forename><surname>Rosbach</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vinit</forename><surname>James</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Großjohann</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Silviu</forename><surname>Homoceanu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Stefan</forename><surname>Roth</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2019">2019. 2019</date>
+			<biblScope unit="page" from="2658" to="2665"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b40">
+	<analytic>
+		<title level="a" type="main">Least ambiguous set-valued classifiers with bounded error levels</title>
+		<author>
+			<persName><forename type="first">Mauricio</forename><surname>Sadinle</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jing</forename><surname>Lei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Larry</forename><surname>Wasserman</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of the American Statistical Association</title>
+		<imprint>
+			<biblScope unit="volume">114</biblScope>
+			<biblScope unit="issue">525</biblScope>
+			<biblScope unit="page" from="223" to="234"/>
+			<date type="published" when="2019">2019</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b41">
+	<analytic>
+		<title level="a" type="main">A tutorial on conformal prediction</title>
+		<author>
+			<persName><forename type="first">Glenn</forename><surname>Shafer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Vladimir</forename><surname>Vovk</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Journal of Machine Learning Research</title>
+		<imprint>
+			<biblScope unit="volume">9</biblScope>
+			<biblScope unit="issue">3</biblScope>
+			<date type="published" when="2008">2008</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b42">
+	<analytic>
+		<title level="a" type="main">Risk-aware planning and assignment for ground vehicles using uncertain perception from aerial vehicles</title>
+		<author>
+			<persName><forename type="first">D</forename><surname>Vishnu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maymoonah</forename><surname>Sharma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Lifeng</forename><surname>Toubeh</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Pratap</forename><surname>Zhou</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Tokekar</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2020">2020. 2020</date>
+			<biblScope unit="page" from="11763" to="11769"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b43">
+	<analytic>
+		<title level="a" type="main">Conformal prediction for uncertainty-aware planning with diffusion dynamics model</title>
+		<author>
+			<persName><forename type="first">Jiankai</forename><surname>Sun</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiqi</forename><surname>Jiang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jianing</forename><surname>Qiu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Parth</forename><surname>Nobel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">J</forename><surname>Mykel</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mac</forename><surname>Kochenderfer</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Schwager</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in Neural Information Processing Systems</title>
+		<imprint>
+			<biblScope unit="volume">36</biblScope>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b44">
+	<analytic>
+		<title level="a" type="main">Prediction-uncertainty-aware decision-making for autonomous vehicles</title>
+		<author>
+			<persName><forename type="first">Xiaolin</forename><surname>Tang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kai</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hong</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiahang</forename><surname>Wu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yechen</forename><surname>Qin</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenhao</forename><surname>Yu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dongpu</forename><surname>Cao</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Intelligent Vehicles</title>
+		<imprint>
+			<biblScope unit="volume">7</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="849" to="862"/>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b45">
+	<analytic>
+		<title level="a" type="main">Limited visibility and uncertainty aware motion planning for automated driving</title>
+		<author>
+			<persName><forename type="first">Şahin</forename><surname>Ömer</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Christoph</forename><surname>Taş</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Stiller</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2018 IEEE Intelligent Vehicles Symposium (IV)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2018">2018</date>
+			<biblScope unit="page" from="1171" to="1178"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b46">
+	<monogr>
+		<title level="m" type="main">Drivevlm: The convergence of autonomous driving and large visionlanguage models</title>
+		<author>
+			<persName><forename type="first">Xiaoyu</forename><surname>Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junru</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bailin</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yicheng</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiyong</forename><surname>Zhao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yang</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kun</forename><surname>Zhan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Peng</forename><surname>Jia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xianpeng</forename><surname>Lang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hang</forename><surname>Zhao</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2402.12289</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b47">
+	<monogr>
+		<title level="m" type="main">Algorithmic Learning in a Random World</title>
+		<author>
+			<persName><forename type="first">Vladimir</forename><surname>Vovk</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Alex</forename><surname>Gammerman</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Glenn</forename><surname>Shafer</surname></persName>
+		</author>
+		<imprint>
+			<date type="published" when="2005">2005</date>
+			<publisher>Springer-Verlag</publisher>
+			<pubPlace>Berlin, Heidelberg</pubPlace>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b48">
+	<analytic>
+		<title level="a" type="main">Probabilistically correct language-based multi-robot planning using conformal prediction</title>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Guocheng</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiannis</forename><surname>Kantaros</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Robotics and Automation Letters</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b49">
+	<monogr>
+		<title level="m" type="main">Conformal temporal logic planning using large language models: Knowing when to do what and when to ask for help</title>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiaming</forename><surname>Tong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kaiyuan</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yevgeniy</forename><surname>Vorobeychik</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yiannis</forename><surname>Kantaros</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2309.10092</idno>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b50">
+	<analytic>
+		<title level="a" type="main">Predictive maneuver planning for an autonomous vehicle in public highway traffic</title>
+		<author>
+			<persName><forename type="first">Qian</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Beshah</forename><surname>Ayalew</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Thomas</forename><surname>Weiskircher</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">IEEE Transactions on Intelligent Transportation Systems</title>
+		<imprint>
+			<biblScope unit="volume">20</biblScope>
+			<biblScope unit="issue">4</biblScope>
+			<biblScope unit="page" from="1303" to="1315"/>
+			<date type="published" when="2018">2018</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b51">
+	<analytic>
+		<title level="a" type="main">Reinforcement learning based negotiation-aware motion planning of autonomous vehicles</title>
+		<author>
+			<persName><forename type="first">Zhitao</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yuzheng</forename><surname>Zhuang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Qiang</forename><surname>Gu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dong</forename><surname>Chen</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hongbo</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wulong</forename><surname>Liu</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2021">2021. 2021</date>
+			<biblScope unit="page" from="4532" to="4537"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b52">
+	<analytic>
+		<title level="a" type="main">Chain-of-thought prompting elicits reasoning in large language models</title>
+		<author>
+			<persName><forename type="first">Jason</forename><surname>Wei</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xuezhi</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Dale</forename><surname>Schuurmans</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Maarten</forename><surname>Bosma</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Fei</forename><surname>Xia</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ed</forename><surname>Chi</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">V</forename><surname>Quoc</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Denny</forename><surname>Le</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Zhou</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="j">Advances in neural information processing systems</title>
+		<imprint>
+			<biblScope unit="volume">35</biblScope>
+			<biblScope unit="page" from="24824" to="24837"/>
+			<date type="published" when="2022">2022</date>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b53">
+	<analytic>
+		<title level="a" type="main">Can llms express their uncertainty? an empirical evaluation of confidence elicitation in llms</title>
+		<author>
+			<persName><forename type="first">Miao</forename><surname>Xiong</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zhiyuan</forename><surname>Hu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xinyang</forename><surname>Lu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yifei</forename><surname>Li</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jie</forename><surname>Fu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Junxian</forename><surname>He</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bryan</forename><surname>Hooi</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">The Twelfth International Conference on Learning Representations</title>
+		<imprint/>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b54">
+	<monogr>
+		<title level="m" type="main">Hallucination is inevitable: An innate limitation of large language models</title>
+		<author>
+			<persName><forename type="first">Ziwei</forename><surname>Xu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sanjay</forename><surname>Jain</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Mohan</forename><surname>Kankanhalli</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2401.11817</idno>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b55">
+	<analytic>
+		<title level="a" type="main">Bayesian network-based probabilistic constraints for safe autonomous driving in occlusion environments</title>
+		<author>
+			<persName><forename type="first">Naoya</forename><surname>Yamada</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Kohei</forename><surname>Honda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Hiroyuki</forename><surname>Okuda</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Tatsuya</forename><surname>Suzuki</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yorie</forename><surname>Nakahira</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">2023 IEEE 26th International Conference on Intelligent Transportation Systems (ITSC)</title>
+		<imprint>
+			<publisher>IEEE</publisher>
+			<date type="published" when="2023">2023</date>
+			<biblScope unit="page" from="3770" to="3777"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b56">
+	<analytic>
+		<title level="a" type="main">End-to-end interpretable neural motion planner</title>
+		<author>
+			<persName><forename type="first">Wenyuan</forename><surname>Zeng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wenjie</forename><surname>Luo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Simon</forename><surname>Suo</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Abbas</forename><surname>Sadat</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Bin</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Sergio</forename><surname>Casas</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Raquel</forename><surname>Urtasun</surname></persName>
+		</author>
+	</analytic>
+	<monogr>
+		<title level="m">Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition</title>
+		<meeting>the IEEE/CVF Conference on Computer Vision and Pattern Recognition</meeting>
+		<imprint>
+			<date type="published" when="2019">2019</date>
+			<biblScope unit="page" from="8660" to="8669"/>
+		</imprint>
+	</monogr>
+</biblStruct>
+
+<biblStruct xml:id="b57">
+	<monogr>
+		<author>
+			<persName><surname>Jiang-Tian</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Ze</forename><surname>Zhai</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jihao</forename><surname>Feng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yongqiang</forename><surname>Du</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jiang-Jiang</forename><surname>Mao</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zichang</forename><surname>Liu</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Yifu</forename><surname>Tan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Xiaoqing</forename><surname>Zhang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jingdong</forename><surname>Ye</surname></persName>
+		</author>
+		<author>
+			<persName><surname>Wang</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2305.10430</idno>
+		<title level="m">Rethinking the openloop evaluation of end-to-end autonomous driving in nuscenes</title>
+		<imprint>
+			<date type="published" when="2023">2023</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+<biblStruct xml:id="b58">
+	<monogr>
+		<author>
+			<persName><forename type="first">Lei</forename><surname>Zheng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Rui</forename><surname>Yang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Zengqi</forename><surname>Peng</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Wei</forename><surname>Yan</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Michael</forename><forename type="middle">Yu</forename><surname>Wang</surname></persName>
+		</author>
+		<author>
+			<persName><forename type="first">Jun</forename><surname>Ma</surname></persName>
+		</author>
+		<idno type="arXiv">arXiv:2403.04143</idno>
+		<title level="m">Incremental bayesian learning for fail-operational control in autonomous driving</title>
+		<imprint>
+			<date type="published" when="2024">2024</date>
+		</imprint>
+	</monogr>
+	<note type="report_type">arXiv preprint</note>
+</biblStruct>
+
+				</listBibl>
+			</div>
+		</back>
+	</text>
+</TEI>

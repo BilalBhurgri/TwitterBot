@@ -6,15 +6,20 @@ import argparse
 import os
 import time
 import json
+import parse_paper
+import parse_paper_remove_math
+import get_paper_xml
 
 # Simplified setup
 parser = argparse.ArgumentParser(description='Create/update Chroma DB')
 parser.add_argument('--name', required=True, help='DB name')
 parser.add_argument('--input', required=True, help='File with arXiv URLs')
+parser.add_argument('--embedding_model', required=True, help='Embedding model')
+parser.add_argument('--text_chunk_size', default=1000, help='Text chunk size')
 args = parser.parse_args()
 
 # Initialize components
-EMBEDDING_MODEL = "all-MiniLM-L6-v2"
+EMBEDDING_MODEL = args.embedding_model
 model = SentenceTransformer(EMBEDDING_MODEL)  # Direct model usage
 
 client = chromadb.PersistentClient(path=f"./db/{args.name}")
@@ -69,8 +74,7 @@ def process_paper(url):
             return
         
         # Process text
-        with fitz.open(pdf_path) as doc:
-            text = " ".join([page.get_text() for page in doc])
+        text = load_paper(pdf_path)
         
         # Create chunks with abstract as first chunk
         chunks = [metadata["abstract"]] + chunk_text(text)
@@ -100,6 +104,42 @@ def process_paper(url):
     except Exception as e:
         print(f"⚠️ Failed to process {arxiv_id}: {str(e)}")
         return None
+    
+def load_paper(paper_path):
+    """
+    Creates a temporary XML file and extracts text without math in it. 
+    Saves the extracted text to a .txt file in the same directory as the PDF.
+    """
+    # First convert PDF to XML using GROBID
+    xml_content = get_paper_xml.process_pdf(paper_path)
+    if isinstance(xml_content, dict) and "error" in xml_content:
+        print(f"Error processing PDF: {xml_content['error']}")
+        return None
+        
+    # Save the XML content to a temporary file
+    xml_path = paper_path.replace('.pdf', '.xml')
+    try:
+        with open(xml_path, 'w', encoding='utf-8') as f:
+            f.write(xml_content)
+        
+        # Now extract text from the XML
+        text = parse_paper_remove_math.extract_text_from_xml(xml_path)
+        
+        # Save the extracted text to a .txt file
+        txt_path = paper_path.replace('.pdf', '.txt')
+        with open(txt_path, 'w', encoding='utf-8') as f:
+            f.write(text)
+        
+        # Delete the temporary XML file
+        os.remove(xml_path)
+        
+        return text
+    except Exception as e:
+        print(f"Error processing XML: {str(e)}")
+        # Clean up XML file if it exists
+        if os.path.exists(xml_path):
+            os.remove(xml_path)
+        return None
 
 def chunk_text(text, chunk_size=TEXT_CHUNK_SIZE, overlap=200):
     """Simple text chunker with overlap"""
@@ -111,11 +151,15 @@ def chunk_text(text, chunk_size=TEXT_CHUNK_SIZE, overlap=200):
         start += chunk_size - overlap
     return chunks
 
-# Main processing loop
-with open(args.input) as f:
-    for line in f:
-        if line.strip() and not line.startswith("#"):
-            print(f"Processing {line.strip()}")
-            process_paper(line.strip())
+def main():
+    # Main processing loop
+    with open(args.input) as f:
+        for line in f:
+            if line.strip() and not line.startswith("#"):
+                print(f"Processing {line.strip()}")
+                process_paper(line.strip())
 
-print("✅ Done processing papers")
+    print("✅ Done processing papers")
+
+if __name__ == "__main__":
+    main()

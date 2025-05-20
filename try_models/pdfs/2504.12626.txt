@@ -1,0 +1,219 @@
+# Packing Input Frame Context in Next-Frame Prediction Models for Video Generation
+
+## 1 Introduction
+
+Forgetting and drifting are the two most critical problems in next-frame (or next-frame-section) prediction models for video generation. Herein, "forgetting" refers to the fading of memory as the model struggles to remember earlier content and maintain consistent temporal dependencies, whereas "drifting" refers to the iterative degradation of visual quality due to error accumulation over time (also called exposure bias).
+
+A fundamental dilemma emerges when attempting to simultaneously address both forgetting and drifting: any method that mitigates forgetting by enhancing memory may also make error accumulation/propagation faster, thereby exacerbating drifting; any method that reduces drifting by interrupting error propagation and weakening the temporal dependencies (e.g., masking or re-noising the history) may also worsen the forgetting. This essential trade-off hinders the scalability of next-frame prediction models.
+
+The forgetting problem leads to a naive solution to encode more frames, but this quickly becomes computationally intractable due to the quadratic attention complexity of transformers (or sub-quadratic optimizations like FlashAttn, etc.). Moreover, video frames contain significant temporal redundancy, rendering naive full-context approaches less efficient. The substantial duplication of visual features across consecutive frames reveals the potential to design effective compression systems to facilitate memorization.
+
+The drifting problem is influenced by memorizing mechanisms from multiple aspects. The source of drifting lies in initial errors that occur in individual frames, while the effect is the propagation and accumulation of these errors across subsequent frames, leading to degraded visual quality. On one hand, a stronger memorizing mechanism leads to better temporal consistency and reduces the occurrence of initial errors, thereby mitigating drifting. On the other hand, a stronger memorizing mechanism also memorizes more errors and thus accelerates error propagation when errors do occur, exacerbating drifting. This paradoxical relationship between memory mechanisms and drifting necessitates carefully designed training/sampling methods to facilitate error correction or interrupt error propagation.
+
+In this paper, we propose FramePack as an anti-forgetting memory structure along with anti-drifting sampling methods. The FramePack structure addresses the forgetting problem by compressing input frames based on their relative importance, ensuring the total transformer context length converges to a fixed upper bound regardless of video duration. This enables the model to encode significantly more frames without increasing the computational bottleneck, thereby facilitating anti-forgetting. Moreover, we propose anti-drifting sampling methods that break the causal prediction chain and incorporate bi-directional context. These methods include generating endpoint frames before filling intermediate content, and an inverted temporal sampling approach where frames are generated in reverse order, each attempting to approach a known high-quality frame (e.g., an input frame in image-to-video tasks). We show that these methods effectively reduce the occurrence of errors and prevent their propagation.
+
+We demonstrate that existing pretrained video diffusion models (e.g., HunyuanVideo, Wan, etc.) can be finetuned with FramePack. Our experiments reveal several findings: because next-frame prediction generates smaller tensor sizes per step compared to full-video generation, it enables more balanced diffusion schedulers with less extreme flow shift timesteps. We observe that the resulting less aggressive schedulers may lead to improved visual quality, beyond the direct goals of addressing the forgetting and drifting problems.
+
+## 2.1 Anti-forgetting and Anti-drifting
+
+Noise scheduling and augmentation in history frames modify noise levels at specific timesteps, video times, or image frequencies to create causal computation or anti-drifting effects. These methods generally reduce dependency on past frames. DiffusionForcing and RollingDiffusion are typical examples. Our ablation studies investigate the influence of adding noise to history frames.
+
+Classifier-Free Guidance (CFG) over history frames applies different masks or noise levels to opposite sides of guidance to amplify the forgetting-drifting trade-off. HistoryGuidance demonstrates this approach. Our ablation studies include guidance-based noise scheduling.
+
+Anchor frames can be used as planning elements for video generation. StreamingT2V and ART-V use reference images as anchors. Video planning approaches use image or video anchors for content planning.
+
+Compressing latent space can improve the efficiency of video diffusion models. LTXVideo shows that a highly compressed latent space can be used for diffusing videos efficiently. Pyramid-Flow diffuses video latents in a pyramid and renoise downsampled latents in that pyramid to reduce computation costs. FAR proposes a multi-level causal attention structure to establish long-short-term causal context pacifying and KV caches. HiTVideo uses hierarchical tokenizers to enhance the video generation with autoregressive language models. The trade-off between forgetting and drifting is also evidenced by previous discussions. CausVid shows that when the video generator is causal, the quality degradation appears at the end of the video and the final video length may be subject to an upper bound. DiffusionForcing discussed that the cause of this drift may be related to error accumulation in models' observation disparity between training and inference. Wang et al. discussed that a model with stronger memory may suffer more from drifting and error accumulation.
+
+## 2.2 Long Video Generation
+
+Extending video generation beyond short clips remains an open problem. LVDM generates long videos using latent diffusion, while Phenaki creates variable-length videos from sequences of text prompts. Gen-L-Video applies temporal co-denoising for multi-text conditioned videos, and FreeNoise extends pretrained models without additional training via noise rescheduling. NUWA-XL implements a Diffusion-over-Diffusion architecture with coarse-to-fine processing, while Video-Infinity overcomes computational constraints through distributed generation. StreamingT2V produces consistent, dynamic, and extendable videos without hard cuts, and CausVid transforms bidirectional models into fast autoregressive ones through distillation. Recent advances include GPT-like architecture (ViD-GPT ), multi-event generation (MEVG ), attention control for multi-prompt generation (DiTCtrl ), precise temporal control (MinT ), history-based guidance (HistoryGuidance ), unified next-token and full-sequence diffusion (Dif-fusionForcing ), SpectralBlend temporal attention (FreeLong ), video autoregressive modeling (FAR ), and test-time training (TTT ).
+
+## 2.3 Efficient Architectures for Video Generation
+
+We discuss typical methods to improve video model efficiency. Linear attention reduces the attention complexity by reformulating linear operations. Sparse attention computes attention only on important token pairs, skipping negligible attention values. Low-bit computation quantizes model weights and activations to lower precision for faster computation. Low-bit attention specifically optimizes attention computation through quantization techniques. Hidden state caching reuses intermediate computations across diffusion timesteps to avoid redundant calculations. Distillation transfers knowledge from larger models to smaller ones or reduces sampling steps while preserving quality.
+
+## 3 Method
+
+We consider a video generation model that predicts next frames repeatedly to form a video. For simplicity, we consider diffusion-based next-frame-section prediction models using Diffusion Transformers (DiTs) that generate a section of S unknown frames X R Shwc conditioned on T input frames F R T hwc . All definitions of frames and pixels refer to latent representations, as most modern models operate in latent space.
+
+For next-frame (or next-frame-section) prediction, S is typically 1 (or a small number). We focus on the challenging case where T ≫ S. With per-frame context length L f (typically L f ≈ 1560 for each 480p frame in Hunyuan/Wan/Flux), the vanilla DiT yields total context length L = L f (T + S). This causes context length explosion when T is large.
+
+## 3.1 FramePack
+
+We observe that the input frames have different importance when predicting the next frame, and we can prioritize the input frames according to their importance. Without loss of generality, we consider a simple case where the temporal proximity reflects importance: frames temporally closer to the prediction target can be more relevant. We enumerate all frames with F 0 being the most important (e.g., the most recent) and F T -1 being the least (e.g., the oldest).
+
+We define a length function ϕ(F i ) that determines each frame's context length after VAE encoding and transformer patchifying, applying progressive compression to less important frames as
+
+where lambda &gt; 1 is a compression parameter. The frame-wise compression is achieved by manipulating the transformer's patchify kernel size in the input layer (e.g., lambda = 2, i = 5 means a kernel size where the product of all dims equals 2 5 = 32 like the 3D kernel 2 4 4, or 8 2 2, etc.). The total context length then follows a geometric progression
+
+and when T , the total context length converges to
+
+and this bounded context length makes FramePack's computation bottleneck invariant to the input frame number T .
+
+## frames unknown frames time
+
+## Next-frame-section Prediction Model
+
+GPU memory layout (context length proportion):
+
+(a)
+
+## Typical geometric progression
+
+Compression rate (relative): 1, 1/2, 1/4, 1/8, 1/16, … Pachify kernel: (1,2,2), , , , , …
+
+Progression with duplicated levels Compression rate (relative): 1, 1/4, 1/4, 1/4, 1/16, 1/16, 1/16, … Pachify kernel: (1,2,2), , , , , …
+
+## Geometric progression with temporal kernel
+
+(multiple frames in one tensor due to temporal kernel step) Compression rate (relative): 1, 1/4, 1/16, 1/64, 1/256, … Pachify kernel: (1,2,2), (2,4,2), , , , …
+
+## Symmetric progression
+
+## Same kernel sizes with (d) Starting frames treated equally (e)
+
+Progression with important start Same kernel sizes with (a) Assigning the first frame with full context length
+
+Figure : Ablation Variants of FramePack. We present several typical kernel structures of FramePack with commonly used kernel sizes and compression rates. This list does not necessarily cover all popular variants, and more structures can be developed in a similar way.
+
+Since most hardware supports efficient matrix processing by powers of 2, we mainly discuss the case of lambda = 2 in this paper. Note that we can represent arbitrary compression rates by duplicating (or dropping) several specific terms in the power-of-2 sequence: considering the accumulation
+
+2-1 = 2, if we want to loosen it a bit, for example to 2.625, we can duplicate the terms 1 2 and 1 8 so that
+
+. Following this, one can cover arbitrary rates by converting the rate value to binary bits and then translate every bit.
+
+The patchifying operations in most DiTs are 3D, and we denote the 3D kernel as (p f , p h , p w ) representing the steps in frame number, height, and width. A same compression rate can be achieved by multiple possible kernel sizes, e.g., the compression rate of 64 can be achieved by , , (16, 2, 2), (64, 1, 1), etc. These would lead to different FramePack compression schedules.
+
+## Independent patchifying parameters
+
+We observe that features from deep neural networks at different compression rates exhibit notable differences. Empirical evidence shows that using independent parameters for the different input projections at multiple compression rates facilitates stabilized learning. We assign the most commonly used input compression kernels as independent neural network layers: (2, 4, 4), , and . For higher compressions (e.g., at )), we first downsample (e.g., with 2 2 2) and then use the largest kernel . This allows us We present sampling approaches to generate frames in different temporal orders. The shadowed squares are the generated frames in each iteration, whereas the white squares are the iteration inputs. Note that only the vanilla approach relies on causal inputs, and both the anti-drifting and inverted anti-drifting approaches receive bi-directional inputs.
+
+to handle all compression rates. When training these new input projection layers, we initialize their weights by interpolating from the pretrained patchifying projection (e.g., the (2, 4, 4) projection of HunyuanVideo/Wan).
+
+Tail options While in theory FramePack can process videos of arbitrary length with a fixed, invariant context length, practical considerations arise when the input frame length becomes extremely large. In the tail area, frames may fall below a minimum unit size (e.g., a single latent pixel). We discuss 3 options to handle the tail: (1) simply delete the tail; (2) allow each tail frame to increase the context length by a single latent pixel; (3) apply global average pooling to all tail frames and process them with the largest kernel. In our tests, the visual differences between these options are relatively negligible. We note that the tail refers to the least important frames, not always the oldest frames (in some cases, we can assign old frames with higher importance).
+
+RoPE alignment When encoding inputs with different compression kernels, the different context lengths require RoP alignment. RoPE generates complex numbers with real and imaginary parts for each token position across all channels, which we refer to as "phase". RoPE typically multiplies the phase to neural network features channel-wise. To match the RoPE encoding after compression, we directly downsample (using average pooling) the RoPE phases to match the compression kernels.
+
+## 3.2 FramePack Variants
+
+The above FramePack structure is discussed with the frame-wise importance defined by simple temporal proximity, and the compression schedule with simple geometric progression. We consider more variants for practical applications and optimal quality. We visualize typical structures in Fig. . First, compression levels can be duplicated and combined with higher compression rates. In Fig. , a power-of-4 sequence with each level repeated 3 times allows for same kernel sizes in frame width and height, making the compression more compact. Compression can also be applied in the temporal dimension (e.g., using a power-of-two sequence), as in Fig. ). This method encodes multiple frames in the same tensor, which is naturally aligned with DiT architectures.
+
+We discuss alternative frame-wise importance modeling beyond simple temporal proximity in Fig. ,). For instance, we can assign full-length context to the oldest frame, or treat both beginning and ending frames as equally important while applying higher compression to middle frames. These structures are particularly effective for applications like image-to-video generation, where userprovided initial frames carry higher importance.
+
+## 3.3 Anti-drifting Sampling
+
+Drifting is a common problem in next-frame prediction models where visual quality degrades as video length increases. While the underlying cause remains an open research problem, we observe that drifting only happens in causal sampling (i.e., when models only access past frames). We show that providing access to future frames (even a single future frame) will get rid of drifting. We point out that bi-directional context, rather than strictly causal dependencies, might be fundamental for maintaining video quality.
+
+The vanilla sampling method shown in Fig. , i.e., iteratively predicting future frames, can be modified into Fig. , where the first iteration simultaneously generates both beginning and ending sections, while subsequent iterations fill the gaps between these anchors. This bi-directional approach prevents drifting since the ending frames are established in the first iteration, and all future generations attempt to approximate them.
+
+We discuss an important variant by inverting the sampling order in Fig. ) into Fig. ). This approach is effective for image-to-video generation because it can treat the user input as a high-quality first frame, and continuously refines generations to approximate the user frame (which is unlike Fig. ) that does not approximate the first frame), leading to overall high-quality videos.
+
+All three methods in Fig. ,,) can generate videos of arbitrary length. Method (a) achieves this through direct iterative generation, while in methods (b) and (c), we can dynamically move the ending sections (or generated frames) to greater distances as our generated frames approach them. Alternatively, in practice, setting a sufficiently large time range (e.g., 1 minute) in the first iteration typically satisfies practical requirements.
+
+RoPE with random access These sampling methods require modifications to RoPE to support non-consecutive phases (time indices of frames). This is achieved by skipping the non-queried phases (indices) in the time dimension.
+
+## 4 Experiments
+
+## 4.1 Ablative Naming
+
+To simplify the presentation of the experiments, we use a common naming convention for all ablative structures. A FramePack name is represented as a string such as td_f16k4f4k2f1k1_g9_x_f1k1. We explain the meaning of this notation: Kernel: A kernel name is like k1h2w2. The k stands for "kernel", and k1h2w2 indicates a patchify kernel with shape (1, 2, 2), where the temporal size is 1, the height is 2, and the width is 2.
+
+Kernel (simplified): For simplicity, since kernels that are multiples of (1, 2, 2) are commonly used, we use abbreviated notation such as k1 that only denotes the temporal dimension. Specifically, k1 represents k1h2w2 (the kernel (1, 2, 2)), k2 represents k2h4w4 (the kernel (2, 4, 4)), k4 represents k4h8w8 (the kernel (4, 8, 8)), etc. Tail: We append the notation with td, ta, or tc to indicate the tail frames before or after packing, such as td_f16k4f4k2f1k1. The three options are as discussed in Section 3.1. Herein, the "delete" option td deletes the tail. The "append" option ta compresses each tail frame by performing a 3D pooling of (1, 32, 32) and then encodes with the nearest kernel, and the "compress" option tc uses global average pooling for all tail frames and compresses them with the nearest kernel.
+
+## Skipping:
+
+The notation x skips an arbitrary number of frames (including 0 frames).
+
+## Generating:
+
+The notation g9 means generating 9 frames.
+
+With the above naming convention, we can represent all ablative structures in a compact form. Note that this naming also implies the sampling approach as discussed in Section 3.3. Consider the three similar structures and their sampling: td_f16k4f4k2f1k1_g9: The vanilla sampling that generates frames in temporal order. td_f16k4f4k2f1k1_g9_x_f1k1: The anti-drifting sampling with an endpoint frame. f1k1_x_g9_f1k1f4k2f16k4_td: The inverted anti-drifting sampling in inverted temporal order.
+
+## 4.2 Base Model and Implementation Details
+
+We implement FramePack with Wan and HunyuanVideo. We implement both the text-to-video and image-to-video structures, though both are naturally supported by next-frame-section prediction models and do not need architecture modifications.
+
+The Wan base model is the official Wan2.1 model. The HunyuanVideo model is an improved version of official HunyuanVideo models to match the capability of Wan2.1, with the modifications: (1) adding the SigLip-Vision model google/siglip-so400m-patch14-384 as a vision encoder, (2) removing the reliance on Tencent's internal MLLM, (3) freezing LLama3.1 as a pure text model and ignoring its multi-modality, and (4) continued training on high-quality data.
+
+Note that the numerical results presented in this paper should not be interpreted as direct comparisons between Wan and HunyuanVideo, as both were trained with similar computational budgets while Wan's larger model size means fewer relative resources (e.g., batch size). Both models demonstrate comparable quality after sufficient training. We recommend HunyuanVideo as the default configuration for more efficient training and faster inference.
+
+Dataset We follow the guidelines of LTXVideo 's dataset collection pipeline to gather data at multiple resolutions and quality levels. All data are filtered using quality measurements and motion scores to ensure a high-quality diverse distribution. We use aspect ratio bucketing for multi-resolution training with a minimum unit size of 32 pixels. For example, the buckets at 480p resolution include: (416, 960), (448, 864), (480, 832), (512, 768), (544, 704), (576, 672), (608, 640), (640, 608), (672, 576), (704, 544), (768, 512), (832, 480), (864, 448), and (960, 416).
+
+## Small-scale Training
+
+FramePack achieves a batch size of 64 on a single 8A100-80G node with the 13B HunyuanVideo model at 480p resolution (without using any image-based workaround training that many community LoRAs are built on top of). This batch size is comparable even to image diffusion models like the 12B Flux, making FramePack suitable for personal or laboratory-scale training and experimentation.
+
+Training We conduct all experiments using H100 GPU clusters. Each FramePack variant in the ablation studies consumes approximately 48 hours of training, while the final models are trained for one week. We use the Adafactor optimizer with a fixed learning rate of 1e-5 without learning rate scheduling. The gradient norm clip is set to 0.5.
+
+## Lower flow shift
+
+Since the next-frame-section prediction methods generate smaller 3D tensors at each inference compared to full-video diffusion, the models can be trained with much lower flow shift values. We use Flux's dynamic flow shift to train all models. We find that this leads to sharp and clean results that are closer to real videos.
+
+## 4.3 Evaluation Metrics
+
+We discuss the metrics for evaluating ablative architectures. The tested inputs consist of 512 real user prompts for text-to-video and 512 image-prompt pairs for image-to-video tasks. All test samples were curated from real users to ensure diversity and real-world applicability. For quantitative tests, we by default use 30 seconds for long videos and 5 seconds for short videos.
+
+## 4.3.1 Multi-dimension Metrics
+
+Multiple metrics for video evaluations are consistent with common benchmarks, e.g., VBench , VBench2 , etc. All scores are normalized using the same numerical system with VBench.
+
+## Clarity:
+
+The MUSIQ image quality predictor trained on the SPAQ dataset. This metric measures artifacts such as noise and blurring in the generated frames.
+
+## Aesthetic:
+
+The LAION aesthetic predictor . This metric measures the aesthetic values perceived with a CLIP-based estimator.
+
+## Motion:
+
+The video frame interpolation model modified by VBench to measure the smoothness of motion.
+
+## Dynamic:
+
+The RAFT modified by VBench to estimate the degree of dynamics. Note that the "dynamic" metric and "motion" metric represent a trade-off, e.g., a still image may rank high on motion smoothness but will be penalized by low dynamic degrees.
+
+## Semantic:
+
+The video-text score computed by ViCLIP . This metric measures the overall semantic consistency between the generated video and the input text.
+
+Anatomy: The ViT pretrained by VBench for identifying the per-frame presence of hands, faces, bodies, etc.
+
+Identity: The facial feature similarity using ArcFace with face detection by RetinaFace to measure the identity consistency.
+
+## 4.3.2 Drifting Measurements
+
+We discuss the methods to measure drifting. Several metrics from VBench-Long already integrate long-range consistency measurements and may indicate drifting. We propose a more direct metric, namely start-end contrast, to measure drifting from multiple aspects.
+
+We observe that when drifting occurs, a significant difference emerges between the beginning and ending portions of a video across various quality metrics. We define the start-end contrast ∆ M drift for an arbitrary quality metric M as:
+
+where V is the tested video, V start represents the first 15% of frames, and V end represents the last 15% of frames. This start-end contrast can be applied to different metrics . The magnitude of ∆ M drift (V ) directly indicates the severity of drifting. Since video models may generate frames in different temporal orders (either forward or backward), we use the absolute difference to ensure our metric remains direction-agnostic.
+
+## 4.3.3 Human Assessments
+
+We collect human preferences from A/B tests. Each ablative architecture yields 100 results. The A/B tests are randomly distributed among ablations, and we ensure that each ablation covers at least 100 assessments. We report ELO-K32 score and the relative ranking.
+
+## 4.4 Ablative Results
+
+As shown in Table , we note several discoveries: (1) The inverted anti-drifting sampling method achieves the best results in 5 out of 7 metrics, while other sampling methods achieve at most a single best metric. ( ) The inverted anti-drifting sampling achieves the best performance in all drifting metrics. (3) Human evaluations indicate that generating 9 frames per section yields better perception than generating 1 or 4 frames, as evidenced by the higher ELO scores for configurations with g9 compared to their g1 or g4 counterparts. (4) While vanilla sampling achieved the highest dynamic score, this is likely attributable to drifting effects rather than genuine quality. We also observe that differences between specific configuration options within the same sampling approach are relatively small and random, suggesting that the sampling category contributes more to the overall performance difference.
+
+## 4.5 Comparison to Alternative Architectures
+
+We discuss several relevant alternatives to generate videos in various ways. The involved methods either enable longer video generation, reduce computational bottlenecks, or both. To be specific, we implement these variants on top of HunyuanVideo default architecture (33 latent frames) using a simple naive sliding window with half context length for history inputs.
+
+Repeating image-to-video: Directly repeat the image-to-video inference to make longer videos.
+
+Anchor frames: Use an image as the anchor frame to avoid drifting. We implement a structure that resembles StreamingT2V .
+
+Causal attention: Finetune full attention into causal attention for easier KV cache and faster inference. We implement a structure that resembles CausVid .
+
+Noisy history: Delay the denoising timestep on history latents so that history latents are noisy (but less noisy than the current generating latents). Reducing the reliance on the history is beneficial for interrupting error accumulation, thus mitigates drifting, but at the cost of aggravating forgetting. We implement a structure that resembles DiffusionForcing .
+
+History guidance: Delay the denoising timestep on history latents but also put the completely noised history on the unconditional side of CFG guidance. This will speed up error accumulation thus aggravating drifting, but also enhance memory to mitigate forgetting. We implement a structure that resembles HistoryGuidance .
+
+As shown in Table , we observe several findings: (1) The proposed method achieves the best results in 3 global metrics, while other methods excel in at most one or two metrics. The proposed method achieves the best results across all drifting metrics. (3) This evaluation aligns with human perceptions as evidenced by the ELO score.
+
+## 5 Conclusion
+
+In this paper, we presented FramePack, a neural network structure that aims to address the forgettingdrifting dilemma in next-frame prediction models for video generation. FramePack applies progressive compression to input frames based on their importance, ensuring the total context length converges to a fixed upper bound regardless of video duration. This is achieved through manipulating transformer patchify kernel sizes for different compression rates. Combined with the anti-drifting sampling methods that incorporate bi-directional context through early-established endpoints or inverted temporal ordering, our approach enables longer video generation while maintaining unchanged computational bottlenecks. Experiments suggest that FramePack can improve model responsiveness and visual quality in inference, while allowing for higher batch sizes in training. The approach is compatible with existing video diffusion models and supports various compression variants that can be optimized for wider applications.
