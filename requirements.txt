@@ -20,3 +20,4 @@ sentencepiece
 accelerate
 pypdf2
 psutil
+lxml
