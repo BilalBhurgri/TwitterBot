@@ -6,4 +6,6 @@ snippets
 .env
 __pycache__/
 *.pdf
+abstracts
 snippets
+.env
