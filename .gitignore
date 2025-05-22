@@ -3,9 +3,8 @@
 abstracts
 snippets
 .env
-.env
 __pycache__/
 *.pdf
 abstracts
 snippets
-.env
+

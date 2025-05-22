@@ -8,6 +8,8 @@ import time
 import json
 import data_processing.parse_paper as parse_paper
 import data_processing.parse_paper_remove_math as parse_paper_remove_math
+import parse_paper
+import parse_paper_remove_math
 import get_paper_xml
 
 # Simplified setup

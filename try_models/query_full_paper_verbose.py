@@ -21,6 +21,13 @@ examples = {}
 
 # Load examples from JSON
 with open(EXAMPLES_PATH, 'r') as f:
+=======
+import parse_paper_remove_math
+import parse_paper
+
+examples = {}
+# Load examples from JSON
+with open('./example_outputs/examples.json', 'r') as f:
     examples = json.load(f)
 
 def print_memory_usage(label=""):

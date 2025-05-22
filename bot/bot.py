@@ -5,6 +5,7 @@ from bot.scrape import get_responses, get_responses_text
 from try_models.query import query_and_generate
 from try_models import query_full_paper_verbose
 import boto3
+from try_models.older_code.query import query_and_generate
 
 parser = argparse.ArgumentParser(description='Generate tweets from paper database')
 parser.add_argument('--folder_name', required=False, help='DB name', default="papers2")
@@ -102,16 +103,10 @@ def main():
 
     # TODO: just generate stuff with full_paper_tweets and embedding_tweets 
     for paper_id, tweet in embeddings_tweets:
-        # print(f"Generated Tweet for {paper_id}:")
-        # print(tweet)
-        # print("\n" + "-"*50 + "\n")
-        # print("Do you want to post this? (y/n): ", end="")
-        # answer = input().strip().lower()
-        return tweet
-        # if answer == "y":
-        #     post_tweet(tweet)
-        # else:
-        #     print("❌ Tweet canceled.")
+      return tweet
+    
+    for paper_id, tweet in full_paper_tweets:
+      return tweet
         
 
 if __name__ == "__main__":

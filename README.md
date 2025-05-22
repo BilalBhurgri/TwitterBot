@@ -1,5 +1,6 @@
-# TwitterBot
+## Setup
 
+In the project root folder:
 
 ## Setup
 
@@ -34,7 +35,6 @@ Posting: `python -m bot.bot --name NAME [--topic TOPIC] [--num_papers NUM_PAPERS
     - This SHOULD call `query_full_paper_verbose.py`, which returns the summary for 1 paper.
     - It also has another function that simply calls `query.py`, which takes in some input query -> semantic search on chromadb embeddings -> model 
 - `server-gpu/app.py`: The server in the `vm-with-gpu-2` instance that the client `scheduler.py` talks to. 
-
 
 
 ## simple-update-db.py 
@@ -102,3 +102,4 @@ Use internal IP addresses and see if you can ping and run scripts on the vm-with
 
 # S3 
 
+Use internal IP addresses and see if you can ping and run scripts on the vm-with-gpu-2. 
