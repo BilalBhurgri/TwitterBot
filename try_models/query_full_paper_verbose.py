@@ -8,6 +8,20 @@ import time
 import traceback
 import re
 import json
+import data_processing.parse_paper_remove_math as parse_paper_remove_math
+import data_processing.parse_paper as parse_paper
+from pathlib import Path
+import sys
+
+project_root = str(Path(__file__).parent.parent)
+sys.path.append(project_root)
+EXAMPLES_PATH = os.path.join(project_root, 'try_models','example_outputs', 'examples.json')
+
+examples = {}
+
+# Load examples from JSON
+with open(EXAMPLES_PATH, 'r') as f:
+=======
 import parse_paper_remove_math
 import parse_paper
 

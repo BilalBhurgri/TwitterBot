@@ -1,5 +1,10 @@
 .venv
+*.pdf
+abstracts
+snippets
 .env
 __pycache__/
 *.pdf
+abstracts
 snippets
+
