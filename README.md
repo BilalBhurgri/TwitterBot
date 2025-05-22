@@ -9,6 +9,8 @@ In the project root folder:
 2. `python -m venv .venv` for first time setup.
 3. `source .venv/bin/activate` 
 4. `pip install -r requirements.txt` (might take a minute)
+5. Install gcloud CLI for VM access
+6. Install aws cli. We use boto3. 
 
 ## Testing
 
@@ -27,6 +29,13 @@ Posting: `python -m bot.bot --name NAME [--topic TOPIC] [--num_papers NUM_PAPERS
 
 
 # Overview of scripts
+
+- `bot/scheduler.py`: The main pipeline. 
+    - This SHOULD call `query_full_paper_verbose.py`, which returns the summary for 1 paper.
+    - It also has another function that simply calls `query.py`, which takes in some input query -> semantic search on chromadb embeddings -> model 
+- `server-gpu/app.py`: The server in the `vm-with-gpu-2` instance that the client `scheduler.py` talks to. 
+
+
 
 ## simple-update-db.py 
 
@@ -90,3 +99,6 @@ If you try `nvidia-smi` and it isn't recognized, then you might want to try thes
 1. https://cloud.google.com/compute/docs/gpus/install-drivers-gpu
 
 Use internal IP addresses and see if you can ping and run scripts on the vm-with-gpu-2. 
+
+# S3 
+

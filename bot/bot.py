@@ -2,7 +2,9 @@ import subprocess, requests, time, json, random, os, tweepy, argparse
 from dotenv import load_dotenv
 from unittest.mock import MagicMock
 from bot.scrape import get_responses, get_responses_text
-from try_models.older_code.query import query_and_generate
+from try_models.query import query_and_generate
+from try_models import query_full_paper_verbose
+import boto3
 
 parser = argparse.ArgumentParser(description='Generate tweets from paper database')
 parser.add_argument('--folder_name', required=False, help='DB name', default="papers2")
@@ -15,6 +17,9 @@ parser.add_argument('--post', action='store_true', help='Actually post to Twitte
 args = parser.parse_args()
 
 load_dotenv()
+
+s3 = boto3.client('s3', region_name='us-west-1')
+
 if args.post:
     # Twitter API credentials - store these in .env
     # Initialize Tweepy's Client using OAuth 1.0a credentials
@@ -45,9 +50,58 @@ def post_tweet(tweet):
     except Exception as e:
         print(f"❌ Failed to post tweet: {str(e)}")
 
-def main():
+def generate_tweet_from_full_paper():
+    """
+    Pick 3 random papers and generate tweets about them by using query_full_paper_verbose.py
+    Returns: list of tuples (paper_id, tweet)
+    """
+    papers_response = s3.list_objects_v2(
+        Bucket=os.environ.get('BUCKET_NAME'),
+        Prefix='papers/'
+    )
+
+    papers_keys = [obj['Key'] for obj in papers_response.get('Contents', [])]
+
+    for obj in papers_response.get('Contents', []):
+        print(f"File: {obj['Key']}")
+        print(f"Modified: {obj['LastModified']}")
+        print("---")
+        # Key format is papers/2412.00857.txt
+        papers_keys.append(obj['Key'])
+    
+    # Pick 3 random papers
+    selected_papers = random.sample(papers_keys, min(3, len(papers_keys)))
+    summaries = []
+
+    for paper_key in selected_papers:
+        # Get the summary from the GPU server
+        summary = requests.get(f'http://{os.environ.get("VM_GPU_INTERNAL_IP")}:5000/get-paper-summary/{paper_key}')
+        summary = summary.json()['summary']
+        summaries.append((paper_key, summary))
+
+    return summaries
+
+def generate_tweet_from_embeddings():
+    """
+    Generates tweets by using query.py, which feeds embeddings into a model
+    Returns: list of tuples (paper_id, tweet)
+    """
     tweets = query_and_generate(args)
-    for paper_id, tweet in tweets:
+    return tweets
+
+
+def main():
+    """
+    This should be able to trigger 2 different kinds of tweet generations: 
+    - Pick a random paper and generate a tweet about it by using query_full_paper_verbose.py
+        - AKA feeding the full paper text to a model with a large context window 
+    - Use query.py and generate a tweet by feeding embeddings to a model
+    """
+    full_paper_tweets = generate_tweet_from_full_paper()
+    embeddings_tweets = generate_tweet_from_embeddings()
+
+    # TODO: just generate stuff with full_paper_tweets and embedding_tweets 
+    for paper_id, tweet in embeddings_tweets:
         # print(f"Generated Tweet for {paper_id}:")
         # print(tweet)
         # print("\n" + "-"*50 + "\n")
