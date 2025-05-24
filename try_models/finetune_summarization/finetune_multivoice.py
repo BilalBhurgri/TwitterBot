@@ -9,6 +9,7 @@ from transformers import (
     TrainingArguments, 
     DataCollatorForSeq2Seq
 )
+import argparse
 import json
 
 def load_twitter_data(file_path="twitter_training_data.json"):
@@ -57,14 +58,16 @@ def load_huggingface_dataset(dataset_name, split="train", subset=None, num_sampl
         fallback = load_dataset("tweet_eval", "sentiment", split="train")
         return list(fallback.select(range(100)))
 
-def format_training_data(data, target_personality="elonmusk", data_source="scraped"):
+def format_training_data(data, data_source="scraped", include_personality=True):
     """
-    Convert different data sources into instruction format
+    Convert different data sources into instruction format for AI researcher personality learning
+    
+    Training goal: Learn to write tweets in AI researcher style (multiple personalities)
     
     Args:
         data: List of examples (format depends on data_source)
-        target_personality: The personality style to emulate
-        data_source: "scraped", "summarization", "twitter", or "custom"
+        data_source: "scraped", "twitter", "summarization", or "custom"
+        include_personality: Whether to specify personality in prompt or learn general style
     """
     formatted_examples = []
     
@@ -73,36 +76,42 @@ def format_training_data(data, target_personality="elonmusk", data_source="scrap
         target_text = ""
         
         if data_source == "scraped":
-            # From your scraped Twitter data
-            original_text = example.get('text', '')
-            summary = example.get('summary', '')
+            # From your scraped Twitter data - BEST for learning researcher personalities
+            original_tweet = example.get('text', '')
+            source_user = example.get('source_user', 'researcher')  # Which researcher this came from
             
-            if original_text and summary:
-                input_text = f"Summarize this content in the style of @{target_personality}: {original_text}"
-                target_text = summary[:280]  # Twitter length limit
+            if original_tweet and len(original_tweet.strip()) > 20:
+                if include_personality:
+                    # Option 1: Include the specific researcher name
+                    input_text = f"Write a tweet in the style of @{source_user} about: {original_tweet[:100]}..."
+                    target_text = original_tweet
+                else:
+                    # Option 2: General AI researcher style (recommended)
+                    input_text = f"Write an AI researcher tweet about: {original_tweet[:100]}..."
+                    target_text = original_tweet
+                
+        elif data_source == "twitter":
+            # From tweet_eval or similar - use for general tweet format learning
+            tweet_content = str(example.get('text', ''))
+            if tweet_content and len(tweet_content) > 20:
+                input_text = f"Write an AI researcher tweet about: {tweet_content}"
+                target_text = tweet_content
                 
         elif data_source == "summarization":
-            # From datasets like cnn_dailymail, xsum
+            # Use academic/tech content as topics for tweet generation
             article = example.get('article', '') or example.get('document', '')
             summary = example.get('highlights', '') or example.get('summary', '')
             
-            if article and summary:
-                input_text = f"Rewrite this summary in Twitter style like @{target_personality}: {summary}"
-                target_text = summary[:280]
-                
-        elif data_source == "twitter":
-            # From tweet_eval or similar Twitter datasets
-            text_content = str(example.get('text', ''))
-            if text_content:
-                input_text = f"Rewrite this in the style of @{target_personality}: {text_content}"
-                target_text = text_content[:100] + "..." if len(text_content) > 100 else text_content
+            if summary and len(summary) > 30:
+                input_text = f"Write an AI researcher tweet about: {summary[:200]}"
+                # Create academic-style tweet target
+                target_text = f"New research: {summary.split('.')[0]}. Implications for the field..."[:280]
                 
         elif data_source == "custom":
-            # Custom format with 'input' and 'output' keys
             input_text = example.get('input', '') or example.get('instruction', '')
             target_text = example.get('output', '') or example.get('response', '')
         
-        if input_text and target_text:
+        if input_text and target_text and len(target_text.strip()) > 10:
             formatted_examples.append({
                 "input_text": input_text,
                 "target_text": target_text
@@ -166,23 +175,15 @@ def main():
     print("LoRA applied successfully!")
     model.print_trainable_parameters()
     
-    # Choose your data source:
+    # AI Researcher tweet collection and training:
     
-    # Option 1: Load from scraped Twitter data
-    # raw_data = load_twitter_data("twitter_training_data.json")
-    # formatted_data = format_training_data(raw_data, target_personality="elonmusk", data_source="scraped")
+    # BEST: Scraped AI researcher tweets (100-1000 high quality tweets)
+    # raw_data = load_twitter_data("ai_researcher_tweets.json")
+    # formatted_data = format_training_data(raw_data, data_source="scraped", include_personality=False)
     
-    # Option 2: Load from Hugging Face summarization dataset
-    # raw_data = load_huggingface_dataset("cardiffnlp/tweet_eval", "3.0.0", split="train", num_samples=1000)
-    # formatted_data = format_training_data(raw_data, target_personality="elonmusk", data_source="summarization")
-    
-    # Option 3: Load from Twitter dataset
-    raw_data = load_huggingface_dataset("tweet_eval", subset="sentiment", num_samples=500)
-    formatted_data = format_training_data(raw_data, target_personality="elonmusk", data_source="twitter")
-    
-    # Option 4: Load custom instruction dataset
-    # raw_data = load_huggingface_dataset("databricks/databricks-dolly-15k", num_samples=1000)
-    # formatted_data = format_training_data(raw_data, target_personality="elonmusk", data_source="custom")
+    # FALLBACK: General Twitter data if no scraped data available
+    raw_data = load_huggingface_dataset("tweet_eval", subset="sentiment", split="train", num_samples=500)
+    formatted_data = format_training_data(raw_data, data_source="twitter")
     
     print(f"Formatted {len(formatted_data)} training examples")
     
@@ -281,7 +282,34 @@ def test_model(model_path="./twitter-personality-final"):
         print(f"Output: {generated_text}")
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description='AI Researcher Twitter Style Fine-tuning')
+    parser.add_argument('--mode', choices=['collect', 'train', 'test'], default='train',
+                       help='Mode: collect AI researcher tweets, train model, or test trained model')
+    parser.add_argument('--usernames-file', default='ai_researchers.txt',
+                       help='File containing AI researcher usernames')
+    parser.add_argument('--posts-per-user', type=int, default=10,
+                       help='Number of posts to collect per researcher (default: 10)')
+    parser.add_argument('--data-file', default='ai_researcher_tweets.json',
+                       help='JSON file containing collected tweets')
     
-    # Uncomment to test the trained model
-    # test_model()
+    args = parser.parse_args()
+    
+    # if args.mode == 'collect':
+        # print("🔍 Collecting AI researcher tweets...")
+        # usernames = load_usernames_from_file(args.usernames_file)
+        # collect_ai_researcher_data(
+        #     usernames=usernames,
+        #     posts_per_user=args.posts_per_user,
+        #     output_file=args.data_file
+        # )
+    
+    if args.mode == 'train':
+        print("🚀 Training AI researcher style model...")
+        main()
+    elif args.mode == 'test':
+        print("🧪 Testing trained model...")
+        test_model()
+
+# Usage examples:
+# python finetune_multivoice.py --mode train  
+# python finetune_multivoice.py --mode test
