@@ -232,6 +232,115 @@ def basic_example():
         print(f"\nResponse #{i+1} from {response['handle']}:")
         print(f"Content: {response['content'][:100]}...")
 
+    # Save results to JSON file
+    filename = f"twitter_responses_{results['original_tweet']['username']}_{results['original_tweet']['id']}.json"
+    with open(filename, 'w', encoding='utf-8') as f:
+        json.dump(results, f, indent=2, ensure_ascii=False)
+    
+    print(f"\nResults saved to: {filename}")
+
+
+def collect_training_data(usernames, posts_per_user=5, responses_per_post=20, output_file="twitter_training_data.json"):
+    """
+    Collect training data from multiple users for fine-tuning
+    
+    Args:
+        usernames: List of Twitter usernames to scrape
+        posts_per_user: Number of posts to collect from each user
+        responses_per_post: Number of responses to collect per post
+        output_file: Output JSON file name
+    """
+    all_data = []
+    
+    for username in usernames:
+        print(f"\nCollecting data from @{username}...")
+        
+        for post_idx in range(posts_per_user):
+            try:
+                results = get_responses(
+                    username=username,
+                    post_index=post_idx,
+                    max_responses=responses_per_post,
+                    headless=True,
+                    verbose=True
+                )
+                
+                # Create training examples (original tweet + responses as summaries)
+                training_example = {
+                    "text": results['original_tweet']['content'],
+                    "summary": " ".join([resp['content'] for resp in results['responses'][:5]]),  # Use first 5 responses
+                    "source_user": username,
+                    "tweet_id": results['original_tweet']['id'],
+                    "tweet_url": results['original_tweet']['url'],
+                    "all_responses": results['responses']
+                }
+                
+                all_data.append(training_example)
+                print(f"Collected post {post_idx + 1}/{posts_per_user} from @{username}")
+                
+            except Exception as e:
+                print(f"Error collecting post {post_idx} from @{username}: {e}")
+                continue
+    
+    # Save all training data
+    with open(output_file, 'w', encoding='utf-8') as f:
+        json.dump(all_data, f, indent=2, ensure_ascii=False)
+    
+    print(f"\nTraining data saved to: {output_file}")
+    print(f"Total examples collected: {len(all_data)}")
+    
+    return all_data
+
+
+def load_usernames_from_file(filename="usernames.txt"):
+    """
+    Load usernames from a text file
+    
+    Args:
+        filename: Path to the text file containing usernames
+        
+    Returns:
+        list: List of usernames
+    """
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            content = f.read().strip()
+            
+        # Split by commas and clean up whitespace
+        usernames = [username.strip() for username in content.split(',') if username.strip()]
+        
+        print(f"Loaded {len(usernames)} usernames from {filename}")
+        for i, username in enumerate(usernames, 1):
+            print(f"  {i}. @{username}")
+            
+        return usernames
+        
+    except FileNotFoundError:
+        print("file not found error!")
+        return [] # ['geoffreyhinton', 'Yoshua_Bengio', 'AndrewYNg']
+    except Exception as e:
+        print("exception!")
+        return [] # ['geoffreyhinton', 'Yoshua_Bengio', 'AndrewYNg']
+
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Twitter Scraper')
+    parser.add_argument('--mode', choices=['collect', 'example'], default='login',
+                       help='Mode to run: collect training data, or run basic example')
+    parser.add_argument('--usernames-file', default='usernames.txt',
+                       help='Path to file containing usernames (default: usernames.txt)')
+    parser.add_argument('--posts-per-user', type=int, default=5,
+                       help='Number of posts to collect per user (default: 5)')
+    parser.add_argument('--responses-per-post', type=int, default=20,
+                       help='Number of responses to collect per post (default: 20)')
+    parser.add_argument('--output-file', default='twitter_training_data.json',
+                       help='Output file for training data (default: twitter_training_data.json)')
+
     login()
+    usernames = load_usernames_from_file(args.usernames_file)
+    collect_training_data(
+        usernames=usernames,
+        posts_per_user=args.posts_per_user,
+        responses_per_post=args.responses_per_post,
+        output_file=args.output_file
+    )
