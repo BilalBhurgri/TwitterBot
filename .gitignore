@@ -1,10 +1,12 @@
 .venv
 *.pdf
 abstracts
+
 snippets
 .env
 __pycache__/
 *.pdf
 abstracts
 snippets
+try_models/finetune_summarization/twitter-personality-model/*
 

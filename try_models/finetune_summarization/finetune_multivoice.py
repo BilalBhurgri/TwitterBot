@@ -1,5 +1,7 @@
 import os
 import torch
+import math
+import argparse
 from datasets import Dataset, load_dataset
 from peft import get_peft_model, LoraConfig, TaskType
 from transformers import (
@@ -9,12 +11,12 @@ from transformers import (
     TrainingArguments, 
     DataCollatorForSeq2Seq
 )
-import argparse
 import json
 
-def load_twitter_data(file_path="twitter_training_data.json"):
+def load_huggingface_dataset(dataset_name, split="train", subset=None, num_samples=None):
     """Load scraped Twitter data from JSON file"""
     try:
+        file_path = ''
         with open(file_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         print(f"Loaded {len(data)} training examples from {file_path}")
@@ -25,7 +27,35 @@ def load_twitter_data(file_path="twitter_training_data.json"):
         dataset = load_dataset("tweet_eval", "sentiment")
         return dataset['train'][:100]  # Take first 100 examples
 
-def load_huggingface_dataset(dataset_name, split="train", subset=None, num_samples=None):
+def load_usernames_from_file(filename="ai_researchers.txt"):
+    """
+    Load usernames from a text file
+    
+    Args:
+        filename: Path to the text file containing usernames
+        
+    Returns:
+        list: List of usernames
+    """
+    try:
+        with open(filename, 'r', encoding='utf-8') as f:
+            content = f.read().strip()
+            
+        # Split by commas and clean up whitespace
+        usernames = [username.strip() for username in content.split(',') if username.strip()]
+        
+        print(f"Loaded {len(usernames)} usernames from {filename}")
+        for i, username in enumerate(usernames, 1):
+            print(f"  {i}. @{username}")
+            
+        return usernames
+        
+    except FileNotFoundError:
+        print(f"Error: {filename} not found. Using default usernames.")
+        return ['geoffreyhinton', 'Yoshua_Bengio', 'AndrewYNg']
+    except Exception as e:
+        print(f"Error reading {filename}: {e}. Using default usernames.")
+        return ['geoffreyhinton', 'Yoshua_Bengio', 'AndrewYNg']
     """
     Load dataset from Hugging Face Hub
     
@@ -120,29 +150,32 @@ def format_training_data(data, data_source="scraped", include_personality=True):
     return formatted_examples
 
 def preprocess_function(examples, tokenizer, max_input_length=512, max_target_length=128):
-    """Tokenize inputs and targets"""
+    """Tokenize inputs and targets properly for seq2seq"""
     
-    # Tokenize inputs
-    inputs = tokenizer(
+    # Tokenize inputs (don't return tensors here, let the trainer handle batching)
+    model_inputs = tokenizer(
         examples["input_text"],
         max_length=max_input_length,
         truncation=True,
-        padding=True,
-        return_tensors="pt"
+        padding=False  # Don't pad here, let DataCollator handle it
     )
     
     # Tokenize targets
-    with tokenizer.as_target_tokenizer():
-        targets = tokenizer(
-            examples["target_text"],
-            max_length=max_target_length,
-            truncation=True,
-            padding=True,
-            return_tensors="pt"
-        )
+    labels = tokenizer(
+        examples["target_text"],
+        max_length=max_target_length,
+        truncation=True,
+        padding=False  # Don't pad here
+    )
     
-    inputs["labels"] = targets["input_ids"]
-    return inputs
+    # Replace padding token id with -100 so it's ignored in loss computation
+    labels["input_ids"] = [
+        [(l if l != tokenizer.pad_token_id else -100) for l in label] 
+        for label in labels["input_ids"]
+    ]
+    
+    model_inputs["labels"] = labels["input_ids"]
+    return model_inputs
 
 def main():
     # Model setup
@@ -158,22 +191,37 @@ def main():
     
     # Add pad token if it doesn't exist
     if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+        tokenizer.add_special_tokens({'pad_token': tokenizer.eos_token})
+        model.resize_token_embeddings(len(tokenizer))
     
-    # LoRA configuration
+    print(f"Vocab size: {len(tokenizer)}")
+    print(f"Pad token: {tokenizer.pad_token}")
+    print(f"Pad token ID: {tokenizer.pad_token_id}")
+    
+    # LoRA configuration - more conservative settings
     lora_config = LoraConfig(
         task_type=TaskType.SEQ_2_SEQ_LM,
         inference_mode=False,
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.1,
-        target_modules=["q", "v", "k", "o", "wi", "wo"]  # T5 specific modules
+        r=8,  # Smaller rank to start
+        lora_alpha=16,  # Lower alpha
+        lora_dropout=0.05,  # Lower dropout
+        target_modules=["q", "v"],  # Fewer modules to start with
+        bias="none",
+        modules_to_save=None,
     )
     
     # Apply LoRA
     model = get_peft_model(model, lora_config)
     print("LoRA applied successfully!")
     model.print_trainable_parameters()
+    
+    # Debug: Check for any inf/nan in model parameters
+    for name, param in model.named_parameters():
+        if param.requires_grad:
+            if torch.isnan(param).any() or torch.isinf(param).any():
+                print(f"⚠️  Warning: NaN/Inf found in parameter {name}")
+            print(f"✓ Parameter {name}: shape={param.shape}, requires_grad={param.requires_grad}")
+            break  # Just check first trainable param
     
     # AI Researcher tweet collection and training:
     
@@ -187,12 +235,35 @@ def main():
     
     print(f"Formatted {len(formatted_data)} training examples")
     
+    # Debug: Print a few examples
+    if len(formatted_data) > 0:
+        print("\n📝 Sample training examples:")
+        for i, example in enumerate(formatted_data[:2]):
+            print(f"Example {i+1}:")
+            print(f"  Input: {example['input_text'][:100]}...")
+            print(f"  Target: {example['target_text'][:100]}...")
+            print()
+    
     # Create dataset
     dataset = Dataset.from_list(formatted_data)
     
-    # Tokenize dataset
+    # Tokenize dataset with better error handling
     def tokenize_function(examples):
-        return preprocess_function(examples, tokenizer)
+        try:
+            result = preprocess_function(examples, tokenizer)
+            
+            # Debug: Check for NaN/Inf in tokenized data
+            for key, values in result.items():
+                if isinstance(values, list) and len(values) > 0:
+                    # Check first example for issues
+                    first_val = values[0]
+                    if isinstance(first_val, list) and any(isinstance(x, float) and (math.isnan(x) or math.isinf(x)) for x in first_val):
+                        print(f"⚠️  Warning: NaN/Inf found in tokenized {key}")
+                        
+            return result
+        except Exception as e:
+            print(f"Error in tokenization: {e}")
+            raise
     
     tokenized_dataset = dataset.map(
         tokenize_function,
@@ -207,32 +278,57 @@ def main():
     
     print(f"Train size: {len(train_dataset)}, Eval size: {len(eval_dataset)}")
     
-    # Training arguments
+    # Debug: Check a sample from the tokenized dataset
+    if len(train_dataset) > 0:
+        sample = train_dataset[0]
+        print("\n🔍 Sample tokenized data:")
+        for key, value in sample.items():
+            if isinstance(value, list):
+                print(f"  {key}: length={len(value)}, first_few={value[:5]}")
+                # Check for NaN/Inf
+                if any(isinstance(x, float) and (math.isnan(x) or math.isinf(x)) for x in value):
+                    print(f"  ⚠️  WARNING: NaN/Inf detected in {key}")
+            else:
+                print(f"  {key}: {value}")
+        print()
+    
+    # Training arguments - more conservative
     training_args = TrainingArguments(
         output_dir="./twitter-personality-model",
-        num_train_epochs=3,
-        per_device_train_batch_size=4,
-        per_device_eval_batch_size=4,
-        warmup_steps=100,
-        weight_decay=0.01,
+        num_train_epochs=1,  # Start with 1 epoch
+        per_device_train_batch_size=1,  # Minimum batch size
+        per_device_eval_batch_size=1,
+        learning_rate=1e-4,  # Lower learning rate
+        warmup_steps=10,  # Fewer warmup steps
+        weight_decay=0.0,  # No weight decay to start
         logging_dir="./logs",
-        logging_steps=10,
-        evaluation_strategy="steps",
-        eval_steps=50,
-        save_steps=100,
+        logging_steps=5,  # More frequent logging
+        eval_strategy="steps",  # Fixed parameter name
+        eval_steps=20,
+        save_steps=50,
         save_total_limit=2,
         load_best_model_at_end=True,
         metric_for_best_model="eval_loss",
         greater_is_better=False,
-        report_to=None,  # Disable wandb logging
-        fp16=torch.cuda.is_available(),  # Use mixed precision if GPU available
+        report_to=None,
+        fp16=False,  # Disable fp16 - can cause NaN issues
+        bf16=False,  # Disable bf16 too
+        dataloader_pin_memory=False,
+        remove_unused_columns=False,
+        max_grad_norm=0.5,  # Lower gradient clipping
+        gradient_checkpointing=True,  # Save memory
+        optim="adamw_torch",  # Explicit optimizer
+        adam_epsilon=1e-6,  # Smaller epsilon to avoid numerical issues
     )
     
-    # Data collator
+    # Data collator with proper label handling
     data_collator = DataCollatorForSeq2Seq(
         tokenizer=tokenizer,
         model=model,
-        padding=True
+        padding=True,
+        max_length=512,
+        label_pad_token_id=-100,  # Ignore padded labels in loss
+        return_tensors="pt"
     )
     
     # Initialize trainer
@@ -295,14 +391,14 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     # if args.mode == 'collect':
-        # print("🔍 Collecting AI researcher tweets...")
-        # usernames = load_usernames_from_file(args.usernames_file)
-        # collect_ai_researcher_data(
-        #     usernames=usernames,
-        #     posts_per_user=args.posts_per_user,
-        #     output_file=args.data_file
-        # )
-    
+    #     print("🔍 Collecting AI researcher tweets...")
+    #     usernames = load_usernames_from_file(args.usernames_file)
+    #     collect_ai_researcher_data(
+    #         usernames=usernames,
+    #         posts_per_user=args.posts_per_user,
+    #         output_file=args.data_file
+    #     )
+
     if args.mode == 'train':
         print("🚀 Training AI researcher style model...")
         main()
@@ -311,5 +407,6 @@ if __name__ == "__main__":
         test_model()
 
 # Usage examples:
-# python finetune_multivoice.py --mode train  
-# python finetune_multivoice.py --mode test
+# python ai_researcher_trainer.py --mode collect --posts-per-user 20
+# python ai_researcher_trainer.py --mode train  
+# python ai_researcher_trainer.py --mode test
