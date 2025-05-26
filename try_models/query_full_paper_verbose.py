@@ -63,15 +63,13 @@ def generate_summary(text, tokenizer, model, max_length=200):
     
     # Create a prompt
     prompt = f"""
-    EXAMPLE:
-    {examples["good_formal_example"]}
+    You will be given a scientific paper. Please write a 200-word summary based on the following instructions.
 
     INSTRUCTIONS:
-    Write a 200 word summary of this paper like a twitter post. Focus on key findings and contributions.
-    DO NOT repeat the paper text verbatim.
-    DO NOT include phrases like "this paper" or "the authors".
-    ONLY USE ENGLISH!
-    DO NOT reuse the example output format.
+    Output key findings directly. Do not include phrases like "this paper" or "the authors".
+    Make sure the summary is factually consistent with the paper. Do not include non-factual information.
+    Prioritize interesting findings
+    Output the summary text only and nothing else. Do not include your thought process.
 
     PAPER TEXT:
     {text}
@@ -195,13 +193,13 @@ Paper text:
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
 
-def generate_eval(text, summary, tokenizer, model, max_length=200):
+def generate_eval(text, summaries, tokenizer, model, max_length=200):
     """Generate a evaluation with extensive debugging"""
     if not text or text.strip() == "":
         print("ERROR: Cannot generate evaluation from empty text")
         return "No text was provided for evaluation."
     
-    if not summary or summary.strip() == "":
+    if not summaries:
         print("ERROR: Cannot generate evaluation from empty summary")
         return "No summary was provided for evaluation."
     
@@ -212,39 +210,46 @@ def generate_eval(text, summary, tokenizer, model, max_length=200):
         text = text[:max_chars]
     
     # Create a prompt
-    prompt = f"""You will be given one summary tweet written for a research paper.
+    prompt = f"""You will be given several summaries written for the same research paper. Your task is to rate the summaries on two metrics.
 
-Your task is to rate the tweet on two metrics. Read these instructions carefully and refer back as needed.
+Criteria:
 
-Evaluation Criteria:
-
-1. Factual Consistency (1-3): Does the tweet only contain facts supported by the source text?
+1. Factual Consistency (1-3): Does the summary only contain facts supported by the source text?
 - 1 (Inconsistent): Major errors or many minor errors
 - 2 (Overall consistent): At most one minor error
 - 3 (Consistent): All facts supported
 
-2. Engagingness (1-3): Is the tweet interesting to most audiences?
+2. Engagingness (1-3): Is the summary interesting to most audiences?
 - 1 (Dull): Only interesting to specialists
 - 2 (Somewhat interesting): Engages those familiar with the field
 - 3 (Interesting): Engages general audiences regardless of expertise
 
-Evaluation Steps:
+Instructions:
 
-1. Read the source text and identify its key points.
-2. Read the tweet. Check for factual consistency and engagingness.
-3. Return two scores as: (Factual Consistency, Engagingness)
+1. Design evaluation steps based on the evaluation criteria.
+2. Evaluate each summary based on your evaluation steps.
+3. Choose the best summary based on your evaluation.
+4. Output based on the following format. Do not include anything else in your output.
 
-Example:
+Output Format:
+[evaluation step 1]
+[evaluation step 2]
+...
+[scores for summary 0]
+[scores for summary 1]
+...
+[index of best summary]
 
 Source Text:
 {text}
-
-Summary:
-{summary}
-
-Evaluation Form:
-(Factual Consistency, Engagingness):
 """
+
+    for i in range(len(summaries)):
+        prompt.append(f"""
+
+        Summary {i}:
+        {summaries[i]}
+        """)
 
     print(f"Prompt created with {len(prompt)} characters")
     
@@ -300,6 +305,7 @@ def main():
     parser.add_argument('--output_path', default=None, help='Path to save the summary')
     parser.add_argument('--eval_path', default=None, help='Path to save the evaluation')
     parser.add_argument('--model_name', default="Qwen/Qwen3-1.7B", help='Model to use (default: Qwen/Qwen3-1.7B)')
+    parser.add_argument('--num_summaries', default=2, help='Number of summaries to generate')
     args = parser.parse_args()
     
     # Check if file exists
@@ -358,33 +364,35 @@ def main():
         
         print(f"Successfully extracted {len(paper_text)} characters from PDF")
         print_memory_usage("After PDF load")
-        
-        # Generate summary
-        print("Generating summary...")
-        if 'mistral' in model_name.lower():
-            summary = generate_summary_mistral(paper_text, tokenizer, model)
-        else:
-            # qwen code
-            summary = generate_summary(paper_text, tokenizer, model)
-        
-        # Verify summary
-        if not summary or summary.strip() == "":
-            print("ERROR: Generated summary is empty")
-            return
+
+        summaries = [None] * args.num_summaries
+        for i in range(args.num_summaries):
+            # Generate summary
+            print("Generating summary...")
+            if 'mistral' in model_name.lower():
+                summaries[i] = generate_summary_mistral(paper_text, tokenizer, model)
+            else:
+                # qwen code
+                summaries[i] = generate_summary(paper_text, tokenizer, model)
             
-        # Print results
-        print("\nGenerated Summary:")
-        print("-" * 50)
-        print(summary)
-        print("-" * 50)
+            # Verify summary
+            if not summaries[i] or summaries[i].strip() == "":
+                print("ERROR: Generated summary is empty")
+                return
+                
+            # Print results
+            print("\nGenerated Summary:")
+            print("-" * 50)
+            print(summaries[i])
+            print("-" * 50)
 
         # Generate evaluation
         print("Generating evaluation...")
         if 'mistral' in model_name.lower():
-            eval = generate_eval_mistral(paper_text, summary, tokenizer, model)
+            eval = generate_eval_mistral(paper_text, summaries, tokenizer, model)
         else:
             # qwen code
-            eval = generate_eval(paper_text, summary, tokenizer, model)
+            eval = generate_eval(paper_text, summaries, tokenizer, model)
         
         # Verify summary
         if not eval or eval.strip() == "":
@@ -400,7 +408,10 @@ def main():
         if args.output_path:
             try:
                 with open(args.output_path, 'w', encoding='utf-8') as f:
-                    f.write(summary)
+                    if ord(eval[-1]) >= ord('0') and ord(eval[-1]) <= ord('9'):
+                        f.write(summaries[int(eval[-1])])
+                    else:
+                        f.write(summaries[0])
                 print(f"Summary saved to {args.output_path}")
             except Exception as e:
                 print(f"ERROR saving output: {e}")
