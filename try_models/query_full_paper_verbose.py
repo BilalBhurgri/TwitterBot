@@ -49,75 +49,75 @@ def load_paper(paper_path):
         print(f"Error reading text file: {str(e)}")
         return None
 
-def generate_summary(text, tokenizer, model, max_length=200):
+def generate_summary(text, tokenizer, model, max_new_tokens=250):
     """Generate a summary with extensive debugging"""
     if not text or text.strip() == "":
         print("ERROR: Cannot generate summary from empty text")
         return "No text was provided for summarization."
     
-    # Truncate text if needed
-    max_chars = 20000
-    if len(text) > max_chars:
-        print(f"Truncating text from {len(text)} to {max_chars} characters")
-        text = text[:max_chars]
+    # # Truncate text if needed
+    # max_chars = 20000
+    # if len(text) > max_chars:
+    #     print(f"Truncating text from {len(text)} to {max_chars} characters")
+    #     text = text[:max_chars]
     
     # Create a prompt
     prompt = f"""
-    You will be given a scientific paper. Please write a 200-word summary based on the following instructions.
+    You will be given a scientific paper. Please write a 150-word summary based on the following instructions.
 
-    INSTRUCTIONS:
-    Output key findings directly. Do not include phrases like "this paper" or "the authors".
+    Instructions:
+    Include key findings of the paper in your summary.
     Make sure the summary is factually consistent with the paper. Do not include non-factual information.
-    Prioritize interesting findings
     Output the summary text only and nothing else. Do not include your thought process.
 
-    PAPER TEXT:
+    Paper text:
     {text}
+
+    Your summary:
     """
 
     print(f"Prompt created with {len(prompt)} characters")
+    max_context = model.config.max_position_embeddings
+    max_prompt_len = max_context - max_new_tokens
     
     try:
         print("Tokenizing input...")
-        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=max_chars)
-        inputs = inputs.to(model.device)
-        
-        print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
+        encoded = tokenizer(
+            prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=max_prompt_len,
+            padding=False
+        )
+        input_ids = encoded.input_ids.to(model.device)
+        attention_mask = encoded.attention_mask.to(model.device)
+        print(f"Input tokenized to {input_ids.shape[1]} tokens")
         
         # Generate summary with verbose logging
         print("Starting generation...")
         start_time = time.time()
         
         # Setting return_dict_in_generate=True to get more debug info
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=400,
+        output_ids = model.generate(
+            input_ids,
+            attention_mask=attention_mask,
+            max_new_tokens=max_new_tokens,
             do_sample=True,
             temperature=0.7,
             top_p=0.95,
             top_k=30,
             repetition_penalty=1.1,
-            pad_token_id=tokenizer.eos_token_id,
-            return_dict_in_generate=True
+            pad_token_id=tokenizer.eos_token_id
         )
 
-        # Get the sequences
-        sequences = outputs.sequences
-        # # print(f"Shape of sequences: {sequences.shape}")
-
-        # # Get input length in tokens
-        input_length = inputs.input_ids.shape[1]
-        # print(f"Input length: {input_length}")
-        # # Extract only the newly generated tokens for the first sequence
-        generated_tokens = sequences[0, input_length:]
-
         # # Decode only the newly generated tokens
-        summary = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        new_tokens = output_ids[0][input_ids.shape[1]:]
+        summary = tokenizer.decode(new_tokens, skip_special_tokens=True)
         
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
         
-        return summary
+        return max(summary.splitlines(), key=len)
         
     except Exception as e:
         print(f"ERROR during generation: {e}")
@@ -193,7 +193,7 @@ Paper text:
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
 
-def generate_eval(text, summaries, tokenizer, model, max_length=200):
+def generate_eval(text, summaries, tokenizer, model, max_new_tokens=300):
     """Generate a evaluation with extensive debugging"""
     if not text or text.strip() == "":
         print("ERROR: Cannot generate evaluation from empty text")
@@ -203,11 +203,11 @@ def generate_eval(text, summaries, tokenizer, model, max_length=200):
         print("ERROR: Cannot generate evaluation from empty summary")
         return "No summary was provided for evaluation."
     
-    # Truncate text if needed
-    max_chars = 20000
-    if len(text) > max_chars:
-        print(f"Truncating text from {len(text)} to {max_chars} characters")
-        text = text[:max_chars]
+    # # Truncate text if needed
+    # max_chars = 20000
+    # if len(text) > max_chars:
+    #     print(f"Truncating text from {len(text)} to {max_chars} characters")
+    #     text = text[:max_chars]
     
     # Create a prompt
     prompt = f"""You will be given several summaries written for the same research paper. Your task is to rate the summaries on two metrics.
@@ -226,70 +226,65 @@ Criteria:
 
 Instructions:
 
-1. Design evaluation steps based on the evaluation criteria.
-2. Evaluate each summary based on your evaluation steps.
-3. Choose the best summary based on your evaluation.
-4. Output based on the following format. Do not include anything else in your output.
-
-Output Format:
-[evaluation step 1]
-[evaluation step 2]
-...
-[scores for summary 0]
-[scores for summary 1]
-...
-[index of best summary]
+1. Design up to 3 evaluation steps based on the evaluation criteria. Output each step on a new line.
+2. Evaluate each summary based on your evaluation steps. Output the score of each summary on a new line.
+3. Choose the best summary based on your evaluation. Output its index on a new line.
+4. End your evaluation. Do not output anything else, such as your thought process.
 
 Source Text:
 {text}
+
 """
 
     for i in range(len(summaries)):
-        prompt.append(f"""
+        prompt = prompt + f"""
 
         Summary {i}:
         {summaries[i]}
-        """)
+
+        """
+    
+    prompt = prompt + "\nEvaluation Steps:\n"
 
     print(f"Prompt created with {len(prompt)} characters")
+    max_context = model.config.max_position_embeddings
+    max_prompt_len = max_context - max_new_tokens
     
     try:
         print("Tokenizing input...")
-        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=max_chars)
-        inputs = inputs.to(model.device)
+        encoded = tokenizer(
+            prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=max_prompt_len,
+            padding=False
+        )
+        input_ids = encoded.input_ids.to(model.device)
+        attention_mask = encoded.attention_mask.to(model.device)
         
-        print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
+        print(f"Input tokenized to {input_ids.shape[1]} tokens")
         
         # Generate summary with verbose logging
         print("Starting generation...")
         start_time = time.time()
         
         # Setting return_dict_in_generate=True to get more debug info
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=400,
+        output_ids = model.generate(
+            input_ids,
+            attention_mask=attention_mask,
+            max_new_tokens=max_new_tokens,
             do_sample=False,
-            pad_token_id=tokenizer.eos_token_id,
-            return_dict_in_generate=True
+            pad_token_id=tokenizer.eos_token_id
         )
 
-        # Get the sequences
-        sequences = outputs.sequences
-        # # print(f"Shape of sequences: {sequences.shape}")
-
-        # # Get input length in tokens
-        input_length = inputs.input_ids.shape[1]
-        # print(f"Input length: {input_length}")
-        # # Extract only the newly generated tokens for the first sequence
-        generated_tokens = sequences[0, input_length:]
-
         # # Decode only the newly generated tokens
-        eval = tokenizer.decode(generated_tokens, skip_special_tokens=True)
+        new_tokens = output_ids[0][input_ids.shape[1]:]
+        eval = tokenizer.decode(new_tokens, skip_special_tokens=True)
         
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
         
-        return eval
+        return eval.strip()
         
     except Exception as e:
         print(f"ERROR during generation: {e}")
@@ -330,6 +325,8 @@ def main():
     
     try:
         tokenizer = AutoTokenizer.from_pretrained(model_name)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
         print("Tokenizer loaded successfully")
         
         # Load in half-precision
@@ -408,10 +405,8 @@ def main():
         if args.output_path:
             try:
                 with open(args.output_path, 'w', encoding='utf-8') as f:
-                    if ord(eval[-1]) >= ord('0') and ord(eval[-1]) <= ord('9'):
-                        f.write(summaries[int(eval[-1])])
-                    else:
-                        f.write(summaries[0])
+                    numbers = re.sub(r'\D', '', eval)
+                    f.write(summaries[int(numbers[-1])])
                 print(f"Summary saved to {args.output_path}")
             except Exception as e:
                 print(f"ERROR saving output: {e}")

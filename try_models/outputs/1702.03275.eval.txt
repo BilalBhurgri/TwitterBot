@@ -1,0 +1,13 @@
+1. Check for factual consistency: Ensure that all claims in the summary are supported by the source text.
+2. Check for engagingness: Determine if the summary is engaging to a general audience.
+3. Compare summaries: Evaluate which summary provides the most accurate and engaging information based on the criteria.
+
+Summary 0:
+Factual Consistency: 3 (Consistent) - The summary accurately reflects the key points of the paper, including the problem with batch normalization, the solution of Batch Renormalization, and the experimental results. All claims are supported by the source text.
+Engagingness: 3 (Interesting) - The summary is clear and concise, explaining the problem and solution in a way that is accessible to a general audience.
+Summary 1:
+Factual Consistency: 3 (Consistent) - The summary accurately captures the main ideas of the paper, including the problem with batch normalization, the solution of Batch Renormalization, and the experimental results. All claims are supported by the source text.
+Engagingness: 3 (Interesting) - The summary is well-structured and provides a clear explanation of the problem and solution, making it engaging for a general audience.
+
+Best Summary: 0
+Okay, let's start

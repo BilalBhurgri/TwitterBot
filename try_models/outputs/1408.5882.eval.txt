@@ -1,0 +1,15 @@
+1. Check for factual consistency by verifying that all claims in the summary are supported by the source text.
+2. Assess engagingness by evaluating how well the summary captures the novelty and significance of the research, making it appealing to a general audience.
+3. Ensure that the summary is concise and does not include any information not present in the source text.
+
+Summary 0:
+Factual Consistency: 3 (Consistent) - All claims are supported by the source text, including the use of pre-trained vectors, the multichannel architecture, and the performance on benchmark datasets.
+Engagingness: 3 (Interesting) - The summary effectively highlights the significance of the research, the effectiveness of pre-trained vectors, and the simplicity of the model, making it engaging for a general audience.
+Summary 1:
+Factual Consistency: 3 (Consistent) - All claims are supported by the source text, including the use of pre-trained vectors, the multichannel architecture, and the performance on benchmark datasets.
+Engagingness: 3 (Interesting) - The summary effectively highlights the significance of the research, the effectiveness of pre-trained vectors, and the simplicity of the model, making it engaging for a general audience.
+
+Best Summary: 0
+Okay, let's start by evaluating the summaries based on the given criteria. 
+
+First, for factual consistency. Both summaries mention the use of pre-trained word vectors from Google News, which is correct. They also talk about the CNN model with
