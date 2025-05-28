@@ -31,10 +31,14 @@ def generate_tweet_mistral(summary: str, tokenizer, model, max_length=7000):
         return "No summary was provided for tweet generation."
     
     # Create a prompt
-    prompt = f"""<s>[INST] Convert this research paper summary into an engaging tweet. Make it accessible to a general audience, highlight the most interesting finding, and keep it under 280 characters. Only use English.
+    prompt = f"""<s>[INST] Convert this research paper summary into an engaging tweet. Highlight the most interesting finding and keep it under 200 characters. Do not output your thought process. Only use English.
+        Prefix your final answer with Answer.
 
         Summary:
-        {summary} [/INST]</s>"""
+        {summary} 
+        
+        Tweet:
+        [/INST]</s>"""
 
     print(f"Prompt created with {len(prompt)} characters")
     
@@ -83,7 +87,7 @@ def generate_tweet_mistral(summary: str, tokenizer, model, max_length=7000):
         traceback.print_exc()
         return f"Error generating tweet: {str(e)}"
 
-def generate_tweet_qwen(summary: str, tokenizer, model, max_new_tokens=280):
+def generate_tweet_qwen(summary: str, tokenizer, model, max_new_tokens=300):
     """
     Generate a tweet from a summary using Qwen model
     """
@@ -93,15 +97,8 @@ def generate_tweet_qwen(summary: str, tokenizer, model, max_new_tokens=280):
     
     # Create a prompt
     prompt = f"""
-    Convert this research paper summary into an engaging tweet. Follow these instructions:
-
-    Instructions:
-    - Make it accessible to a general audience
-    - Highlight the most interesting finding
-    - Keep it under 280 characters
-    - Do not include phrases like "this paper" or "the authors"
-    - Only use English
-    - Output the tweet text only and nothing else
+    Convert this research paper summary into an engaging tweet with emojis. Keep it under 200 characters.
+    Do not output your thought process. Output your tweet into one line and nothing else. Extract the longest line from your output.
 
     Summary:
     {summary}
