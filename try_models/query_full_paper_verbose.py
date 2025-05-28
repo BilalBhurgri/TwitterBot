@@ -55,26 +55,19 @@ def generate_summary(text, tokenizer, model, max_new_tokens=250):
         print("ERROR: Cannot generate summary from empty text")
         return "No text was provided for summarization."
     
-    # # Truncate text if needed
-    # max_chars = 20000
-    # if len(text) > max_chars:
-    #     print(f"Truncating text from {len(text)} to {max_chars} characters")
-    #     text = text[:max_chars]
-    
     # Create a prompt
-    prompt = f"""
-    You will be given a scientific paper. Please write a 150-word summary based on the following instructions.
+    prompt = f"""You will be given a scientific paper. Please write a 150-word summary based on the instructions.
 
-    Instructions:
-    Include key findings of the paper in your summary.
-    Make sure the summary is factually consistent with the paper. Do not include non-factual information.
-    Output the summary text only and nothing else. Do not include your thought process.
+Paper text:
+{text}
 
-    Paper text:
-    {text}
+Instructions:
+Include key findings of the paper in your summary.
+Make sure the summary is factually consistent with the paper. Do not include non-factual information.
+Output the summary text in a single line and nothing else. Do not output your thought process.
 
-    Your summary:
-    """
+Your summary:
+"""
 
     print(f"Prompt created with {len(prompt)} characters")
     max_context = model.config.max_position_embeddings
@@ -193,7 +186,7 @@ Paper text:
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
 
-def generate_eval(text, summaries, tokenizer, model, max_new_tokens=300):
+def generate_eval(text, summaries, tokenizer, model):
     """Generate a evaluation with extensive debugging"""
     if not text or text.strip() == "":
         print("ERROR: Cannot generate evaluation from empty text")
@@ -202,15 +195,26 @@ def generate_eval(text, summaries, tokenizer, model, max_new_tokens=300):
     if not summaries:
         print("ERROR: Cannot generate evaluation from empty summary")
         return "No summary was provided for evaluation."
-    
-    # # Truncate text if needed
-    # max_chars = 20000
-    # if len(text) > max_chars:
-    #     print(f"Truncating text from {len(text)} to {max_chars} characters")
-    #     text = text[:max_chars]
+
+    max_new_tokens= 100 + 100 * len(summaries)
     
     # Create a prompt
     prompt = f"""You will be given several summaries written for the same research paper. Your task is to rate the summaries on two metrics.
+
+Source Text:
+{text}
+
+"""
+
+    for i in range(len(summaries)):
+        prompt = prompt + f"""
+
+Summary {i}:
+{summaries[i]}
+
+"""
+
+    prompt = prompt + f"""
 
 Criteria:
 
@@ -227,24 +231,12 @@ Criteria:
 Instructions:
 
 1. Design up to 3 evaluation steps based on the evaluation criteria. Output each step on a new line.
-2. Evaluate each summary based on your evaluation steps. Output the score of each summary on a new line.
+2. Based on your evaluation steps, output the factual consistency and engagingness scores of each summary on a new line.
 3. Choose the best summary based on your evaluation. Output its index on a new line.
-4. End your evaluation. Do not output anything else, such as your thought process.
+4. Output nothing else. Do not output your thought process.
 
-Source Text:
-{text}
-
+Evaluation Steps:
 """
-
-    for i in range(len(summaries)):
-        prompt = prompt + f"""
-
-        Summary {i}:
-        {summaries[i]}
-
-        """
-    
-    prompt = prompt + "\nEvaluation Steps:\n"
 
     print(f"Prompt created with {len(prompt)} characters")
     max_context = model.config.max_position_embeddings
@@ -300,7 +292,7 @@ def main():
     parser.add_argument('--output_path', default=None, help='Path to save the summary')
     parser.add_argument('--eval_path', default=None, help='Path to save the evaluation')
     parser.add_argument('--model_name', default="Qwen/Qwen3-1.7B", help='Model to use (default: Qwen/Qwen3-1.7B)')
-    parser.add_argument('--num_summaries', default=2, help='Number of summaries to generate')
+    parser.add_argument('--num_summaries', default=2, help='Number of summaries to generate', type=int)
     args = parser.parse_args()
     
     # Check if file exists
@@ -395,18 +387,29 @@ def main():
         if not eval or eval.strip() == "":
             print("ERROR: Generated evaluation is empty")
             return
-            
+        
         # Print results
         print("\nGenerated Evaluation:")
         print("-" * 50)
         print(eval)
         print("-" * 50)
+
+        # Extract index of best summary
+        lines = eval.splitlines()
+        numLines = [line for line in lines if re.fullmatch(r'\s*[0-9]\s*', line) or re.search(r'\b(best|answer)\b', line, re.IGNORECASE)]
+        if not numLines:
+            print("ERROR: Cannot find best summary index in evaluation")
+            return
+        numbers = re.sub(r'\D', '', numLines[-1])
+        best_idx = int(numbers[-1])
+        if best_idx < 0 or best_idx >= len(summaries):
+            print("ERROR: Best summary index out of bounds")
+            return
         
         if args.output_path:
             try:
                 with open(args.output_path, 'w', encoding='utf-8') as f:
-                    numbers = re.sub(r'\D', '', eval)
-                    f.write(summaries[int(numbers[-1])])
+                    f.write(summaries[best_idx])
                 print(f"Summary saved to {args.output_path}")
             except Exception as e:
                 print(f"ERROR saving output: {e}")

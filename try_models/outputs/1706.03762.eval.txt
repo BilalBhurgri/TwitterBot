@@ -1,0 +1,17 @@
+Step 1: Check for factual consistency by verifying that all claims in the summary are supported by the source text.
+Step 2: Assess engagingness by evaluating the summary's ability to capture the essence of the paper and its relevance to a general audience.
+Step 3: Compare the summaries to determine which one best represents the paper's contributions and findings.
+
+Factual Consistency Scores:
+Summary 0: 3
+Summary 1: 3
+
+Engagingness Scores:
+Summary 0: 3
+Summary 1: 3
+
+Best Summary:
+1
+Okay, let's start by evaluating the factual consistency of each summary. 
+
+For Summary 0, it mentions the Transformer replacing RNNs with self-attention, which is correct as per the source text. It also states that the model uses positional encodings from sine and cosine functions, which matches the description in the source. The claim about achieving state-of-the-art results on WMT 2014 datasets with

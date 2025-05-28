@@ -1,13 +1,19 @@
-1. Check for factual consistency: Ensure that all claims in the summary are supported by the source text.
-2. Check for engagingness: Determine if the summary is engaging to a general audience.
-3. Compare summaries: Evaluate which summary provides the most accurate and engaging information based on the criteria.
+Step 1: Check for factual consistency. Ensure that all claims in the summary are supported by the source text.
+Step 2: Assess engagingness. Determine if the summary is engaging to a general audience.
+Step 3: Compare the summaries to identify the best one based on the criteria.
 
-Summary 0:
-Factual Consistency: 3 (Consistent) - The summary accurately reflects the key points of the paper, including the problem with batch normalization, the solution of Batch Renormalization, and the experimental results. All claims are supported by the source text.
-Engagingness: 3 (Interesting) - The summary is clear and concise, explaining the problem and solution in a way that is accessible to a general audience.
-Summary 1:
-Factual Consistency: 3 (Consistent) - The summary accurately captures the main ideas of the paper, including the problem with batch normalization, the solution of Batch Renormalization, and the experimental results. All claims are supported by the source text.
-Engagingness: 3 (Interesting) - The summary is well-structured and provides a clear explanation of the problem and solution, making it engaging for a general audience.
+Factual Consistency Scores:
+Summary 0: 3
+Summary 1: 3
 
-Best Summary: 0
-Okay, let's start
+Engagingness Scores:
+Summary 0: 3
+Summary 1: 3
+
+Best Summary:
+1
+Okay, let's start by evaluating the factual consistency of each summary. 
+
+For Summary 0, it mentions that Batch Renormalization ensures activations depend only on individual examples during training and inference. The source text states that Batch Renormalization ensures activations during both training and inference depend only on individual examples. It also talks about a per-dimension correction and treating correction parameters as fixed during backpropagation, which aligns with the source. The part about using moving averages during training and avoiding issues with minibatch size and non-i.i.d. samples is also supported. The experiments showing comparable or higher accuracy are mentioned, which the source discusses. So, Summary 0 seems consistent.
+
+Summary 1 states that Batch Renormalization addresses minibatch dependency issues, leading to problems with non-i.i.d. and small minibatches. The source explains that batchnorm's dependency causes overfitting in such cases. The summary mentions that Batch Renormalization ensures activations match during inference, which

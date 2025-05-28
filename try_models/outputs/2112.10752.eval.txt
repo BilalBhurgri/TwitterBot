@@ -1,0 +1,20 @@
+Step 1: Check for factual consistency by verifying that all claims in the summaries are supported by the source text.
+Step 2: Assess engagingness by evaluating how well the summaries capture the novelty and significance of the research.
+Step 3: Compare the summaries to determine which one is the most accurate and comprehensive representation of the paper's contributions.
+
+Summary 0 Scores:
+Factual Consistency: 3
+Engagingness: 3
+
+Summary 1 Scores:
+Factual Consistency: 3
+Engagingness: 3
+
+Best Summary: 1
+Okay, let's go through the evaluation steps for the two summaries.
+
+**Step 1: Factual Consistency Check**
+Both summaries mention Latent Diffusion Models (LDMs) and their use of a latent space to reduce computational costs for high-resolution image synthesis. The source text discusses training diffusion models in a latent space derived from an autoencoder, which aligns with both summaries. Summary 0 mentions improved performance on tasks like super-resolution and inpainting, which is supported by the source text. Summary 1 also states that LDMs achieve competitive performance on multiple tasks and offer better perceptual and semantic compression, which is also in line with the source. Both summaries correctly note the two-stage approach and the release of pretrained models. There are no major discrepancies, so both summaries are factually consistent.
+
+**Step 2: Engagingness Assessment**
+Summary 0 highlights the key findings such as lower F
