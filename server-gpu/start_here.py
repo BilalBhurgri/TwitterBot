@@ -1,4 +1,12 @@
-from flask import Flask, jsonify, request
+"""
+This generates today's tweets. 
+1. It picks random paper texts from the bucket
+2. Generates summaries 
+3. Generates eval
+4. Generates tweets
+5. Returns them as json in /results/<model_name>/bot0, bot1, bot2... Using different personas. 
+"""
+
 import os
 from dotenv import load_dotenv
 import torch
@@ -26,42 +34,10 @@ from try_models.summary_to_tweet import (
     generate_tweet_qwen
 )
 
-# Load environment variables
 load_dotenv()
-
-app = Flask(__name__)
-
 s3 = boto3.client('s3', region_name='us-west-1')
 response = s3.list_buckets()
 
-# papers_response = s3.list_objects_v2(
-#     Bucket=os.environ.get('BUCKET_NAME'),
-#     Prefix='papers/'
-# )
-
-# papers_dict = {}
-
-# for obj in papers_response.get('Contents', []):
-#     print(f"File: {obj['Key']}")
-#     print(f"Size: {obj['Size']} bytes")
-#     print(f"Modified: {obj['LastModified']}")
-#     print("---")
-#     paper_id = obj['Key'].split('/')[-1].split('.')[0]
-#     print(f"Paper ID: {paper_id}")
-#     papers_text = s3.get_object(Bucket=os.environ.get('BUCKET_NAME'), Key=obj['Key'])
-#     papers_dict[obj['Key']] = paper_id
-#     papers_dict[obj['Key']] = papers_text['Body'].read().decode('utf-8')
-
-# # Temp comment: confirm that paper text prints properly 
-# print(papers_dict['papers/2412.00857.txt'] )
-    
-
-# output bucket names 
-# print('Existing buckets:')
-# for bucket in response['Buckets']:
-#     print(f'  {bucket["Name"]}')
-
-# Global variables for model and tokenizer
 model = None
 tokenizer = None
 model_name = "Qwen/Qwen3-4B"  # Default model
@@ -79,18 +55,13 @@ def load_model():
         )
         print("Model loaded successfully")
 
-@app.route('/health', methods=['GET'])
-def health_check():
-    """Health check endpoint"""
-    return jsonify({
-        'status': 'healthy',
-        'message': 'Server is running',
-        'model_loaded': model is not None
-    })
-
-@app.route('/process-paper/<key>', methods=['GET'])
-def process_paper(key):
-    """Process a paper and generate a summary"""
+def process_paper_for_bot(paper_key, eval=False):
+    """
+    Process a paper and generate a summary, tweet, and optionally an eval
+    Params: 
+    key: paper_key is same as arxiv ID
+    eval: bool. If True, eval happens.
+    """
     try:
         # Check if model is loaded
         if model is None:
@@ -143,40 +114,5 @@ def process_paper(key):
             'message': str(e)
         }), 500
 
-@app.route('/set-model', methods=['POST'])
-def set_model():
-    """Set the model to use"""
-    global model, tokenizer, model_name
-    try:
-        data = request.get_json()
-        if not data or 'model_name' not in data:
-            return jsonify({
-                'status': 'error',
-                'message': 'No model name provided'
-            }), 400
 
-        new_model_name = data['model_name']
-        # Reset model and tokenizer
-        model = None
-        tokenizer = None
-        model_name = new_model_name
-        
-        # Load new model
-        load_model()
-        
-        return jsonify({
-            'status': 'success',
-            'message': f'Model set to {model_name}'
-        })
 
-    except Exception as e:
-        return jsonify({
-            'status': 'error',
-            'message': str(e)
-        }), 500
-
-if __name__ == '__main__':
-    # Get port from environment variable or default to 5000
-    port = int(os.getenv('PORT', 5000))
-    # Run the app
-    app.run(host='0.0.0.0', port=port) 

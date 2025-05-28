@@ -13,6 +13,11 @@ import sys
 project_root = str(Path(__file__).parent.parent.parent)
 sys.path.append(project_root)
 
+with open('prompt_contexts.json', 'r') as f:
+    prompts = json.load(f)
+
+prompt_template = prompts['summary']['prompt']
+
 def print_memory_usage(label=""):
     """Print current memory usage"""
     process = psutil.Process(os.getpid())
@@ -96,15 +101,18 @@ def generate_tweet_qwen(summary: str, tokenizer, model, max_new_tokens=300):
         return "No summary was provided for tweet generation."
     
     # Create a prompt
-    prompt = f"""
-    Convert this research paper summary into an engaging tweet with emojis. Keep it under 200 characters.
-    Do not output your thought process. Output your tweet into one line and nothing else. Extract the longest line from your output.
+    # prompt = f"""
+    # Convert this research paper summary into an engaging tweet with emojis. Keep it under 200 characters.
+    # Do not output your thought process. Output your tweet into one line and nothing else. Extract the longest line from your output.
 
-    Summary:
-    {summary}
+    # Summary:
+    # {summary}
 
-    Your tweet:
-    """
+    # Your tweet:
+    # """
+    prompt = prompt_template
+    prompt = prompt_template.format(summary=summary)
+    print(f"prompt is: {prompt}")
 
     print(f"Prompt created with {len(prompt)} characters")
     max_context = model.config.max_position_embeddings

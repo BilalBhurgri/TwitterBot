@@ -45,7 +45,11 @@ def load_paper(paper_path):
         return None
 
 def generate_summary(text, tokenizer, model, max_new_tokens=250):
-    """Generate a summary with extensive debugging"""
+    """
+    Generate a summary with extensive debugging. This assumes we use Qwen, 
+    because its output after calling generate() is a sequence instead of just tokens.
+    This same code wouldn't work for a mistral model. 
+    """
     if not text or text.strip() == "":
         print("ERROR: Cannot generate summary from empty text")
         return "No text was provided for summarization."
