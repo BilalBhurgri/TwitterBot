@@ -1,0 +1,36 @@
+{
+    "bot0": {
+        "persona": "drfeifei",
+        "example": "One of the “holy grails” of robotic learning is to perform generalizable everyday household mobile manipulation tasks. With a new bimanual mobile robot, our latest work BEHAVIOR Robot Suite (BRS) takes a stab at this very very hard, still yet-to-be-solved problem!🤖🦾🤩"
+    },
+    "bot1": {
+        "persona": "AndrewYNg",
+        "example": "I see this pattern across more and more businesses. Consider the following scenarios: \n - If a lender can approve loans in minutes using AI, rather than days waiting for a human to review them, this creates more borrowing opportunities (and also lets the lender deploy its capital faster). Even if human-in-the-loop review is needed, using AI to get the most important information to the reviewer might speed things up. The ability to provide loans quickly opens up the market to new customers in need of rapid funds and helps customers who need a quick positive or negative decision to accept the loan or move on. \n- If an academic institution gives homework feedback to students in minutes (via sophisticated autograding) rather than days (via human grading), not only is the automation cheaper, the rapid feedback facilitates better learning. \n- If an online seller can approve purchases faster, this can lead to more sales. For example, many platforms that accept online ad purchases have an approval process that can take hours or days; if approvals can be done faster, they can earn revenue faster. Further, for customers buying ads, being able to post an ad in minutes lets them test ideas faster and also makes the ad product more valuable. \n- If a company’s sales department can prioritize leads and respond to prospective customers in minutes or hours rather than days — closer to when the customers’ buying intent first led them to contact the company — sales representatives might close more deals. Likewise, a business that can respond more quickly to requests for proposals may win more deals."
+    },
+    "bot2": {
+        "persona": "karpathy",
+        "example": "So so so cool. Llama 1B batch one inference in one single CUDA kernel, deleting synchronization boundaries imposed by breaking the computation into a series of kernels called in sequence. The *optimal* orchestration of compute and memory is only achievable in this way."
+    },
+    "bot3": {
+        "persona": "geoffreyhinton",
+        "example": "Caterpillars extract nutrients which are then converted into butterflies. People have extracted billions of nuggets of understanding and GPT-4 is humanity's butterfly."
+    },
+    "bot4": {
+        "persona": "ylecun",
+        "example": "Auto-Regressive LLMs (auto-encoders with causal transformer architectures) and BERT-style models (denoising auto-encoders with transformer archis) are smashing demonstrations of the power of self-supervised (pre-)training. \n But they only work for sequences of discrete symbols: language, proteins..."
+    },
+    "bot5": {
+        "persona": "lilianweng",
+        "example": "Giving your models more time to think before prediction, like via smart decoding, chain-of-thoughts reasoning, latent thoughts, etc, turns out to be quite effective for unblocking the next level of intelligence. \n New post is here :) \n 'Why we think':"
+    },
+    "summary": {
+        "prompt":  "You will be given a scientific paper. Please write a 150-word summary based on the instructions.\n\nPaper text:\n{text}\n\nInstructions:\nInclude key findings of the paper in your summary.\nMake sure the summary is factually consistent with the paper. Do not include non-factual information.\nOutput the summary text in a single line and nothing else. Do not output your thought process.\n\nYour summary:"
+    },
+    "eval": {
+        "prompt": "You will be given several summaries written for the same research paper. Your task is to rate the summaries on two metrics. \n Source Text: \n {text}",
+        "criteria": "Criteria: 1. Factual Consistency (1-3): Does the summary only contain facts supported by the source text? \n - 1 (Inconsistent): Major errors or many minor errors \n - 2 (Overall consistent): At most one minor error \n - 3 (Consistent): All facts supported \n 2. Engagingness (1-3): Is the summary interesting to most audiences? \n - 1 (Dull): Only interesting to specialists \n - 2 (Somewhat interesting): Engages those familiar with the field \n - 3 (Interesting): Engages general audiences regardless of expertise \n Instructions: \n 1. Design up to 3 evaluation steps based on the evaluation criteria. Output each step on a new line. \n 2. Based on your evaluation steps, output the factual consistency and engagingness scores of each summary on a new line. \n 3. Choose the best summary based on your evaluation. Output its index on a new line. \n 4. Output nothing else. Do not output your thought process. \n Evaluation Steps: \n"
+    },
+    "tweet": {
+        "prompt": "Convert this research paper summary into an engaging tweet with emojis. Keep it under 200 characters. \n Do not output your thought process. Output your tweet into one final line, without repetition. \n {example} \n Summary: \n {summary} \n Your tweet: \n"
+    }
+}

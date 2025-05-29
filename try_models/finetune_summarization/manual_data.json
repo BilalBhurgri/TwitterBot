@@ -1,0 +1,80 @@
+{
+    "AndrewYNg": {
+        "post1": {
+            "content": "Agentic Document Extraction just got much faster! From previous 135sec median processing time down to 8sec. Extracts not just text but diagrams, charts, and form fields from PDFs to give LLM-ready output. Please see the video for details and some application ideas.",
+            "date": "2025-05-27"
+        }
+    
+    },
+
+    "sama": {
+        "post1": {
+            "content": "i think we should stop arguing about what year AGI will arrive and start arguing about what year the first self-replicating spaceship will take off",
+            "date": "2025-05-23"
+        },
+        "post2": {
+            "content": "it is amazing and exciting how much software one person is going to be able to create with tools like this. 'you can just do things' is one of my favorite memes; i didn't think it would apply to AI itself, and its users, in such an important way so soon.",
+            "date": "2025-05-16"
+        }
+
+    },
+
+    "drfeifei": {
+        "post1": {
+            "content": "Live from Paris, at the #ParisAISummit . I gave the opening keynote about AI’s past, present, future and opportunities. “75 years ago, Alan Turing dared humanity to imagine ‘thinking machines’. But perhaps that vision is too narrow and inward-looking. As AI today is poised to become both thinking and doing machines as we unlock language, spatial and embodied intelligence, we should consider a new dare to all of us - a dare to build human-centered AI to empower and augment people.” 1/N",
+            "date": "2025-02-11"
+        },
+        "post2": {
+            "content": "Leading up to #ParisAISummit , I penned an oped about an AI governance framework that focuses on pragmatism, scientific method and investments in AI ecosystem. It’s heartening to see the announcements at this Summit by multiple countries and the EU in AI investments, and America’s commitment in advancing AI so that this technology can wield the power for good. 3/N",
+            "date": "2025-02-08"
+        },
+        "post3": {
+            "content": "I really enjoyed working with @sainingxie and his students in this study called “Thinking in Space”, which is an evaluation on how LLMs (mostly failed to) do in spatial reasoning, something so essential to human intelligence. So much more to look ahead in 2025 to push the boundaries of Spatial Intelligence!",
+            "date": "2024-12-22"
+        },
+
+        "post4": {
+            "content": "How do you effectively scale up real to sim data for robotic learning? We propose a new idea called “digital cousins” to simultaneously reduce the cost of real to sim generation while improving generalizability in learning 🦾😍",
+            "date": "2024-10-10"
+        }
+
+    },
+
+    "yann-lecun": {
+        "post1": {
+            "content": "Aravind Srinivas (Perplexity) tells Lex all the ways in which I was right against the prevalent ideas of the time: DL, ConvNets, energy-based models, SSL, the limitation of RL, and now the limitations of auto-regressive generative models including LLMs. Thanks Aravind! youtu.be/mnGUfkMt9fE?...",
+            "date": "2024-12-15"
+        },
+
+        "post2": {
+            "content": "WaPo Edito: Be thankful for the applications of AI in medicine. \n More accurate detection of cancers (breast, prostate, skin, brain), faster diagnosis of strokes, sepsis, heart attacks, faster MRIs, full-body in 40 minutes. \n Much more to come over the next years. \n   www.washingtonpost.com/opinions/202...",
+            "date": "2024-09-10"
+        },
+
+        "post3": {
+            "content": "I am very excited about the recent advances in LLMs. I think we are on the verge of a new era of AI. I am also very excited about the recent advances in LLMs. I think we are on the verge of a new era of AI.",
+            "date": "2024-08-10",
+            "likes": 92
+        },
+
+        "post4": {
+            "content": "Auto-Regressive LLMs (auto-encoders with causal transformer architectures) and BERT-style models (denoising auto-encoders with transformer archis) are smashing demonstrations of the power of self-supervised (pre-)training. \n But they only work for sequences of discrete symbols: language, proteins...",
+            "date": "2024-11-24",
+            "likes": 41
+        }
+    },
+
+    "geoffreyhinton": {
+        "post1": {
+            "content": "Fei-Fei Li has written a book. She was the first computer vision researcher to truly understand the power of big data and her work opened the floodgates for deep learning. She delivers a clear-eyed account of the awesome potential and danger of AI.",
+            "date": "2023-11-24"
+        }
+    },
+
+    "elonmusk": {
+        "post1": {
+            "content": "I'm excited to announce that we've made a breakthrough in AI. We've created a new model that can generate text that is indistinguishable from human-written text. This is a major milestone in the development of AI. I'm excited to see what this model can do.",
+            "date": "2025-05-27"
+        }
+    }
+}

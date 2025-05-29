@@ -1,0 +1,92 @@
+Step 1: Check for factual consistency by verifying that all claims in the summary are supported by the source text.
+Step 2: Assess engagingness by evaluating the summary's ability to capture the essence of the study and its relevance to a general audience.
+Step 3: Compare the summaries to determine which one best captures the key findings and is most engaging.
+
+Summary 0:
+Factual Consistency: 3 (All facts supported)
+Engagingness: 3 (Interesting to general audiences)
+
+Summary 1:
+Factual Consistency: 2 (Overall consistent, with one minor error)
+Engagingness: 2 (Somewhat interesting to those familiar with the field)
+
+Best Summary: 0
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+```
+``
