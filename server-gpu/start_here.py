@@ -95,7 +95,7 @@ def process_paper_for_bot(paper_id: str, bot_num: int, eval=False):
     print(f"APP.PY: CALLING GENERATE TWEET")
     tweet = generate_tweet_qwen(summary, tokenizer, model, max_new_tokens=300, bot_num=bot_num)
     real_tweet = tweet.split('\n')[0]
-    real_tweet += "\n Link: https://arxiv.org/abs/{paper_id}"
+    real_tweet += f"\n Link: https://arxiv.org/abs/{paper_id}"
 
     result = {
         'status': 'success',
