@@ -10,13 +10,17 @@ import json
 from pathlib import Path
 import sys
 
-project_root = str(Path(__file__).parent.parent.parent)
+project_root = str(Path(__file__).parent.parent)
 sys.path.append(project_root)
 
-with open('prompt_contexts.json', 'r') as f:
+print(f"project_root is {project_root}")
+
+prompt_path = os.path.join(project_root, "try_models", "prompt_contexts.json")
+
+with open(prompt_path, 'r') as f:
     prompts = json.load(f)
 
-prompt_template = prompts['summary']['prompt']
+prompt_template = prompts['tweet']['prompt']
 
 def print_memory_usage(label=""):
     """Print current memory usage"""
@@ -92,29 +96,28 @@ def generate_tweet_mistral(summary: str, tokenizer, model, max_length=7000):
         traceback.print_exc()
         return f"Error generating tweet: {str(e)}"
 
-def generate_tweet_qwen(summary: str, tokenizer, model, max_new_tokens=300):
+def generate_tweet_qwen(summary: str, tokenizer, model, max_new_tokens=300, bot_num=None):
     """
-    Generate a tweet from a summary using Qwen model
+    Generate a tweet from a summary using Qwen model. 
+    Check out prompt_contexts.json for the prompt. 
+    If you specify a bot number, this iwll look up prompt_contexts.json to provide the persona and tweet example.
     """
     if not summary or summary.strip() == "":
         print("ERROR: Cannot generate tweet from empty summary")
         return "No summary was provided for tweet generation."
     
-    # Create a prompt
-    # prompt = f"""
-    # Convert this research paper summary into an engaging tweet with emojis. Keep it under 200 characters.
-    # Do not output your thought process. Output your tweet into one line and nothing else. Extract the longest line from your output.
-
-    # Summary:
-    # {summary}
-
-    # Your tweet:
-    # """
     prompt = prompt_template
-    prompt = prompt_template.format(summary=summary)
+    example = ''
+    if bot_num >= 0:
+        persona = prompts[f'bot{bot_num}']['persona']
+        example_text = prompts[f'bot{bot_num}']['example']
+        print(f"example_text: {example_text}")
+        example = f'Talk like {persona}. Example: {example_text}'
+
+    prompt = prompt_template.format(example=example, summary=summary)
     print(f"prompt is: {prompt}")
 
-    print(f"Prompt created with {len(prompt)} characters")
+    print(f"Prompt created with prompt: {prompt}")
     max_context = model.config.max_position_embeddings
     max_prompt_len = max_context - max_new_tokens
     
