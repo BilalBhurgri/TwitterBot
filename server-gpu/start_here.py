@@ -106,7 +106,7 @@ def process_paper_for_bot(paper_id: str, bot_num: int, eval=False):
     }
 
     today = datetime.now().strftime("%Y-%m-%d")
-    s3_key = f"results/{model_name}/bot{bot_num}/{paper_id}.json"
+    s3_key = f"results/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
     print(f"s3_key = {s3_key}")
     
     try:
