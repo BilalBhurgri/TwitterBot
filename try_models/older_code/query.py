@@ -18,8 +18,11 @@ TEXT_CHUNK_SIZE = 1000
 embedding_model = SentenceTransformer(EMBEDDING_MODEL)
 
 persona_ids = ["vision_bot", "robotics_bot", "bio_bot", "security_bot", "education_bot", "industry_bot", "theory_bot", "layperson_bot"]
-device = "mps" if torch.has_mps else "cpu"
-
+if torch.backends.mps.is_built() and torch.backends.mps.is_available():
+    device = torch.device("mps")
+else:
+    device = torch.device("cpu")
+    
 def find_relevant_papers(collection, query_text, n_papers=3, cutoff_date=None):
     """
     Find relevant papers using semantic search.

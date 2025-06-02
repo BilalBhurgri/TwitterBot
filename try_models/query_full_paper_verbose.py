@@ -22,12 +22,12 @@ import data_processing.parse_paper as parse_paper
 examples = {}
 
 # Load examples from JSON
-with open('./example_outputs/examples.json', 'r') as f:
+with open('./try_models/example_outputs/examples.json', 'r') as f:
     examples = json.load(f)
 
 examples = {}
 # Load examples from JSON
-with open('./example_outputs/examples.json', 'r') as f:
+with open('./try_models/example_outputs/examples.json', 'r') as f:
     examples = json.load(f)
 
 def print_memory_usage(label=""):
