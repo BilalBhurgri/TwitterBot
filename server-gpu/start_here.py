@@ -45,7 +45,7 @@ tokenizer = None
 model_name = "Qwen/Qwen3-4B"  # Default model
 
 NUM_BOTS = 6
-NUM_INDICES = 3
+NUM_INDICES = 10
 
 def load_model():
     """Load the model and tokenizer. Currently both are based on Qwen3-4B."""
@@ -60,7 +60,7 @@ def load_model():
         )
         print("Model loaded successfully")
 
-def process_paper_for_bot(paper_id: str, bot_num: int, eval=True):
+def process_paper_for_bot(paper_id: str, bot_num: int, eval=False):
     """
     Process a paper and generate a summary, tweet, and optionally an eval
     Params: 
