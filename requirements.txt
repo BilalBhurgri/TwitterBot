@@ -21,3 +21,5 @@ accelerate
 pypdf2
 psutil
 lxml
+boto3
+docker

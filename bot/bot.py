@@ -36,11 +36,6 @@ else:
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-# def generate_response(prompt):
-#     res = requests.post("http://localhost:11434/api/generate", json={"model": "llama3.2", "prompt": prompt, "stream":True})
-#     print("Full response:", res.text)
-#     return res.json()["response"].strip()
-
 def post_tweet(tweet):
     try:
         # Post the tweet
