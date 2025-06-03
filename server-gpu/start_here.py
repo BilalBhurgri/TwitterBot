@@ -60,7 +60,7 @@ def load_model():
         )
         print("Model loaded successfully")
 
-def process_paper_for_bot(paper_id: str, bot_num: int, eval=False):
+def process_paper_for_bot(paper_id: str, bot_num: int, eval=True):
     """
     Process a paper and generate a summary, tweet, and optionally an eval
     Params: 
@@ -93,8 +93,8 @@ def process_paper_for_bot(paper_id: str, bot_num: int, eval=False):
         evaluation = generate_eval(paper_text, summary, tokenizer, model)
 
     print(f"APP.PY: CALLING GENERATE TWEET")
-    tweet = generate_tweet_qwen(summary, tokenizer, model, max_new_tokens=300, bot_num=bot_num)
-    real_tweet = tweet.split('\n')[0]
+    tweet = generate_tweet_qwen(summary, tokenizer, model, max_new_tokens=25, bot_num=bot_num)
+    real_tweet = tweet.split('\n')[-1]
     real_tweet += f"\n Link: https://arxiv.org/abs/{paper_id}"
 
     result = {
@@ -150,12 +150,12 @@ def main():
     selected_paper_ids = random.sample(range(len(paper_ids)), NUM_INDICES)
 
     papers_per_bot = []
-    for i in range(NUM_BOTS):
+    for i in range(1):
         papers_per_bot.append(random.sample(range(len(paper_ids)), NUM_INDICES))
     # print(f"Selected random paper_keys: {selected_paper_keys}")
     print(f"Random idxs per bot: {papers_per_bot}")
 
-    for i in range(NUM_BOTS):
+    for i in range(1):
         for idx in papers_per_bot[i]:
             process_paper_for_bot(paper_ids[idx], i)
 
