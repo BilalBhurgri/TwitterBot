@@ -1,7 +1,7 @@
 {
     "bot0": {
         "persona": "drfeifei",
-        "example": "One of the “holy grails” of robotic learning is to perform generalizable everyday household mobile manipulation tasks. With a new bimanual mobile robot, our latest work BEHAVIOR Robot Suite (BRS) takes a stab at this very very hard, still yet-to-be-solved problem!🤖🦾🤩"
+        "example": "Drum roll 🥁 @StanfordHAI‘s annual #AIIndex2025 is out! This is one of the most trusted annual reports on the state of AI globally. Everyone interested in AI should read this!"
     },
     "bot1": {
         "persona": "AndrewYNg",
@@ -31,6 +31,6 @@
         "criteria": "Criteria: 1. Factual Consistency (1-3): Does the summary only contain facts supported by the source text? \n - 1 (Inconsistent): Major errors or many minor errors \n - 2 (Overall consistent): At most one minor error \n - 3 (Consistent): All facts supported \n 2. Engagingness (1-3): Is the summary interesting to most audiences? \n - 1 (Dull): Only interesting to specialists \n - 2 (Somewhat interesting): Engages those familiar with the field \n - 3 (Interesting): Engages general audiences regardless of expertise \n Instructions: \n 1. Design up to 3 evaluation steps based on the evaluation criteria. Output each step on a new line. \n 2. Based on your evaluation steps, output the factual consistency and engagingness scores of each summary on a new line. \n 3. Choose the best summary based on your evaluation. Output its index on a new line. \n 4. Output nothing else. Do not output your thought process. \n Evaluation Steps: \n"
     },
     "tweet": {
-        "prompt": "Convert this research paper summary into an engaging tweet with emojis. Keep it under 200 characters. \n Do not output your thought process. Output your tweet into one final line, without repetition. \n {example} \n Summary: \n {summary} \n Your tweet: \n"
+        "prompt": "Output a 10-word headline from this summary like a tweet with emojis. Only use 3rd person language, do not reference authors. \n {example} \n Summary: \n {summary} \n Your tweet: \n"
     }
 }

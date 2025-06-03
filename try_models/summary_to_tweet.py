@@ -65,10 +65,10 @@ def generate_tweet_mistral(summary: str, tokenizer, model, max_length=7000):
         
         outputs = model.generate(
             **inputs,
-            max_new_tokens=280,  # Twitter's character limit
-            min_new_tokens=50,  # Force at least some generation
+            max_new_tokens=40,  # Twitter's character limit
+            min_new_tokens=20,  # Force at least some generation
             do_sample=True,
-            temperature=0.8,
+            temperature=0.2,
             top_p=0.95,
             top_k=50,
             repetition_penalty=1.2,
