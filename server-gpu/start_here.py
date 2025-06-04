@@ -120,15 +120,15 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
         s3_key = f"results-eval/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
     print(f"s3_key = {s3_key}")
     
-    # try:
-    #     s3.put_object(
-    #         Bucket=os.environ.get('BUCKET_NAME'),
-    #         Key=s3_key,
-    #         Body=json.dumps(result, indent=2),
-    #         ContentType='application/json'
-    #     )
-    # except ClientError as e:
-    #     print(f"Error putting object {s3_key} into s3 dir: {e}")
+    try:
+        s3.put_object(
+            Bucket=os.environ.get('BUCKET_NAME'),
+            Key=s3_key,
+            Body=json.dumps(result, indent=2),
+            ContentType='application/json'
+        )
+    except ClientError as e:
+        print(f"Error putting object {s3_key} into s3 dir: {e}")
 
     print(f"Put {result} into s3 bucket :)")
 
@@ -168,13 +168,13 @@ def main():
 
     papers_per_bot = []
 
-    for i in range(1): # NUM_BOTS
+    for i in range(NUM_BOTS): # NUM_BOTS
         papers_per_bot.append(random.sample(range(len(paper_ids)), NUM_INDICES))
     # print(f"Selected random paper_keys: {selected_paper_keys}")
     print(f"Random idxs per bot: {papers_per_bot}")
 
     eval = not args.no_eval
-    for i in range(1): # NUM_BOTS
+    for i in range(NUM_BOTS): # NUM_BOTS
         for idx in papers_per_bot[i]:
             process_paper_for_bot('2505.24850', i, args.num_summaries, eval)
             
