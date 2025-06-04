@@ -29,8 +29,7 @@ from try_models.query_full_paper_verbose import (
     load_paper,
     generate_summary,
     generate_summary_mistral,
-    generate_eval,
-    generate_eval_mistral
+    sum_eval
 )
 
 from try_models.summary_to_tweet import (
@@ -61,7 +60,7 @@ def load_model():
         )
         print("Model loaded successfully")
 
-def process_paper_for_bot(paper_id: str, bot_num: int, eval=False, num_summaries: int):
+def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=True):
     """
     Process a paper and generate a summary, tweet, and optionally an eval
     Params: 
@@ -81,18 +80,14 @@ def process_paper_for_bot(paper_id: str, bot_num: int, eval=False, num_summaries
         print(f"Error getting object papers/{paper_id}.txt: {e}")
     
     print(f"generating summary with {len(paper_text)} summary")
-    
-    # Generate summary
-    print(f"APP.PY: CALLING GENERATE SUMMARY")
-    summary = generate_summary(paper_text, tokenizer, model)
-    if not summary:
-        print(f"APP.PY: WARNING, SUMMARY IS EMPTY SO TWEET WILL BE EMPTY TOO")
-    
-    evaluation = None
-    # if the parameter doesnt exist, it returns default value 'false'.
-    # This part is wrong! Should not be called here, but in main()
+
     if eval:
-        evaluation = generate_eval(paper_text, summary, tokenizer, model)
+        best_summary, evaluation = sum_eval(paper_text, tokenizer, model, model_name, num_summaries)
+    else:
+        if 'mistral' in model_name.lower():
+            best_summary = generate_summary_mistral(paper_text, tokenizer, model)
+        else:
+            best_summary = generate_summary(paper_text, tokenizer, model)
 
     print(f"APP.PY: CALLING GENERATE TWEET")
     tweet = generate_tweet_qwen(summary, tokenizer, model, max_new_tokens=25, bot_num=bot_num)
@@ -150,8 +145,9 @@ def main():
     about different papers.
     """
     parser = argparse.ArgumentParser(description='Pick specific subset of papers or randomly pick them, generate summaries, evals, tweets.')
-    parser.add_argument('--num_summaries', required=True, help='Number of summaries to generate per paper')
+    parser.add_argument('--num_summaries', default=2, help='Number of summaries to generate for eval', type=int)
     parser.add_argument('--model_name', default="Qwen/Qwen3-4B")
+    parser.add_argument('--no_eval', action='store_true', help='Turns off eval when this flag is added')
     args = parser.parse_args()
     
     load_model()
@@ -163,16 +159,13 @@ def main():
 
     for i in range(): # NUM_BOTS
         papers_per_bot.append(random.sample(range(len(paper_ids)), NUM_INDICES))
-        papers = papers_per_bot
-        for paper in range(papers_per_bot):
-            # create temporary papers.txt in current dir to call generate_eval
-            # create 
     # print(f"Selected random paper_keys: {selected_paper_keys}")
     print(f"Random idxs per bot: {papers_per_bot}")
 
+    eval = not args.no_eval
     for i in range(1): # NUM_BOTS
         for idx in papers_per_bot[i]:
-            process_paper_for_bot(paper_ids[idx], i, args.num_summaries)
+            process_paper_for_bot(paper_ids[idx], i, args.num_summaries, eval)
             
 
 if __name__ == '__main__':

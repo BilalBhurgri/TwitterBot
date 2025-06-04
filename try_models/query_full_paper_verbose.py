@@ -109,12 +109,25 @@ Your summary:
 
         # # Decode only the newly generated tokens
         new_tokens = output_ids[0][input_ids.shape[1]:]
-        summary = tokenizer.decode(new_tokens, skip_special_tokens=True)
+        lines = tokenizer.decode(new_tokens, skip_special_tokens=True)
         
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
+
+        summary = max(lines.splitlines(), key=len)
         
-        return max(summary.splitlines(), key=len)
+        # Verify summary
+        if not summary or summary.strip() == "":
+            print("ERROR: Generated summary is empty")
+            return
+            
+        # Print results
+        print("\nGenerated Summary:")
+        print("-" * 50)
+        print(summary)
+        print("-" * 50)
+        
+        return summary
         
     except Exception as e:
         print(f"ERROR during generation: {e}")
@@ -295,6 +308,65 @@ Evaluation Steps:
 def generate_eval_mistral(text, summary, tokenizer, model, max_length=7000):
     return "not implemented"
 
+# Takes in paper text, returns best summary & eval
+def sum_eval(paper_text, tokenizer, model, model_name, num_summaries=2):
+    summaries = [None] * num_summaries
+    for i in range(num_summaries):
+        # Generate summary
+        print("Generating summary...")
+        if 'mistral' in model_name.lower():
+            summaries[i] = generate_summary_mistral(paper_text, tokenizer, model)
+        else:
+            # qwen code
+            summaries[i] = generate_summary(paper_text, tokenizer, model)
+        
+        # Verify summary
+        if not summaries[i] or summaries[i].strip() == "":
+            print("ERROR: Generated summary is empty")
+            return
+
+    # Generate evaluation
+    print("Generating evaluation...")
+    if 'mistral' in model_name.lower():
+        eval = generate_eval_mistral(paper_text, summaries, tokenizer, model)
+    else:
+        # qwen code
+        eval = generate_eval(paper_text, summaries, tokenizer, model)
+    
+    # Verify summary
+    if not eval or eval.strip() == "":
+        print("ERROR: Generated evaluation is empty")
+        return
+    
+    # Print results
+    print("\nGenerated Evaluation:")
+    print("-" * 50)
+    print(eval)
+    print("-" * 50)
+
+    # Extract index of best summary
+    lines = eval.splitlines()
+    numLines = [line for line in lines if re.fullmatch(r'\s*[0-9]\s*', line) or re.search(r'\b(Best|Answer)\b', line) and re.search(r'\d', line)]
+    if not numLines:
+        print("ERROR: Cannot find line with single number/best: number/answer: number in evaluation")
+        return
+    print("\nExtracted Lines:")
+    for line in numLines:
+        print(line)
+    numbers = [re.sub(r'\D', '', line) for line in numLines]
+    if not numbers:
+        print("ERROR: Cannot find number in extracted lines")
+        return
+    print("\nExtracted Numbers:")
+    for number in numbers:
+        print(number)
+    best_idx = int(numbers[-1])
+    if best_idx < 0 or best_idx >= len(summaries):
+        print("ERROR: Best summary index out of bounds")
+        return
+    
+    return summaries[best_idx], eval
+
 def main():
     parser = argparse.ArgumentParser(description='Generate paper summary using Qwen/Qwen3-1.7B')
     parser.add_argument('--paper_path', required=True, help='Path to the paper\'s text file')
@@ -363,76 +435,30 @@ def main():
         print(f"Successfully extracted {len(paper_text)} characters from PDF")
         print_memory_usage("After PDF load")
 
-        summaries = [None] * args.num_summaries
-        for i in range(args.num_summaries):
-            # Generate summary
-            print("Generating summary...")
-            if 'mistral' in model_name.lower():
-                summaries[i] = generate_summary_mistral(paper_text, tokenizer, model)
-            else:
-                # qwen code
-                summaries[i] = generate_summary(paper_text, tokenizer, model)
-            
-            # Verify summary
-            if not summaries[i] or summaries[i].strip() == "":
-                print("ERROR: Generated summary is empty")
-                return
-                
-            # Print results
-            print("\nGenerated Summary:")
-            print("-" * 50)
-            print(summaries[i])
-            print("-" * 50)
-
-        # Generate evaluation
-        print("Generating evaluation...")
-        if 'mistral' in model_name.lower():
-            eval = generate_eval_mistral(paper_text, summaries, tokenizer, model)
+        if args.eval_path:
+            best_summary, eval = sum_eval(paper_text, tokenizer, model, args.model_name, args.num_summaries)
         else:
-            # qwen code
-            eval = generate_eval(paper_text, summaries, tokenizer, model)
-        
-        # Verify summary
-        if not eval or eval.strip() == "":
-            print("ERROR: Generated evaluation is empty")
-            return
-        
-        # Print results
-        print("\nGenerated Evaluation:")
-        print("-" * 50)
-        print(eval)
-        print("-" * 50)
-
-        # Extract index of best summary
-        lines = eval.splitlines()
-        numLines = [line for line in lines if re.fullmatch(r'\s*[0-9]\s*', line) or re.search(r'\b(best|answer)\b', line, re.IGNORECASE) and re.search(r'\d', line)]
-        if not numLines:
-            print("ERROR: Cannot find line with single number/best: number/answer: number in evaluation")
-            return
-        print("\nExtracted Lines:")
-        for line in numLines:
-            print(line)
-        numbers = [re.sub(r'\D', '', line) for line in numLines]
-        if not numbers:
-            print("ERROR: Cannot find number in extracted lines")
-            return
-        print("\nExtracted Numbers:")
-        for number in numbers:
-            print(number)
-        best_idx = int(numbers[-1])
-        if best_idx < 0 or best_idx >= len(summaries):
-            print("ERROR: Best summary index out of bounds")
+            if 'mistral' in model_name.lower():
+                best_summary = generate_summary_mistral(paper_text, tokenizer, model)
+            else:
+                best_summary = generate_summary(paper_text, tokenizer, model)
+            
+        if best_summary is None:
+            print("ERROR: Best summary not returned")
             return
         
         if args.output_path:
             try:
                 with open(args.output_path, 'w', encoding='utf-8') as f:
-                    f.write(summaries[best_idx])
+                    f.write(best_summary)
                 print(f"Summary saved to {args.output_path}")
             except Exception as e:
                 print(f"ERROR saving output: {e}")
         
         if args.eval_path:
+            if eval is None:
+                print("ERROR: Evaluation not returned")
+                return
             try:
                 with open(args.eval_path, 'w', encoding='utf-8') as f:
                     f.write(eval)
