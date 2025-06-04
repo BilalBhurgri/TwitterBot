@@ -18,6 +18,7 @@ import boto3
 from botocore.exceptions import ClientError
 from datetime import datetime
 import random 
+import argparse
 
 # Add the project root to Python path
 project_root = str(Path(__file__).parent.parent)
@@ -60,7 +61,7 @@ def load_model():
         )
         print("Model loaded successfully")
 
-def process_paper_for_bot(paper_id: str, bot_num: int, eval=False):
+def process_paper_for_bot(paper_id: str, bot_num: int, eval=False, num_summaries: int):
     """
     Process a paper and generate a summary, tweet, and optionally an eval
     Params: 
@@ -89,6 +90,7 @@ def process_paper_for_bot(paper_id: str, bot_num: int, eval=False):
     
     evaluation = None
     # if the parameter doesnt exist, it returns default value 'false'.
+    # This part is wrong! Should not be called here, but in main()
     if eval:
         evaluation = generate_eval(paper_text, summary, tokenizer, model)
 
@@ -97,6 +99,7 @@ def process_paper_for_bot(paper_id: str, bot_num: int, eval=False):
     real_tweet = tweet.split('\n')[-1]
     real_tweet += f"\n Link: https://arxiv.org/abs/{paper_id}"
 
+    # This should be created in main()
     result = {
         'status': 'success',
         'summary': summary,
@@ -107,6 +110,8 @@ def process_paper_for_bot(paper_id: str, bot_num: int, eval=False):
 
     today = datetime.now().strftime("%Y-%m-%d")
     s3_key = f"results/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
+    if eval:
+        s3_key = f"results-eval/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
     print(f"s3_key = {s3_key}")
     
     try:
@@ -144,21 +149,31 @@ def main():
     This randomly selects NUM_INDICES for each bot. So the bots end up posting
     about different papers.
     """
+    parser = argparse.ArgumentParser(description='Pick specific subset of papers or randomly pick them, generate summaries, evals, tweets.')
+    parser.add_argument('--num_summaries', required=True, help='Number of summaries to generate per paper')
+    parser.add_argument('--model_name', default="Qwen/Qwen3-4B")
+    args = parser.parse_args()
+    
     load_model()
     paper_ids = get_all_papers_from_bucket()
     print(f"All paper_keys: {paper_ids}")
     selected_paper_ids = random.sample(range(len(paper_ids)), NUM_INDICES)
 
     papers_per_bot = []
-    for i in range(1):
+
+    for i in range(): # NUM_BOTS
         papers_per_bot.append(random.sample(range(len(paper_ids)), NUM_INDICES))
+        papers = papers_per_bot
+        for paper in range(papers_per_bot):
+            # create temporary papers.txt in current dir to call generate_eval
+            # create 
     # print(f"Selected random paper_keys: {selected_paper_keys}")
     print(f"Random idxs per bot: {papers_per_bot}")
 
-    for i in range(1):
+    for i in range(1): # NUM_BOTS
         for idx in papers_per_bot[i]:
-            process_paper_for_bot(paper_ids[idx], i)
-
+            process_paper_for_bot(paper_ids[idx], i, args.num_summaries)
+            
 
 if __name__ == '__main__':
     main()
