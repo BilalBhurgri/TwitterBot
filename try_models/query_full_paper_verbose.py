@@ -70,7 +70,12 @@ Your summary:
 
     print(f"Prompt created with {len(prompt)} characters")
     max_context = model.config.max_position_embeddings
+    print(f"Max context length: {max_context}")
     max_prompt_len = max_context - max_new_tokens
+    print(f"Max prompt length: {max_prompt_len}")
+    if max_prompt_len < 0:
+        print("ERROR: Too many summaries to evaluate at the same time")
+        return "Too many summaries to evaluate at the same time"
     
     try:
         print("Tokenizing input...")
@@ -194,8 +199,6 @@ def generate_eval(text, summaries, tokenizer, model):
     if not summaries:
         print("ERROR: Cannot generate evaluation from empty summary")
         return "No summary was provided for evaluation."
-
-    max_new_tokens= 100 + 100 * len(summaries)
     
     # Create a prompt
     prompt = f"""You will be given several summaries written for the same research paper. Your task is to rate the summaries on two metrics.
@@ -238,8 +241,15 @@ Evaluation Steps:
 """
 
     print(f"Prompt created with {len(prompt)} characters")
+
     max_context = model.config.max_position_embeddings
+    print(f"Max context length: {max_context}")
+    max_new_tokens= 100 + 100 * len(summaries)
     max_prompt_len = max_context - max_new_tokens
+    print(f"Max prompt length: {max_prompt_len}")
+    if max_prompt_len < 0:
+        print("ERROR: Too many summaries to evaluate at the same time")
+        return "Too many summaries to evaluate at the same time"
     
     try:
         print("Tokenizing input...")
@@ -395,11 +405,20 @@ def main():
 
         # Extract index of best summary
         lines = eval.splitlines()
-        numLines = [line for line in lines if re.fullmatch(r'\s*[0-9]\s*', line) or re.search(r'\b(best|answer)\b', line, re.IGNORECASE)]
+        numLines = [line for line in lines if re.fullmatch(r'\s*[0-9]\s*', line) or re.search(r'\b(best|answer)\b', line, re.IGNORECASE) and re.search(r'\d', line)]
         if not numLines:
-            print("ERROR: Cannot find best summary index in evaluation")
+            print("ERROR: Cannot find line with single number/best: number/answer: number in evaluation")
             return
-        numbers = re.sub(r'\D', '', numLines[-1])
+        print("\nExtracted Lines:")
+        for line in numLines:
+            print(line)
+        numbers = [re.sub(r'\D', '', line) for line in numLines]
+        if not numbers:
+            print("ERROR: Cannot find number in extracted lines")
+            return
+        print("\nExtracted Numbers:")
+        for number in numbers:
+            print(number)
         best_idx = int(numbers[-1])
         if best_idx < 0 or best_idx >= len(summaries):
             print("ERROR: Best summary index out of bounds")
