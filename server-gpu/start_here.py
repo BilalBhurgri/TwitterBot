@@ -80,9 +80,12 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
         print(f"Error getting object papers/{paper_id}.txt: {e}")
     
     print(f"generating summary with {len(paper_text)} summary")
-
+    
+    best_summary = ""
     if eval:
-        best_summary, evaluation = sum_eval(paper_text, tokenizer, model, model_name, num_summaries)
+        all_summaries, best_summary_idx, evaluation = sum_eval(paper_text, tokenizer, model, model_name, num_summaries)
+        best_summary = all_summaries[best_summary_idx]
+        evaluation = evaluation.replace('```\n', '')
     else:
         if 'mistral' in model_name.lower():
             best_summary = generate_summary_mistral(paper_text, tokenizer, model)
@@ -90,14 +93,16 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
             best_summary = generate_summary(paper_text, tokenizer, model)
 
     print(f"APP.PY: CALLING GENERATE TWEET")
-    tweet = generate_tweet_qwen(summary, tokenizer, model, max_new_tokens=25, bot_num=bot_num)
-    real_tweet = tweet.split('\n')[-1]
+    tweet = generate_tweet_qwen(best_summary, tokenizer, model, max_new_tokens=26, bot_num=bot_num)
+    real_tweet = tweet.split('\n')[0]
     real_tweet += f"\n Link: https://arxiv.org/abs/{paper_id}"
 
-    # This should be created in main()
+    print(f"evaluation is: {evaluation}")
+
     result = {
         'status': 'success',
-        'summary': summary,
+        'all_summaries': all_summaries,
+        'summary': best_summary,
         'evaluation': evaluation,
         'tweet': tweet,
         'real_tweet': real_tweet,
@@ -109,15 +114,15 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
         s3_key = f"results-eval/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
     print(f"s3_key = {s3_key}")
     
-    try:
-        s3.put_object(
-            Bucket=os.environ.get('BUCKET_NAME'),
-            Key=s3_key,
-            Body=json.dumps(result, indent=2),
-            ContentType='application/json'
-        )
-    except ClientError as e:
-        print(f"Error putting object {s3_key} into s3 dir: {e}")
+    # try:
+    #     s3.put_object(
+    #         Bucket=os.environ.get('BUCKET_NAME'),
+    #         Key=s3_key,
+    #         Body=json.dumps(result, indent=2),
+    #         ContentType='application/json'
+    #     )
+    # except ClientError as e:
+    #     print(f"Error putting object {s3_key} into s3 dir: {e}")
 
     print(f"Put {result} into s3 bucket :)")
 
@@ -157,7 +162,7 @@ def main():
 
     papers_per_bot = []
 
-    for i in range(): # NUM_BOTS
+    for i in range(1): # NUM_BOTS
         papers_per_bot.append(random.sample(range(len(paper_ids)), NUM_INDICES))
     # print(f"Selected random paper_keys: {selected_paper_keys}")
     print(f"Random idxs per bot: {papers_per_bot}")
@@ -165,7 +170,7 @@ def main():
     eval = not args.no_eval
     for i in range(1): # NUM_BOTS
         for idx in papers_per_bot[i]:
-            process_paper_for_bot(paper_ids[idx], i, args.num_summaries, eval)
+            process_paper_for_bot('2505.24850', i, args.num_summaries, eval)
             
 
 if __name__ == '__main__':
