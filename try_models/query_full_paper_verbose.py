@@ -74,8 +74,8 @@ Your summary:
     max_prompt_len = max_context - max_new_tokens
     print(f"Max prompt length: {max_prompt_len}")
     if max_prompt_len < 0:
-        print("ERROR: Too many summaries to evaluate at the same time")
-        return "Too many summaries to evaluate at the same time"
+        print("ERROR: max_new_tokens is too long?")
+        return "max_new_tokens is too long?"
     
     try:
         print("Tokenizing input...")
@@ -119,7 +119,7 @@ Your summary:
         # Verify summary
         if not summary or summary.strip() == "":
             print("ERROR: Generated summary is empty")
-            return
+            return "Generated summary is empty"
             
         # Print results
         print("\nGenerated Summary:")
@@ -204,14 +204,14 @@ Paper text:
         return f"Error generating summary: {str(e)}"
 
 def generate_eval(text, summaries, tokenizer, model):
+    if not summaries:
+        print("ERROR: Cannot generate evaluation from empty summary")
+        return "No summary was provided for evaluation."
+    
     """Generate a evaluation with extensive debugging"""
     if not text or text.strip() == "":
         print("ERROR: Cannot generate evaluation from empty text")
         return "No text was provided for evaluation."
-    
-    if not summaries:
-        print("ERROR: Cannot generate evaluation from empty summary")
-        return "No summary was provided for evaluation."
     
     # Create a prompt
     prompt = f"""You will be given several summaries written for the same research paper. Your task is to rate the summaries on two metrics.
@@ -323,7 +323,7 @@ def sum_eval(paper_text, tokenizer, model, model_name, num_summaries=2):
         # Verify summary
         if not summaries[i] or summaries[i].strip() == "":
             print("ERROR: Generated summary is empty")
-            return
+            return summaries[:i], -1, "ERROR: Generated summary is empty"
 
     # Generate evaluation
     print("Generating evaluation...")
@@ -336,7 +336,7 @@ def sum_eval(paper_text, tokenizer, model, model_name, num_summaries=2):
     # Verify summary
     if not eval or eval.strip() == "":
         print("ERROR: Generated evaluation is empty")
-        return
+        return summaries, -1, "ERROR: Generated evaluation is empty"
     
     # Print results
     print("\nGenerated Evaluation:")
@@ -346,26 +346,46 @@ def sum_eval(paper_text, tokenizer, model, model_name, num_summaries=2):
 
     # Extract index of best summary
     lines = eval.splitlines()
-    numLines = [line for line in lines if re.fullmatch(r'\s*[0-9]\s*', line) or re.search(r'\b(Best|Answer)\b', line) and re.search(r'\d', line)]
+    numLines = [line for line in lines if re.search(r'\b(Best|Answer)\b', line) and re.search(r'\d', line)]
+    if numLines:
+        print("\nExtracted Lines:")
+        for line in numLines:
+            print(line)
+        numbers = [re.sub(r'\D', '', line) for line in numLines]
+        if not numbers:
+            print("ERROR: Cannot find number in extracted lines")
+            return summaries, -1, eval
+        print("\nExtracted Numbers:")
+        for number in numbers:
+            print(number)
+        for i in range(len(numbers) - 1, -1, -1):
+            best_idx = int(numbers[i])
+            if best_idx >= 0 and best_idx < len(summaries):
+                print(f"Best idx: {best_idx}")
+                return summaries, best_idx, eval
+    
+    numLines = [line for line in lines if re.fullmatch(r'\s*[0-9]\s*', line)]
     if not numLines:
         print("ERROR: Cannot find line with single number/best: number/answer: number in evaluation")
-        return
+        return summaries, -1, eval
     print("\nExtracted Lines:")
     for line in numLines:
         print(line)
     numbers = [re.sub(r'\D', '', line) for line in numLines]
     if not numbers:
         print("ERROR: Cannot find number in extracted lines")
-        return
+        return summaries, -1, eval
     print("\nExtracted Numbers:")
     for number in numbers:
         print(number)
-    best_idx = int(numbers[-1])
-    if best_idx < 0 or best_idx >= len(summaries):
-        print("ERROR: Best summary index out of bounds")
-        return
+    for i in range(len(numbers) - 1, -1, -1):
+        best_idx = int(numbers[i])
+        if best_idx >= 0 and best_idx < len(summaries):
+            print(f"Best idx: {best_idx}")
+            return summaries, best_idx, eval
     
-    return summaries[best_idx], eval
+    print("No index within bounds of summaries")
+    return summaries, -1, eval
 
 def main():
     parser = argparse.ArgumentParser(description='Generate paper summary using Qwen/Qwen3-1.7B')
@@ -436,7 +456,11 @@ def main():
         print_memory_usage("After PDF load")
 
         if args.eval_path:
-            best_summary, eval = sum_eval(paper_text, tokenizer, model, args.model_name, args.num_summaries)
+            summaries, best_idx, eval = sum_eval(paper_text, tokenizer, model, args.model_name, args.num_summaries)
+            if best_idx is None:
+                best_summary = summaries[0]
+            else:
+                best_summary = summaries[best_idx]
         else:
             if 'mistral' in model_name.lower():
                 best_summary = generate_summary_mistral(paper_text, tokenizer, model)

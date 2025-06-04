@@ -84,13 +84,18 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
     best_summary = ""
     if eval:
         all_summaries, best_summary_idx, evaluation = sum_eval(paper_text, tokenizer, model, model_name, num_summaries)
-        best_summary = all_summaries[best_summary_idx]
+        if best_summary_idx < 0 or best_summary_idx >= len(all_summaries):
+            best_summary = random.choice(all_summaries)
+        else:
+            best_summary = all_summaries[best_summary_idx]
         evaluation = evaluation.replace('```\n', '')
     else:
         if 'mistral' in model_name.lower():
             best_summary = generate_summary_mistral(paper_text, tokenizer, model)
         else:
             best_summary = generate_summary(paper_text, tokenizer, model)
+        best_summary_idx = -1
+        evaluation = "Evaluation turned off"
 
     print(f"APP.PY: CALLING GENERATE TWEET")
     tweet = generate_tweet_qwen(best_summary, tokenizer, model, max_new_tokens=26, bot_num=bot_num)
@@ -102,6 +107,7 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
     result = {
         'status': 'success',
         'all_summaries': all_summaries,
+        'best_summary_idx': best_summary_idx,
         'summary': best_summary,
         'evaluation': evaluation,
         'tweet': tweet,
