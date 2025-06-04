@@ -5,6 +5,7 @@ This generates today's tweets.
 3. Generates eval
 4. Generates tweets
 5. Returns them as json in /results/<model_name>/bot0, bot1, bot2... Using different personas. 
+6. Tracks which bots processed which papers
 """
 
 import os
@@ -60,6 +61,119 @@ def load_model():
         )
         print("Model loaded successfully")
 
+def load_processed_papers_tracker():
+    """Load the tracking file from S3. Returns empty dict if file doesn't exist."""
+    tracking_key = "tracking/processed_papers.json"
+    
+    try:
+        obj = s3.get_object(Bucket=os.environ.get('BUCKET_NAME'), Key=tracking_key)
+        tracking_data = json.loads(obj['Body'].read().decode('utf-8'))
+        print(f"Loaded existing tracking data with {len(tracking_data.get('processed_papers', []))} papers")
+        return tracking_data
+    except ClientError as e:
+        if e.response['Error']['Code'] == 'NoSuchKey':
+            print("No existing tracking file found. Creating new one.")
+            return {
+                "processed_papers": [],
+                "papers_by_bot": {str(i): [] for i in range(NUM_BOTS)},  # Track which papers each bot processed
+                "bots_by_paper": {},  # Track which bots processed each paper
+                "last_updated": datetime.now().isoformat(),
+                "total_processed": 0
+            }
+        else:
+            print(f"Error loading tracking file: {e}")
+            return {
+                "processed_papers": [],
+                "papers_by_bot": {str(i): [] for i in range(NUM_BOTS)},
+                "bots_by_paper": {},
+                "last_updated": datetime.now().isoformat(),
+                "total_processed": 0
+            }
+
+def save_processed_papers_tracker(tracking_data):
+    """Save the tracking file to S3."""
+    tracking_key = "tracking/processed_papers.json"
+    tracking_data["last_updated"] = datetime.now().isoformat()
+    tracking_data["total_processed"] = len(tracking_data["processed_papers"])
+    
+    try:
+        s3.put_object(
+            Bucket=os.environ.get('BUCKET_NAME'),
+            Key=tracking_key,
+            Body=json.dumps(tracking_data, indent=2),
+            ContentType='application/json'
+        )
+        print(f"Updated tracking file with {tracking_data['total_processed']} total papers")
+    except ClientError as e:
+        print(f"Error saving tracking file: {e}")
+
+def is_paper_already_processed(paper_id, bot_num, tracking_data, eval_mode=False):
+    """Check if a paper has already been processed by a specific bot."""
+    for entry in tracking_data["processed_papers"]:
+        if (entry["paper_id"] == paper_id and 
+            entry["bot_num"] == bot_num and 
+            entry["eval_mode"] == eval_mode):
+            return True
+    return False
+
+def add_processed_paper(paper_id, bot_num, tracking_data, eval_mode=False, s3_key=""):
+    """Add a processed paper to the tracking data and update bot/paper mappings."""
+    entry = {
+        "paper_id": paper_id,
+        "bot_num": bot_num,
+        "processed_date": datetime.now().isoformat(),
+        "eval_mode": eval_mode,
+        "s3_result_key": s3_key,
+        "model_used": model_name
+    }
+    tracking_data["processed_papers"].append(entry)
+    
+    # Update papers_by_bot mapping
+    bot_key = str(bot_num)
+    if bot_key not in tracking_data["papers_by_bot"]:
+        tracking_data["papers_by_bot"][bot_key] = []
+    
+    paper_entry = {
+        "paper_id": paper_id,
+        "processed_date": datetime.now().isoformat(),
+        "eval_mode": eval_mode,
+        "s3_result_key": s3_key
+    }
+    tracking_data["papers_by_bot"][bot_key].append(paper_entry)
+    
+    # Update bots_by_paper mapping
+    if paper_id not in tracking_data["bots_by_paper"]:
+        tracking_data["bots_by_paper"][paper_id] = []
+    
+    bot_entry = {
+        "bot_num": bot_num,
+        "processed_date": datetime.now().isoformat(),
+        "eval_mode": eval_mode,
+        "s3_result_key": s3_key
+    }
+    tracking_data["bots_by_paper"][paper_id].append(bot_entry)
+
+def get_unprocessed_papers(all_paper_ids, bot_num, tracking_data, eval_mode=False):
+    """Get list of papers that haven't been processed by a specific bot."""
+    unprocessed = []
+    for paper_id in all_paper_ids:
+        if not is_paper_already_processed(paper_id, bot_num, tracking_data, eval_mode):
+            unprocessed.append(paper_id)
+    return unprocessed
+
+def get_bot_statistics(tracking_data):
+    """Get statistics about which bots processed how many papers."""
+    stats = {}
+    for bot_num in range(NUM_BOTS):
+        bot_key = str(bot_num)
+        bot_papers = tracking_data["papers_by_bot"].get(bot_key, [])
+        stats[bot_num] = {
+            "total_papers": len(bot_papers),
+            "eval_papers": len([p for p in bot_papers if p.get("eval_mode", False)]),
+            "non_eval_papers": len([p for p in bot_papers if not p.get("eval_mode", False)])
+        }
+    return stats
+
 def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=True):
     """
     Process a paper and generate a summary, tweet, and optionally an eval
@@ -78,8 +192,9 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
         paper_text = obj['Body'].read().decode('utf-8')
     except ClientError as e:
         print(f"Error getting object papers/{paper_id}.txt: {e}")
+        return None
     
-    print(f"generating summary with {len(paper_text)} summary")
+    print(f"generating summary with {len(paper_text)} characters")
     
     best_summary = ""
     if eval:
@@ -88,13 +203,15 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
             best_summary = random.choice(all_summaries)
         else:
             best_summary = all_summaries[best_summary_idx]
-        evaluation = evaluation.replace('```\n', '')
+        evaluation = evaluation.replace('\nAnswer', '').replace('```', '')
+    
     else:
         if 'mistral' in model_name.lower():
             best_summary = generate_summary_mistral(paper_text, tokenizer, model)
         else:
             best_summary = generate_summary(paper_text, tokenizer, model)
         best_summary_idx = -1
+        all_summaries = []
         evaluation = "Evaluation turned off"
 
     print(f"APP.PY: CALLING GENERATE TWEET")
@@ -106,12 +223,17 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
 
     result = {
         'status': 'success',
+        'paper_id': paper_id,
+        'bot_num': bot_num,
+        'processed_date': datetime.now().isoformat(),
         'all_summaries': all_summaries,
         'best_summary_idx': best_summary_idx,
         'summary': best_summary,
         'evaluation': evaluation,
         'tweet': tweet,
         'real_tweet': real_tweet,
+        'model_used': model_name,
+        'eval_mode': eval
     }
 
     today = datetime.now().strftime("%Y-%m-%d")
@@ -127,10 +249,12 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
             Body=json.dumps(result, indent=2),
             ContentType='application/json'
         )
+        print(f"Put result into s3 bucket :)")
+        return s3_key
+
     except ClientError as e:
         print(f"Error putting object {s3_key} into s3 dir: {e}")
-
-    print(f"Put {result} into s3 bucket :)")
+        return None
 
 def get_all_papers_from_bucket():
     """
@@ -145,39 +269,100 @@ def get_all_papers_from_bucket():
     paper_keys = []
     if 'Contents' in response:
         for obj in response['Contents']:
-            paper_keys.append(obj['Key'].split("/")[-1].split('.txt')[0])
+            key = obj['Key'].split("/")[-1].split('.txt')[0]
+            if key:  # Skip empty keys
+                paper_keys.append(key)
     
-    return paper_keys[1:]  # first one is nothing
-
+    return paper_keys
 
 def main():
     """
     This randomly selects NUM_INDICES for each bot. So the bots end up posting
-    about different papers.
+    about different papers. Now with comprehensive tracking of bot-paper relationships.
     """
     parser = argparse.ArgumentParser(description='Pick specific subset of papers or randomly pick them, generate summaries, evals, tweets.')
     parser.add_argument('--num_summaries', default=2, help='Number of summaries to generate for eval', type=int)
     parser.add_argument('--model_name', default="Qwen/Qwen3-4B")
     parser.add_argument('--no_eval', action='store_true', help='Turns off eval when this flag is added')
+    parser.add_argument('--force_reprocess', action='store_true', help='Force reprocessing of already processed papers')
+    parser.add_argument('--show_stats', action='store_true', help='Show bot processing statistics')
     args = parser.parse_args()
+    
+    global model_name
+    model_name = args.model_name
+    
+    # Load tracking data first
+    tracking_data = load_processed_papers_tracker()
+    
+    # Show statistics if requested
+    if args.show_stats:
+        stats = get_bot_statistics(tracking_data)
+        print("\n=== Bot Processing Statistics ===")
+        for bot_num, stat in stats.items():
+            print(f"Bot {bot_num}: {stat['total_papers']} total papers "
+                  f"({stat['eval_papers']} with eval, {stat['non_eval_papers']} without eval)")
+        print("=====================================\n")
     
     load_model()
     paper_ids = get_all_papers_from_bucket()
-    print(f"All paper_keys: {paper_ids}")
-    selected_paper_ids = random.sample(range(len(paper_ids)), NUM_INDICES)
+    print(f"Found {len(paper_ids)} papers in bucket")
 
-    papers_per_bot = []
-
-    for i in range(NUM_BOTS): # NUM_BOTS
-        papers_per_bot.append(random.sample(range(len(paper_ids)), NUM_INDICES))
-    # print(f"Selected random paper_keys: {selected_paper_keys}")
-    print(f"Random idxs per bot: {papers_per_bot}")
-
-    eval = not args.no_eval
-    for i in range(NUM_BOTS): # NUM_BOTS
-        for idx in papers_per_bot[i]:
-            process_paper_for_bot('2505.24850', i, args.num_summaries, eval)
+    eval_mode = not args.no_eval
+    print(f"Eval mode: {eval_mode}")
+    
+    # Process papers for each bot
+    processed_this_run = 0
+    
+    for bot_num in range(NUM_BOTS):
+        print(f"\n--- Processing for Bot {bot_num} ---")
+        
+        if args.force_reprocess:
+            # Use all papers if forcing reprocess
+            available_papers = paper_ids
+        else:
+            # Get unprocessed papers for this bot
+            available_papers = get_unprocessed_papers(paper_ids, bot_num, tracking_data, eval_mode)
+        
+        print(f"Bot {bot_num}: {len(available_papers)} available papers")
+        
+        if len(available_papers) == 0:
+            print(f"No unprocessed papers for bot {bot_num}")
+            continue
             
+        # Select papers for this bot
+        num_to_select = min(NUM_INDICES, len(available_papers))
+        selected_papers = random.sample(available_papers, num_to_select)
+        
+        print(f"Bot {bot_num} selected papers: {selected_papers}")
+        
+        # Process each selected paper
+        for paper_id in selected_papers:
+            print(f"\nProcessing {paper_id} for bot {bot_num}")
+            
+            s3_key = process_paper_for_bot(paper_id, bot_num, args.num_summaries, eval_mode)
+            
+            if s3_key:
+                # Add to in-memory tracking (batch save at end)
+                add_processed_paper(paper_id, bot_num, tracking_data, eval_mode, s3_key)
+                print(f"Added {paper_id} to tracking for bot {bot_num}")
+                processed_this_run += 1
+    
+    # Save all tracking data at once at the end
+    if processed_this_run > 0:
+        save_processed_papers_tracker(tracking_data)
+        print(f"\n=== Processing Complete ===")
+        print(f"Processed {processed_this_run} new papers this run")
+        print(f"Total papers tracked: {len(tracking_data['processed_papers'])}")
+        
+        # Show final statistics
+        final_stats = get_bot_statistics(tracking_data)
+        print("\n=== Final Bot Statistics ===")
+        for bot_num, stat in final_stats.items():
+            print(f"Bot {bot_num}: {stat['total_papers']} total papers "
+                  f"({stat['eval_papers']} with eval, {stat['non_eval_papers']} without eval)")
+        print("============================")
+    else:
+        print("\nNo new papers were processed this run.")
 
 if __name__ == '__main__':
     main()

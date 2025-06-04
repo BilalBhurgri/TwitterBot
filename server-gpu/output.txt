@@ -1,0 +1,36 @@
+project_root is /home/emilykang/TwitterBot
+No existing tracking file found. Creating new one.
+
+=== Bot Processing Statistics ===
+Bot 0: 0 total papers (0 with eval, 0 without eval)
+Bot 1: 0 total papers (0 with eval, 0 without eval)
+Bot 2: 0 total papers (0 with eval, 0 without eval)
+Bot 3: 0 total papers (0 with eval, 0 without eval)
+Bot 4: 0 total papers (0 with eval, 0 without eval)
+Bot 5: 0 total papers (0 with eval, 0 without eval)
+=====================================
+
+Loading model: Qwen/Qwen3-4B
+Traceback (most recent call last):
+  File "/home/emilykang/TwitterBot/server-gpu/start_here.py", line 368, in <module>
+    main()
+  File "/home/emilykang/TwitterBot/server-gpu/start_here.py", line 306, in main
+    load_model()
+  File "/home/emilykang/TwitterBot/server-gpu/start_here.py", line 56, in load_model
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/emilykang/miniconda3/envs/myenv/lib/python3.11/site-packages/transformers/models/auto/tokenization_auto.py", line 1013, in from_pretrained
+    return tokenizer_class.from_pretrained(pretrained_model_name_or_path, *inputs, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/emilykang/miniconda3/envs/myenv/lib/python3.11/site-packages/transformers/tokenization_utils_base.py", line 2025, in from_pretrained
+    return cls._from_pretrained(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/emilykang/miniconda3/envs/myenv/lib/python3.11/site-packages/transformers/tokenization_utils_base.py", line 2278, in _from_pretrained
+    tokenizer = cls(*init_inputs, **init_kwargs)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/emilykang/miniconda3/envs/myenv/lib/python3.11/site-packages/transformers/models/qwen2/tokenization_qwen2_fast.py", line 120, in __init__
+    super().__init__(
+  File "/home/emilykang/miniconda3/envs/myenv/lib/python3.11/site-packages/transformers/tokenization_utils_fast.py", line 117, in __init__
+    fast_tokenizer = TokenizerFast.from_file(fast_tokenizer_file)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+KeyboardInterrupt
