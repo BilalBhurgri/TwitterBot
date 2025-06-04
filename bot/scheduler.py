@@ -204,5 +204,5 @@ if __name__ == "__main__":
     #     threading.Thread(target=schedule_daily_tasks, args=(bot, j), daemon=True).start()
     #     j+=1
     # This argument is the number of papers retrieved daily
-    threading.Thread(target=schedule_daily_paper_retrieval, args=(1,), daemon=True).start()
+    threading.Thread(target=schedule_daily_paper_retrieval, args=(100,), daemon=True).start()
     app.run(host="0.0.0.0", port=os.getenv('PORT_NO'))

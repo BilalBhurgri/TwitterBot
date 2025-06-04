@@ -139,9 +139,7 @@ def load_paper(paper_path):
     Saves the extracted text to a .txt file in the same directory as the PDF.
     """
     # First convert PDF to XML using GROBID
-    print("GROBID ISOLATION TECHNIQUE")
     xml_content = get_paper_xml.process_pdf(paper_path)
-    print("GROBID ISOLATION TECHNIQUE 2")
     if isinstance(xml_content, dict) and "error" in xml_content:
         print(f"Error processing PDF: {xml_content['error']}")
         return None
@@ -154,20 +152,21 @@ def load_paper(paper_path):
         
         # Now extract text from the XML
         text = parse_paper_remove_math.extract_text_from_xml(xml_path)
-        
-        # Save the extracted text to a .txt file
+        # # Save the extracted text to a .txt file
         txt_path = paper_path.replace('.pdf', '.txt')
         with open(txt_path, 'w', encoding='utf-8') as f:
             f.write(text)
-            
         try:
-            s3.upload_file(txt_path, os.getenv("BUCKET_NAME"), txt_path)
-            print(f"Uploaded {local_file_path} to s3://{bucket_name}/{txt_path}")
+            bucket = os.getenv("BUCKET_NAME")
+            s3_path = f"papers/{os.path.basename(txt_path)}"
+            s3.upload_file(txt_path, bucket, s3_path)
+            print(f"Uploaded to s3://{bucket}/papers/{txt_path}")
         except Exception as e:
             print(f"Upload failed: {e}")
         
         # Delete the temporary XML file
         os.remove(xml_path)
+        os.remove(txt_path)
         
         return text
     except Exception as e:
@@ -175,6 +174,8 @@ def load_paper(paper_path):
         # Clean up XML file if it exists
         if os.path.exists(xml_path):
             os.remove(xml_path)
+        if os.path.exists(txt_path):
+            os.remove(txt_path)
         return None
 
 def chunk_text(text, chunk_size=TEXT_CHUNK_SIZE, overlap=200):
