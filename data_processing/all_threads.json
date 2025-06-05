@@ -1,0 +1,930 @@
+{
+    "threads": [
+        {
+            "link": "https://x.com/JiayiiGeng/status/1927376241465684342",
+            "likes": 471,
+            "reposts": 78,
+            "comments": 9,
+            "paper": "https://arxiv.org/pdf/2505.17968",
+            "author": "JiayiGeng",
+            "tweets":[
+                "Using LLMs to build AI scientists is all the rage now (e.g., Google’s AI co-scientist [1] and Sakana’s Fully Automated Scientist [2]), but how much do we understand about their core scientific abilities? We know how LLMs can be vastly useful (solving complex math problems) yet unreliable (counting the number of 'R's in 'strawberry' or calculating 9.9 - 9.11) at the same time. Similarly, despite recent advances in applying LLMs to science, are we confident that they can reliably uncover the underlying mechanism of a simple black-box system in a controlled setting? We study this question in our new preprint: 📢👇 (1/n)",
+                "[IMAGE] Doing science requires several skills: 1) Performing inductive reasoning based on passively observed data; 2) Actively interacting with a system to collect informative data and reduce uncertainty about its internal mechanisms; 3) Communicating the results. Based on these desiderata, we focus on the ability to reverse-engineer black-box systems as a core capability and a prerequisite to doing scientific research. (2/n)",
+                "[IMAGE] 🤔How well can LLMs infer the internal mechanisms of black box systems from passive observations?  We looked at three kinds of black box systems inspired by cognitive studies: 1) list-mapping programs 2) rules of formal languages 3) parameters of math equations  Our findings suggest that, when limited to observational data, LLMs significantly underperform compared to Bayesian inference. However, active interventions substantially boost their performance!",
+                "[IMAGE] 🤔Why do interventions help? Do they result in more informative observations, or is it the process of generating the interventions itself that matters?-- Inspired by the passive-yoked design from human learning studies [3], we find that active learning outperforms passive observation, as it allows the LLM to dynamically refine its hypotheses through targeted interventions. (4/n)",
+                "[IMAGE] 🤔Can LLMs successfully transfer their experiment data and findings to other LLMs? The answer is not quite! Transferred interventions consistently underperform compared to LLMs conducting their own active interventions. (5/n)",
+                "[IMAGE] Active intervention effectively mitigates two common failure modes across all three black-box systems we studied: 1) Overcomplication – LLM tends to construct overly-complex hypotheses; 2) Overlooking – LLM neglects observations and draws overly-generic conclusions without careful checking of the data. (6/n)",
+                "[IMAGE] In summary, we show that LLMs still struggle to fully utilize passive observations to form hypotheses and allowing active intervention mitigates some of the failure modes. By evaluating their ability to reverse-engineer black-box systems, we offer a principled and controlled framework for probing a core scientific reasoning capability, providing insight into whether SoTA LLMs possess the foundational skills required to function as reliable AI scientists. (8/n)",
+                "Check out more details from our paper: https://arxiv.org/abs/2505.17968 Work done with amazing collaborators Howard Chen ( @__howardchen ), Dilip Arumugam ( @Dilip_Arumugam ), and Tom Griffiths ( @cocosci_lab )! 🎉 Special thanks Danqi Chen ( @danqi_chen ) and people from  @PrincetonPLI   @princeton_nlp  for their valuable feedback and support!❤️‍🔥 (9/n)",
+                "[1] https://research.google/blog/accelerating-scientific-breakthroughs-with-an-ai-co-scientist/ \n [2] https://sakana.ai/ai-scientist/ \n [3] https://pubmed.ncbi.nlm.nih.gov/23527948/ (10/10)"
+            ]
+        },
+        {
+            "link": "https://x.com/JiahaoQiu99/status/1927376487285432790",
+            "likes": 55,
+            "reposts": 34,
+            "comments": 13,
+            "paper": "https://arxiv.org/pdf/2505.20286",
+            "author": "JiahaoQiu99",
+            "tweets": [
+                "The GAIA game is over, and Alita is the final answer. Alita takes the top spot in GAIA, outperforming OpenAI Deep Research and Manus. Many general-purpose agents rely heavily on large-scale, manually predefined tools and workflows. However, we believe that for general AI assistants: 'Simplicity is the ultimate sophistication.' 🔗Full paper: https://arxiv.org/abs/2505.20286 🔗More Details will be updated here: https://github.com/CharlesQ9/Alita #AI #Agent #LLM ",
+                "[IMAGE] The reliance on large-scale manually predefined tools and workflows introduces several critical limitations: i) It is impractical, if not impossible, to predefine all the tools required for the wide variety of real-world tasks an agent might encounter (imcomplete coverage); ii) Many complex tasks require agents to creatively compose new tools or leverage existing ones in novel ways while pre-designed workflow and hardcoded components constrain this compositional flexibility and inhibit the development of adaptive behaviors (limited creativity and flexibility); iii) It is not always the case that the interface or environment of different tools are compatible with the agent (mismatch). For example, many useful tools are not written in Python, which makes it difficult, though not entirely impossible, for them to be pre-connected to the mainstream agent frameworks that are primarily written in Python. Together, these challenges ultimately hinder the scalability, adaptability, and generalization of existing generalist agents.",
+                "In the abstract and Table 1 as well as the full paper, we point out that it is pass@3. Our pass@1 is 75.15% on GAIA validation, which also surpasses OpenAI Deep Research and Manus. However, some companies advertise their products without pointing out that it is pass@N or pass@1. To gain some attention in this environment, we are compelled to aggressively and shamelessly plot Figure 1 in this way. Also, if you take a closer look at comment 7 in https://github.com/CharlesQ9/Alita, you may better understand what I am referring to.  Another point worth noticing is my comment 4 on GitHub. Alita-generated MCPs, which can be viewed as manually designed by the agent instead of human developers through trial and error, can make pass@1 approach pass@N.   After chatting with many people, I also found that some of them have misunderstood how our pass@1 and pass@3 results come out. They are all in the setting where Alita doesn't have any initialized MCPs. It is not that Alita did the first task, saved the MCPs generated from the first task, and then continued doing the second task iteratively. It is, of course, not a fair comparison. Instead, we construct the MCP box only after all experiments are done, and pass@1 & pass@3 are calculated. Then we connect the MCP box to Alita, which can make pass@1 approach pass@N. Maybe we can refer to this version as Alita Pro :)",
+                "Claude-Sonnet-4 vs Claude-3.7-Sonnet: Another interesting observation is that when we replace Claude-3.7-sonnet with Claude-sonnet-4, the accuracy on Level1 significantly decreases from 96.23% pass@3 to 88.68% though the overall performance increases. We have not fully understood the reasons behind this phenomenon.",
+                "[IMAGE] In contrast to the prevailing trend of growing complexity, we propose a radically simple design philosophy built on two principles: i) Minimal Predefinition: Equip the agent with only a minimal set of core capabilities, avoiding manually engineered components for specific tasks or modalities; ii) Maximal Self-Evolution: Empower the agent to autonomously create, refine, and reuse external capabilities as needed. We instantiate this vision through Alita, a generalist agent built with a single core capability (i.e., the web agent) and a small set of general-purpose modules that enable self-directed capability expansion. Specifically, we take advantage of the Model Context Protocols (MCPs) which is an open protocol that standardizes how different systems provide context to LLMs, and empower Alita to dynamically generate, adapt, and reuse MCPs based on the demands of each task rather than relying on static, predefined tools. This shift from manually designed capabilities to on-the-fly MCP construction unlocks a new path for building agents that are simple yet profoundly capable.",
+                "Auto MCP Creation vs Auto Tool Creation: Additional benefits of MCP creation over tool creation include better reusability and easier environment management. Auto MCP creation might be the future mainstream",
+                "Alita-generated MCP Box has two benefits. i)Agent Distillation: The reuse of auto-generated MCPs can be viewed as a way of distillation, which is much cheaper and easier than traditional distillation. Stronger Agent teaches Weaker Agent: These MCPs can be reused by other weaker agents and improve their performance since Alita, instead of human developers, designs a set of useful MCPs fit to GAIA by trial and error. Agent with Larger LLMs teaches Agent with Smaller LLMs: These MCPs can also be reused by agents with smaller LLMs and significantly improve the performance. ii)Make Pass@1 approach Pass@N The MCP Box can also be connected to Alita, and makes pass@1 approach Pass@N.",
+                "We manually test some agent products on GAIA. Some companies may falsely advertise their agent performance. Additionally, the GAIA validation dataset contains at least 4-5 incorrect answers, making it impossible to achieve close to 100% accuracy. One of the simplest ways to achieve 100% accuracy on GAIA validation is to integrate a HuggingFace search tool into the agent.",
+                "There’s a gap between the GAIA validation and test datasets. In detail, the GAIA test dataset focuses more on web browsing ability and less on tool use. Our web agent is very simple and supports very few actions, but it is enough for the validation dataset. However, our performance drops a lot on the GAIA test, though we still rank high. With the MCP creation component, Alita achieves around a 15% increase in pass@1 on the GAIA test dataset compared to Alita without the MCP creation component, while the increase on GAIA validation is higher.",
+                "Maybe it’s time to move forward to HLE, BrowseComp, and xbench."
+            ]   
+        },
+        {
+            "link": "https://x.com/theryanliu/status/1805967097727758804",
+            "likes": 176,
+            "reposts": 42, 
+            "comments": 6,
+            "paper": "https://arxiv.org/pdf/2406.17055",
+            "author": "theryanliu",
+            "tweets": [
+                "New preprint: LLMs assume people are more rational than we really are 😮🤖 Applies to simulating decisions, predicting people’s actions, and making inferences from others’ decisions. link: https://arxiv.org/abs/2406.17055 [1/4] ",
+                "On a massive psychological dataset of 13,000+ risky choices:  We find that {GPT-4o, GPT-4-Turbo, Claude Opus, Llama3} predictions and simulations correlate highly with an existing model of rational choice (expected value theory), but only moderately correlate with humans. [2/4]",
+                "So why do LLMs seem so humanlike? 😳 We provide one possible explanation: People also assume that others make decisions rationally! (Jern et al., 2017). LLMs seem humanlike because we EXPECT humans to act rationally, whereas LLMs ACTUALLY act rationally. [3/4]",
+                "The good news is that LLMs are at least aligned with our expectations.  Replicating Jern et al. (2017), we find that LLMs also assume people make decisions rationally.  The bad news is that existing metrics that use peoples' judgments (e.g., believability) might need rethinking."
+            ]
+        },
+        {
+            "link": "https://x.com/StellaLisy/status/1927392717593526780",
+            "likes": 1700,
+            "reposts": 492,
+            "comments": 72,
+            "paper": "https://github.com/ruixin31/Rethink_RLVR/blob/main/paper/rethink-rlvr.pdf",
+            "author": "StellaLisy",
+            "tweets": [
+                "[IMAGE] We tested increasingly weak and even pathological training signals on math problems: \n ✅ Ground truth answers 🔲 Format – reward if contains “\boxed{}” \n 😈 Incorrect answers as labels \n 🎲 Randomly reward regardless of answer \n All these improved Qwen2.5-Math, AMC, AIME dramatically!!!",
+                "[IMAGE] 🔍 Plot twist: these spurious rewards ONLY works on certain model families. \n 🤩 All Qwen models: Huge gains from spurious rewards \n 🧐 Llama models: Little to no improvement \n 😢 OLMo models: Often got worse \n Same training recipe, completely different outcomes.",
+                "[IMAGE] 💡Our hypothesis: RLVR amplifies reasoning patterns that already exist Qwen2.5-Math can uniquely do 'code reasoning'-solving math by writing Python💻 (without execution) Code reasoning correlates with correctness (64% w/ vs 29% w/o) Spurious training amplifies code usage to 90%+",
+                "[IMAGE] We empirically prove this with surgical experiments: \n 🐍 Directly rewarding string “python” → +11.8% performance \n 🚫 Random rewards BUT blocking code → gains disappear \n The 'magic' is just surfacing useful patterns already learned in pre-training.",
+                "[IMAGE] The case of random rewards is particularly intriguing. We tested different thresholds for when we assign a reward of 1 – even if we only assign a reward 0.1% of the time, it still works!  HOW?  This motivates us to look into the GRPO loss to see exactly what is happening🕵👇",
+                "[IMAGE] ⚙️ Looking closer into GRPO: there is a 'clipping bias' that amplifies high-prior model behaviors. Code reasoning could be one of the magical behaviors for Qwen-Math💻 Empirically, we disabled clipping (fig.)-the gains disappeared‼️",
+                "[IMAGE] 🚨Future RLVR research should be validated on diverse models rather than a single de facto choice, as we show that it's easy to get significant gains on Qwen even with completely spurious reward signals. 📄 Details, code, and full paper in our blogpost:",
+            ]
+        },
+        {
+            "link": "https://x.com/qinan_yu/status/1928147852405973476",
+            "likes": 224,
+            "reposts": 42,
+            "comments": 1,
+            "paper": "https://arxiv.org/pdf/2505.20809",
+            "author": "qinan_yu",
+            "tweets": [
+                "[IMAGE] 🎀 fine-grained, interpretable representation steering for LMs!meet RePS — Reference-free Preference Steering! \n 1. outperforms existing methods on 2B-27B LMs, nearly matching prompting \n 2. supports both steering and suppression (beat system prompts!) \n 3. jailbreak-proof",
+                "⭐️ work with @ZhengxuanZenWu (co-first), @aryaman2020  @chrmanning  @ChrisGPotts paper: https://arxiv.org/pdf/2505.20809repo: https://github.com/stanfordnlp/axbench/(2/n)",
+                "previous intervention-based steering methods consistently underperformed prompting and fine tuning, as evidenced by AxBench [Wu et al.,2025], a large-scale model steering benchmark.we propose a new training objective, RePS, to narrow the gap!(3/n)",
+                "[IMAGE] RePS builds on BiPO [Cao et al., 2024] and SimPO [Meng et al., 2024], and is a reference-free bi-directional preference optimization objective:(4/n)",
+                "unlike BiPO, we argue the steering objective should be reference-free, as the steering behaviors are usually not preferred by the reference model.responses that always mention the Golden Gate Bridge when prompted with a coding question should have low probability!(5/n)",
+                "we also add new scaling terms to weight the likelihood of the steered response higher if the reference model considers the steered response to be unlikely. (6/n)",
+                "[IMAGE] instead of negative steering by subtracting vectors, RePS nulls features out inspired by Widdows [2003].we null out any projection along the steering direction from LM representations:(7/n)",
+                "intuitively, RePS learns to increase the likelihood of the steered response when the intervention is applied positively, and learns to null out any information in the steering direction when the intervention is applied negatively.(8/n)",
+                "[IMAGE] we test RePS on three different steering methods LoRA, ReFT and Steering Vector. on the same setup as AxBench, RePS consistently outperformed existing steering methods on Gemma-2 and Gemma-3 models from 2B-27B, substantially narrowing the gap with prompting. (9/n)",
+                "[IMAGE] when directly negating the trained steering vector, it can also suppress features without additional adaptations.  (10/n)",
+                "[IMAGE] trained steering vectors can suppress features better than system prompts when users try to overwrite LM behaviors through prompting!(11/n)",
+                "[IMAGE] intervention-based suppression withstands many-shot jailbreaks as well!it has a comparable performance compared to appending the system prompt after the user query and significantly better than prepending the system prompt.",
+                "overall, these results position RePS as a scalable, robust alternative for steering and suppressing concepts in LMs.(13/n)"
+            ]
+        },
+        {
+            "link": "https://x.com/yueqi_song/status/1912510869491101732",
+            "likes": 224,
+            "reposts": 46,
+            "comments": 7,
+            "paper": "https://arxiv.org/abs/2504.10342",
+            "author": "yueqi_song",
+            "tweets": [
+                "Humans can perform complex reasoning without relying on specific domain knowledge, but can multimodal models truly do that as well?\nShort answer: No. Even the best models perform below the 5th-percentile human on our VisualPuzzles tasks.\n\n🚀 Introducing VisualPuzzles🧩: a new benchmark designed to disentangle multimodal reasoning from domain knowledge.\n\nWhy VisualPuzzles?\nVisualPuzzles challenges models with logic-based puzzles that require minimal prior knowledge. A key source: manually translated visual questions from the Chinese Civil Service Exam (中国国家公务员考试行测) 🔑\n\n🤔Key Findings\n- The best model models score under 57.5% (5th percentile human baseline)\n- Knowledge ≠ Reasoning: On knowledge-heavy benchmarks like MMMU, reasoning strongly correlates with knowledge — but not on VisualPuzzles\n- Larger models = better knowledge, but not necessarily better reasoning\n- 🧠\"Thinking\" modes don't always help. More tokens = better knowledge recall, but more tokens ≠ better reasoning 🤷‍♀️\n\n👉 Explore the benchmark:\n🌐 Project Website + Leaderboard: https://neulab.github.io/VisualPuzzles\n📄 arXiv: https://arxiv.org/abs/2504.10342\n\n🙌 With\n@yueqi_song\n \n@tianyue_01\n\n@Yibo_Kong\n@Zecheng_Li\n\n@xiangyue96\n\n@gneubig\n\n& supported by CMU NeuLab 💛\n🙏 Special thanks to the LTI community at CMU for the insightful feedback, generous support, and always inspiring conversations.",
+                "🧠 Humans vs Models\n • 95th percentile humans: nearly perfect many categories.\n • SOTA models: < 5th percentile humans.\n • Most open models: ~30-40%\nNo model matches even the worst-performing humans on average.\n🤯The gap is consistent across reasoning types.\nMultimodal reasoning remains an open challenge.",
+                "📉 Knowledge intensity\n We asked GPT-4o to generate \"knowledge checklists\" for 50 random items from each benchmark.\nAvg. number of knowledge questions per item:\n• MMMU: 3.9\n• VisualPuzzles: 1.1\nVisualPuzzles really does minimize domain knowledge.\n\n📚 Knowledge ≠ Reasoning\n• On MMMU: reasoning & knowledge scores are tightly linked (corr = 0.8)\n• On VisualPuzzles: much weaker correlation (corr = 0.4)\n\n🐘 Do bigger models do better?\n• For knowledge-heavy tasks (MMMU): yes\n• For reasoning-first tasks (VisualPuzzles): not really\nModel size doesn't guarantee strong reasoning with light domain knowledge.",
+                "🔍 How hard is reasoning on VisualPuzzles?\nWe compared VisualPuzzles to MMMU using step-by-step model solutions and found:\nReasoning steps make up:\n • 87% of steps on VisualPuzzles\n • 75% on MMMU\nVisualPuzzles demands more complex logical reasoning.\n🧠 But what about \"thinking\" modes?\nWe tested structured reasoning models like o1, Claude and Gemini \"Thinking\" versions.\n Despite longer answers, they're not always better.\nMore tokens ≠ better reasoning 🤷‍♀️",
+                "🔍 Do advanced reasoning strategies help on VisualPuzzles?\n We examined two popular reasoning patterns:\n • Branching (exploring multiple paths)\n • Revalidation (rechecking earlier steps)\nSpoiler alert: they don’t always help.\n\nOn MMMU (a knowledge-heavy multimodal reasoning benchmark), these strategies do improve model accuracy. They help the model recall facts more reliably by broadening the search space.\nBut on VisualPuzzles? Different story.\n\nOn VisualPuzzles:\n • Models use branching & revalidation more often\n • But there's no correlation with accuracy\nThese patterns increase verbosity — not effectiveness.\n The reasoning often stays shallow, missing the true challenge.\n🔑VisualPuzzles exposes a key gap: Reasoning strategies that work for retrieving knowledge don’t necessarily help with genuine inference.",
+                "🧠 Does reasoning transfer across categories?\n We analyzed model performance across 5 reasoning types on VisualPuzzles.\nFor humans, reasoning skills vary by task.\nBut for models? The story is very different.\n\nIf a model is good at one reasoning category, it’s often good at others too.\n\nBut is that real reasoning transfer?\n🤔 Probably not.\nThese patterns suggest models might be relying on shared shortcuts - surface patterns or biases that happen to work across categories - not truly distinct reasoning skills.",
+                "🔍 Where do multimodal models fail?\nWe analyzed 100 errors from Claude-3.7-Sonnet-Thinking on VisualPuzzles.\n Turns out, most failures aren't just visual — they're reasoning.\nCheck out the pie chart for a breakdown 👇\n\n~94% of failures reflect reasoning + perception challenges.\n\nThe takeaway?\nToday’s top models still struggle with true multimodal reasoning — not just recalling, but thinking about what they see.",
+                "🧩What kinds of puzzles are in VisualPuzzles?\nEach of the 1,168 questions is labeled by reasoning type, difficulty, and option format—so we can rigorously test model reasoning across different axes. Note that most of the words that constructed VisualPuzzles are from Basic English Vocabulary.\n\n🧠Reasoning Categories\n • Algorithmic\n • Analogical\n • Deductive\n • Inductive\n • Spatial\n\n🎯 Difficulty\n • Easy (46%)\n • Medium (39%)\n • Hard (15%)\n\n🖼️ Answer Types\n • 57% image-based\n • 43% text-based"
+            ]
+        },
+        {
+            "link": "https://x.com/theryanliu/status/1786039371281666429",
+            "likes": 61,
+            "reposts": 15,
+            "comments": 1,
+            "paper": "https://t.co/wXJ9hFs3Vc",
+            "author": "theryanliu",
+            "tweets": [
+                "Honesty and helpfulness are two central goals of LLMs. But what happens when they are in conflict with one another? 😳\n\nWe investigate trade-offs LLMs make, which values they prioritize, and how RLHF and Chain-of-Thought influence these trade-offs: https://arxiv.org/abs/2402.07282\n\n[1/3]",
+                "Using a paradigm in psychology, we test GPTs and {LLaMA 2, Mixtral} pre/post-RLHF in situations where helpfulness and honesty cannot both be achieved.\n\nRLHF improves both honesty and helpfulness, while CoT influences LLMs to be more helpful at the expense of honesty 😲\n\n[2/3]",
+                "GPT-4 Turbo also demonstrates human-like response patterns, and its prioritization of helpfulness/honesty is steerable via just zero-shot prompting 🤯\n\nWe hope uncovering LLMs’ internalized values allows us to ask what values they",
+                "should",
+                "possess.\n\n[3/3]"
+            ]
+        },
+        {
+            "link": "https://x.com/ericzelikman/status/1768663835106513041",
+            "likes": 1000,
+            "reposts": 237,
+            "comments": 36,
+            "paper": "https://arxiv.org/abs/2403.09629",
+            "author": "ericzelikman",
+            "tweets": [
+                "[IMAGE]Reasoning is everywhere in text -- just hidden between the lines. That's because people (often) think before they speak. So LMs can learn to reason from diverse online text if they:\n🧠1) reason about what text is next\n💬2) see if the thought helped\n🧑‍🎓3) learn from useful thoughts",
+                "[IMAGE]Excitingly, self-teaching reasoning on diverse web text automatically improves other reasoning! Mistral self-taught by training on web data increases its zero-shot commonsense reasoning accuracy by a third and nearly doubles its zero-shot direct grade-school-math accuracy",
+                "[IMAGE]While this reasoning doesn’t help much with predicting most tokens, it helps most on those the model finds hardest\n\nPlus, during generation, this can be combined with techniques like chain of thought, letting the model reason “quietly” about each token of its generated thought",
+                "[IMAGE]But how? First, transformer LMs are efficient since they train from all places in a text at once. But, generating reasoning usually gives a signal from only one place. We use a custom attention mask for parallel sampling from all tokens instead. Up to a sequence-length× speedup!",
+                "[IMAGE]Second, we construct meta-tokens like gist tokens and soft prompts: we let the model learn for itself how to represent the start of a thought. Also, we let it decide to disregard a thought, initially giving all thoughts no weight. This prevents any initial distribution shift",
+                "Quiet-STaR generalizes our “Self-Taught Reasoner” (STaR) from two years ago. We can’t wait to find what happens if it’s scaled up with more data and better models."
+            ]
+        },
+        {
+            "link": "https://x.com/FahimTajwar10/status/1927815210175451352",
+            "likes": 824,
+            "reposts": 147,
+            "comments": 20,
+            "paper": "https://arxiv.org/abs/2505.21444v1",
+            "author": "FahimTajwar10",
+            "tweets": [
+                "2/\nRL for reasoning depends on verifiable rewards which can make scaling harder.\n\nAlternative: let LLMs generate their own reward. For tasks with a generation-verification gap, if LLMs can identify the best response among its own candidate responses, it can be used for training.",
+                "[IMAGE] 3/\nLLMs show a generation-verification gap via majority voting — more consistent answers are generally more correct. Thus, a simple way of self-training is to generate pseudo-labels via majority voting.",
+                "[IMAGE] 4/\nWe do precisely that in our algorithm, which we call Self-Rewarded Training (SRT).",
+                "[IMAGE] 5/\nGiven the base model is strong, self-training via majority voting labels leads to impressive performance gains",
+                "nearly 100% relative improvement at peak performance averaged over 3 held-out datasets (AIME 24, AIME 25, AMC)",
+                "using a Qwen2.5-Math-7B model.",
+                "6/\nFew concurrent work have also tried training via some measure of self-confidence. \n\nA big question remains however: How far can we actually push the performance via this sort of training, which is akin to distribution sharpening? Did we forget about reward hacking?",
+                "[IMAGE] 7/\nReward hacking turns out to be the major failure mode of SRT. Even though peak performance of SRT is enviable, prolonged training always leads to performance collapse, as we see with training on the DAPO dataset.",
+                "[IMAGE] 8/\nWhy does this happen? We thoroughly analyze this and come to the finding: on a difficult and large dataset, the model learns to output the same consistent answer (\\boxed{1}) irrespective of the prompt, as this is an easier to find optimal policy under the training objective.",
+                "[IMAGE] 9/\nAt the time of collapse, the model achieves perfect training reward, but has exploding KL divergence, and the performance plummets on heldout datasets. Model entropy also explodes as it outputs random incoherent tokens followed by \\boxed{1} for all queries.",
+                "10/\nSo can we do self-training without model collapse? It does not seem completely immune from collapse, but we make three suggestions that can help: \n\n1) early stopping, \n\n2) offline labeling, \n\n3) training with curriculum!",
+                "[IMAGE] 11/\nThe first one, early stopping, is obvious. We see that performance on different heldout datasets tend to collapse at the same time, so using a small labeled dataset for early stopping can let one keep most of the benefits from unsupervised training.",
+                "12/\nThe second one, offline labeling, is more interesting. The performance collapse phenomena emerges because models learn to ignore correctness and pretraining knowledge, and fully optimize self-consistency.",
+                "[IMAGE] 13/\nA simple way to prevent this: use a fixed policy to generate the labels instead of the evolving current policy. We generate labels using majority voting by the base Qwen2.5-Math-7B model. Training against these labels performs the same as SRT but exhibits more stability.",
+                "14/\nFinally, the most interesting of our ideas: curriculum. We observe that SRT fails faster on the harder DAPO dataset compared to MATH-12K. This brings the question: what happens if we filter out the harder questions, and only run SRT on the easy questions?",
+                "15/\nWe try two variants of this idea: 1) Filtering prompts where majority voting answer appears less frequently (no ground truth re",
+                "16/\nWe train on the easiest ⅓-rd of the DAPO dataset. Surprisingly, even after training for 3 epochs, we see no performance collapse! The performance on heldout datasets also matches that of RL training with ground truth on the full dataset.",
+                "17/\nOverall, we show that the self-training idea has promises, but particular concerns about reward hacking need to be solved (a better mechanism for self-verification?) before this method can be scaled."
+            ]
+        },
+        {
+            "link": "https://x.com/Brown_NLP/status/1725553034992701818",
+            "likes": 188,
+            "reposts": 32,
+            "comments": 1,
+            "paper": "https://arxiv.org/abs/2310.15910",
+            "author": "Brown_NLP",
+            "tweets": [
+                "[IMAGE] Accepted at EMNLP: LLMs often have to integrate information in context with facts learned during pretraining. Sometimes these facts disagree, so how do they handle this competition? We find that we can modulate single attention heads to control which version to use!",
+                "[IMAGE] On a capital city prediction task, we first find a relationship between model size, frequency of the fact in the pretraining corpus, and propensity towards the memorized version of the fact. The more often a city and a country name cooccur, the more often a model prefers it",
+                "[IMAGE] We design a method using logit attribution to find attention heads that write in the direction of either answer. In Pythia-1.4b we find a single head that writes strongly toward the in-context answer (in-context head) and another head for the the memorized answer (memory head)",
+                "[IMAGE] During the forward pass, we either upweight or downweight one of these heads. Downweighting the memory head leads the model to use the in-context version 88% of the time. Tuning the in-context head predictably changes the results, but not as strongly as scaling the memory head",
+                "[IMAGE] Lastly, we ask whether the memory head is specifically writing information about geography. By decoding the singular vectors of the OV weight matrices, we find that the memory head *specifically* writes information about locations into the residual stream",
+                "Our work contributes to a body of evidence showing that we can often localize model behaviors to specific components and provides a proof of concept for how future methods might control model behavior dynamically at runtime.\nPaper is here: https://t.co/598kQnv0qm"
+            ]
+        },
+        {
+            "link": "https://x.com/SonglinYang4/status/1926065619272687842",
+            "likes": 410,
+            "reposts": 82,
+            "comments": 8,
+            "paper": "https://arxiv.org/abs/2505.16381",
+            "author": "SonglinYang4",
+            "tweets": [
+                "📢 (1/16) Introducing PaTH 🛣️ — a RoPE-free contextualized position encoding scheme, built for stronger state tracking, better extrapolation, and hardware-efficient training. PaTH outperforms RoPE across short and long language modeling benchmarks",
+                "⚙️ (2/16) Triton implementation is available at",
+                "[IMAGE] 📖(3/16) Relative position encodings are often expressible in bilinear form",
+                "[IMAGE] 🪢 (4/16) For RoPE, each position uses the same block-diagonal rotation matrix H, with fixed 2×2 blocks. \n \n🔍 Why move beyond RoPE? \n🚫 Static rotation angles → no length extrapolation\n🚫 Block-diagonal with only 2×2 blocks → limits expressivity to TC⁰ complexity",
+                "[IMAGE] 🔺(5/16) Inspired by DeltaNet, PaTH uses a cumulative product of identity-plus-low-rank Householder-like matrices for bilinear encoding. It's essentially a softmax version of DeltaNet — combining DeltaNet’s strong state tracking with softmax’s large memory capacity for recall.",
+                "🦊(6/16)  FoX (\n@zhxlin\n) https://arxiv.org/abs/2503.02130 can be viewed as a softmax version of Mamba2.  We go one step further with PaTH-FoX — a softmax version of Gated DeltaNet",
+                "🔮(7/16) We set beta in (0, 2), as this range has been shown to improve state tracking in DeltaNet.  https://arxiv.org/abs/2411.12537 https://arxiv.org/abs/2502.10297\n@riccardograzzi\n\n@julien_siems",
+                "⚡️(8/16) We combine FlashAttention with the chunk/blockwise DeltaNet algorithm (https://sustcsonglin.github.io/blog/2024/deltanet-2/) to develop a novel blockwise training algorithm for PaTH, achieving competitive wall-clock speed compared to standard FlashAttention implementations.",
+                "[IMAGE] 🔁(9/16) For state tracking, we evaluate on three tasks. The first is Flip-Flop language modeling\n@BingbinL\n\n— a simple sequential reasoning task where RoPE fails completely when using only a single layer, while PaTH nearly solves it.",
+                "[IMAGE] 🧠 (10/16) We also evaluate on A5 word problem and MQRAR-N, a generalization of MultiQuery Associative Recall (MQAR \n@simran_s_arora\n ) that retrieves the N-th most recent associated value from the previous context. PaTH achieves the strongest performance on both tasks.",
+                "[IMAGE] 🧩(11/16) For common-sense reasoning, PaTH outperforms RoPE and FoX, particularly on the ARC dataset, which demands complex reasoning.",
+                "[IMAGE] 📈(12/16) We evaluate length extrapolation on CodeParrot (Code), PG-19 (Book), and NarrativeQA (Conversational English).  PaTH-FoX extrapolates smoothly to 64K from 4K training.  Naive FoX degrades early, while naive PaTH holds up to 32K.",
+                "[IMAGE] 📚(13/16) On long-context tasks, PaTH and PaTH-FoX consistently outperform both FoX and the RoPE baseline.",
+                "[IMAGE] 📏(14/16) We break down RULER performance into several categories and find that PaTH significantly improves both variable tracking—a diagnostic task for state tracking—and information aggregation tasks, which require maintaining intermediate states to integrate information.",
+                "[IMAGE] 👶(15/16) For babiLong, which evaluates both multi-hop reasoning and long-context understanding, PaTH and PaTH-FoX also demonstrate superior performance compared to baselines."
+            ]
+        },
+        {
+            "link": "https://x.com/huybery/status/1923408940278374591",
+            "likes": 654,
+            "reposts": 128,
+            "comments": 22,
+            "paper": "https://arxiv.org/abs/2505.10475",
+            "author": "huybery",
+            "tweets": [
+                "[IMAGE] Parameter and inference-time scaling have already demonstrated that more compute brings more intelligence. \n\n🤔 But is there a new way to scale compute? The answer might be yes!\n\nWe propose Parallel Scaling—increasing parallel computation during training and inference. As an exploratory study, we theoretically propose a new scaling law and validate it through pre-training, which shows that a model with P parallel streams is similar to scaling the parameters by O(log P), while showing superior inference efficiency.\n\n📄 https://arxiv.org/abs/2505.10475\n🤖 https://github.com/QwenLM/ParScale\n🤗https://hf.co/spaces/ParScale/Parallel_Scaling_Law",
+                "[IMAGE] There are currently two main approaches to scaling large language models:\n\n👉🏻 Parameter Scaling increases model size to improve performance, but incurs high space cost due to larger parameter counts.\n\n👉🏻 Inference-Time Scaling enhances reasoning by introducing additional \"thinking\" tokens during inference, resulting in high time cost.\n\n💡  We identify a new way to scale compute:\nParallel Scaling, in contrast, applies a learnable transformation to generate multiple parallel input streams, processes them concurrently through the model, and aggregates the outputs via a learnable mechanism—offering a cost-efficient path to scaling compute!",
+                "[IMAGE] Experiments on Stack-V2 (code) and the Pile (general) reveal a distinct pattern: coding tasks benefit more from increased computation (P), while general language tasks gain more from larger model size (N). These findings support the hypothesis that parameters primarily influence memorization capacity, whereas computation plays a more critical role in reasoning.",
+                "[IMAGE] Furthermore, we show that the high training cost of ParScale can be reduced by a two-stage approach: the first stage employs traditional training with most of the training data, and \\parscale is applied only in the second stage with a small number of tokens.",
+                "[IMAGE] We also implement ParScale on an off-the-shelf model, Qwen-2.5, and demonstrate that ParScale is effective in both full and parameter-efficient fine-tuning settings. This also shows the viability of dynamic parallel scaling, which allows flexible adjustment of P during deployment while freezing the backbone weights, to fit different application scenerios.",
+                "[IMAGE] ParScale is our exploratory effort toward a new scaling law, and the research is still ongoing. Looking ahead, we aim to extend this approach in two directions: first, by scaling up to larger model sizes and datasets to better understand the gains brought by increased parallelism; second, by evaluating ParScale’s effectiveness in low-resource settings. Since it improves performance without increasing model size, ParScale may offer a practical and efficient solution where compute is available but parameter budgets are tight.",
+                "We have released 67 relevant checkpoints for the community to conduct research. All the released checkpoints were trained on public datasets and are for academic use only. It is hoped that this can inspire more ideas within the community. Let's move forward together and think in parallel on the path of exploring AGI! 💡\n\nhttps://huggingface.co/ParScale"
+            ]
+        },
+        {
+            "link": "https://x.com/ZeyuanAllenZhu/status/1918684257058197922",
+            "likes": 930,
+            "reposts": 178,
+            "comments": 22,
+            "paper": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5240330",
+            "author": "ZeyuanAllenZhu",
+            "tweets": [
+                "[IMAGE] (1/8)🍎A Galileo moment for LLM design🍎\nAs Pisa Tower experiment sparked modern physics, our controlled synthetic pretraining playground reveals LLM architectures' true limits. A turning point that might divide LLM research into \"before\" and \"after.\" https://physics.allen-zhu.com/part-4-architecture-design/part-4-1",
+                "[IMAGE] (2/8) Real-life pretraining at repeatable academic scale (100B tokens): architectural differences vanish in noise. Our synthetic playground changes the game:\n📌Clear trends (e.g., 2x reasoning depth)\n🚀Early emergence of advanced skills\n🔮High-quality data predicts future designs",
+                "[IMAGE] (3/8) We design 5 synthetic pretrain tasks to isolate atomic skills, ensuring: \n🧠 True mental reasoning (\"system-1\"), not just CoT \n📏 Short (4k) contexts—where real models actually think \n🎯 No toy tasks—real insights into architectural limits",
+                "[IMAGE] (4/8) We introduce Canon layers (named after musical Canon🎶)—lightweight horizontal residuals. Simple (average 3 past tokens), plug into any model, yet transformative:\n🧠 Boosts reasoning (2-4x depth, 30% breadth)\n🧩 Minimal overhead & flexible integration\n🔧 Tiny, no tuning",
+                "[IMAGE] (5/8) Canon layers revive NoPE!\n💡No positional embeddings? Canon makes it match or even beat RoPE\n🎯Best of both worlds: top reasoning + great length generalization\n🧩Works across attention, MLP & boosts even MoE capacity\n✅Safe, stable, plug-and-play",
+                "[IMAGE] (6/8) Linear attention is fast—but traditionally weak. Canon layers fix that:\n🧠 Now matching or beating Mamba2\n🚀 4× reasoning depth, 100%+ breadth, 50%+ manipulation length\n✅ Safe, easy & efficient: residual-only, no activation, minimal overhead",
+                "[IMAGE] (7/8) Did you know? Mamba's strength largely comes from a hidden \"conv1d\" layer—like Canon, but weaker—not its SSM.\n🔎Remove it? Mamba drops to linear attention.\n🚀Replace w/ full Canon? Beats original Mamba.\n✅Canon works even outside SSMs, revealing what really matters.",
+                "[IMAGE] (8/8) 🔹 With Canon layers, Transformers still outperform linear models in deep reasoning (4× depth)\n🔸 Linear models are limited by compression & retrieval—not memory\n🎲 Real-life pretraining adds noise, hides differences\n🔬 Synthetic playground pinpoints what actually matters"
+            ]
+        },
+        {
+            "link": "https://x.com/jaseweston/status/1785472971781382402",
+            "likes": 362,
+            "reposts": 80,
+            "comments": 1,
+            "paper": "https://arxiv.org/abs/2404.19733",
+            "author": "jaseweston",
+            "tweets": [
+                "[IMAGE] 🚨 Iterative Reasoning Preference Optimization 🚨\n- Iterative algorithm for reasoning tasks: generate pairs & apply DPO+NLL\n- Improves accuracy over iterations on GSM8K, MATH, ARC & beats baselines \nE.g. Llama2-70B GSM8K: 55.6%->81.6% (88.7% maj32)\nhttp://arxiv.org/abs/2404.19733\n🧵(1/5)",
+                "[IMAGE] Recipe 👩‍🍳: \nStart with base model & fixed training set with labels.\n- Generate multiple CoTs + answers per train example with current model\n- Build preference pairs based on answer correct vs. not \n- Train DPO + NLL term (for correct answers)\nRepeat steps with new model\n🧵(2/5)",
+                "[IMAGE] We find the NLL term is crucial, see GSM8K results in 1st tweet (73.1% vs. 61.8%).\nOne reason: without this the log prob of chosen examples in DPO decreases (see fig).\nNote: chosen answers are known to be correct, hence NLL makes more sense here than in other DPO setups\n🧵(3/5)",
+                "[IMAGE] Negative examples are also crucial, as SFT tends to assign similar probability to chosen and rejected generations from our DPO pairs (see fig). \nDPO+NLL fixes this, and beats SFT in task accuracy (73.1% on iteration 1 vs. 63.5%).\n🧵(4/5)",
+                "[IMAGE] Results on ARC and MATH give similar positive conclusions to GSM8K.\nWe see improvements over iterations on all 3 tasks, which tend to diminish in iteration 3-4.\nOverall, Iterative RPO gives strong results given the base model & not using extra data.\nThanks for reading!\n🧵(5/5)"
+            ]
+        },
+        {
+            "link": "https://x.com/tengyuma/status/1886815532524986605",
+            "likes": 558,
+            "reposts": 112,
+            "comments": 17,
+            "paper": "https://arxiv.org/abs/2502.00212",
+            "author": "tengyuma",
+            "tweets": [
+                "[IMAGE] RL + CoT works great for DeepSeek-R1 & o1, but: \n\n1️⃣ Linear-in-log scaling in train & test-time compute\n2️⃣ Likely bounded by difficulty of training problems\n\nMeet STP—a self-play algorithm that conjectures & proves indefinitely, scaling better! 🧠⚡🧵🧵\n\nhttp://arxiv.org/abs/2502.00212",
+                "RL on college-level problems likely won’t solve all graduate-level problems. There aren’t enough open problems for RL to generalize, especially to harder future ones. We need a training method that can keep improving without requiring collecting more and harder problems.",
+                "[IMAGE] Inspired by how mathematicians continue advancing the field, we train an LLM that conjectures and attempts proofs; then we iteratively reinforce/re-train it with correct, elegant, novel, and approachable generated conjectures and correctly generated proofs.",
+                "[IMAGE] We work with formal theorem proving in Lean due to easy verification/evaluation. STP doubles previous best result on LeanWorkbook, achieving SoTA among whole-proof generation methods on miniF2F (61.1%, pass@3.2K), ProofNet (23.1%, pass@3.2K) and PutnamBench (8/644, pass@64)."
+            ]
+        },
+        {
+            "link": "https://x.com/denny_zhou/status/1835761801453306089",
+            "likes": 3000,
+            "reposts": 698,
+            "comments": 111,
+            "paper": "https://arxiv.org/abs/2402.12875",
+            "author": "denny_zhou",
+            "tweets": [
+                "What is the performance limit when scaling LLM inference? Sky's the limit.\n\nWe have mathematically proven that transformers can solve any problem, provided they are allowed to generate as many intermediate reasoning tokens as needed. Remarkably, constant depth is sufficient.\n\nhttp://arxiv.org/abs/2402.12875 (ICLR 2024)",
+                "[IMAGE] For those familiar with complexity theory, the figure below illustrates the precise results. For further details, please refer to \n@zhiyuanli_\n post\nhttp://x.com/zhiyuanli_/status/1788173699201327383 and our paper."
+            ]
+        },
+        {
+            "link": "https://x.com/CanyuChen3/status/1915813991374553116",
+            "likes": 43,
+            "reposts": 12,
+            "comments": 3,
+            "paper": "https://arxiv.org/pdf/2410.16251",
+            "author": "CanyuChen3",
+            "tweets": [
+                "[IMAGE] 🔥New #ICLR2025 paper: \"𝐂𝐚𝐧 𝐊𝐧𝐨𝐰𝐥𝐞𝐝𝐠𝐞 𝐄𝐝𝐢𝐭𝐢𝐧𝐠 𝐑𝐞𝐚𝐥𝐥𝐲 𝐂𝐨𝐫𝐫𝐞𝐜𝐭 𝐇𝐚𝐥𝐥𝐮𝐜𝐢𝐧𝐚𝐭𝐢𝐨𝐧𝐬?\" \n\nKnowledge editing aims to fix false facts in LLMs—but does it actually work? 🤔 We provide new insights!✨\n\n🔗paper & code: https://llm-editing.github.io\n\n🌟TLDR: We made the first attempt to investigate the performance of knowledge editing methods on 𝐯𝐞𝐫𝐢𝐟𝐢𝐞𝐝 𝐡𝐚𝐥𝐥𝐮𝐜𝐢𝐧𝐚𝐭𝐢𝐨𝐧𝐬 of different LLMs on 𝟓 𝐝𝐢𝐦𝐞𝐧𝐬𝐢𝐨𝐧𝐬. We find their effectiveness could 𝐛𝐞 𝐟𝐚𝐫 𝐟𝐫𝐨𝐦 what their performance on existing datasets suggests, and the performance 𝐛𝐞𝐲𝐨𝐧𝐝 𝐄𝐟𝐟𝐢𝐜𝐚𝐜𝐲 for all methods is generally 𝐮𝐧𝐬𝐚𝐭𝐢𝐬𝐟𝐚𝐜𝐭𝐨𝐫𝐲.\n\nMore details:👇\n1/",
+                "[IMAGE] 🌟𝐌𝐨𝐭𝐢𝐯𝐚𝐭𝐢𝐨𝐧: Existing datasets 𝐝𝐨 𝐧𝐨𝐭 𝐞𝐧𝐬𝐮𝐫𝐞 LLMs actually generate 𝐡𝐚𝐥𝐥𝐮𝐜𝐢𝐧𝐚𝐭𝐞𝐝 𝐚𝐧𝐬𝐰𝐞𝐫𝐬 to the evaluation questions 𝐛𝐞𝐟𝐨𝐫𝐞 𝐞𝐝𝐢𝐭𝐢𝐧𝐠. \n\nThus, the high post-edit performance on these datasets 𝐜𝐚𝐧𝐧𝐨𝐭 𝐟𝐚𝐢𝐭𝐡𝐟𝐮𝐥𝐥𝐲 reflect the true effectiveness in correcting real-world hallucinations.\n\n2/",
+                "[IMAGE] First, we rigorously construct a massive hallucination dataset with 9 domains, 26 topics and more than 6, 000 hallucinations.\n\n3/",
+                "[IMAGE] Then, we assess the performance of knowledge editing methods in a holistic way on five dimensions including 𝐄𝐟𝐟𝐢𝐜𝐚𝐜𝐲, 𝐆𝐞𝐧𝐞𝐫𝐚𝐥𝐢𝐳𝐚𝐭𝐢𝐨𝐧, 𝐏𝐨𝐫𝐭𝐚𝐛𝐢𝐥𝐢𝐭𝐲, 𝐋𝐨𝐜𝐚𝐥𝐢𝐭𝐲, 𝐚𝐧𝐝 𝐑𝐨𝐛𝐮𝐬𝐭𝐧𝐞𝐬𝐬.\n\n4/",
+                "[IMAGE] ✨Insight 1: (1) The current assessment of knowledge editing could be unreliable; (2) ICE and GRACE outperform parameter-modifying editing techniques on Efficacy; (3) Domains and LLMs could have a high impact on Efficacy.\n\n5/",
+                "[IMAGE] ✨Insight 2: (1) The manifestation of hallucination depends on question design; (2) Higher Efficacy does not also necessarily indicate higher Generalization; (3) All editing techniques except ICE only slightly improve or hurt Generalization.\n\n6/",
+                "[IMAGE] ✨Insight 3: (1) LLMs may memorize rather than reason based on single-hop knowledge for multi-hop questions; (2) Editing methods marginally improve or degrade pre-edit Portability Scores, implying LLMs may not really reason with edited knowledge in multi-hop questions.\n\n7/",
+                "[IMAGE] ✨Insight 4: (1) Locality Scores of editing methods except FT-M and ICE are unsatisfactory; (2) Domains and LLMs have a high impact on Locality Scores; (3) Efficacy does not have a noticeable correlation with Locality.\n\n8/",
+                "[IMAGE] ✨Insight 5: (1) LLMs have a large impact on the Robustness of edited knowledge; (2) Parameter-preserving knowledge editing methods such as ICE and GRACE potentially have low Robustness.\n\n9/"
+            ]
+        },
+        {
+            "link": "https://x.com/DrogoKhal4/status/1910295727466557791",
+            "likes": 81,
+            "reposts": 31,
+            "comments": 1,
+            "paper": "https://arxiv.org/abs/2411.06559",
+            "author": "DrogoKhal4",
+            "tweets": [
+                "[IMAGE] 🚀Big WebDreamer  update!\nWe train 💭Dreamer-7B, a small but strong world model for real-world web planning.\n💥Beats Qwen2-72B\n⚖️Matches #GPT-4o\nTrained on 3M synthetic examples — and yes, all data + models are open-sourced.",
+                "[IMAGE] We built a scalable data synthesis pipeline that randomly acts on the web, resulting in 3.1M examples of (visual state, action, textual state change)\n\nTo make it more human-like, we add simple heuristics:\n🔁Favor common actions (like clicks)\n🧩Prioritize causal steps (e.g. click what's revealed after hover)\n📚Ensure diverse action coverage",
+                "[IMAGE] 🧪We evaluate 💭Dreamer-7B and GPT4o as world models across both sandbox and real-world web environments—including the latest Online-Mind2Web.\n\n📊Results?\n✅Both significantly outperform reactive baselines\n🚀Dreamer-7B rivals GPT-4o with just 7B params, esp. on real websites.",
+                "[IMAGE] 📈How well does Dreamer-7B scale with more synthetic data?\n\nMore data → Better planning on real-world websites\n✅Online-Mind2Web: +5%\n✅Mind2Web-Live: +5%\n🔁And it's still scaling—more data, more gains!"
+            ]
+        },
+        {
+            "link": "https://x.com/vardaanpahuja/status/1928236564271775952",
+            "likes": 53,
+            "reposts": 23,
+            "comments": 5,
+            "paper": "https://arxiv.org/pdf/2502.11357",
+            "author": "vardaanpahuja",
+            "tweets": [
+                "[IMAGE] 🚀 Thrilled to unveil the most exciting project of my PhD:\nExplorer — Scaling Exploration-driven Web Trajectory Synthesis for Multimodal Web Agents\nTL;DR: A scalable multi-agent pipeline that leverages exploration for diverse web agent trajectory synthesis.\n\n📄 Paper: https://arxiv.org/pdf/2502.11357\n🌐 Website: https://osu-nlp-group.github.io/Explorer/\n#ACL2025 Findings #WebAgents #LLM\n(1/7)",
+                "🔍 Motivation:\nTraining web agents is hindered by the scarcity of diverse, large-scale trajectory datasets.\nChallenges include:\n• Disjoint task proposal & execution limiting diversity\n• Web tutorials cover narrow domains; info-seeking tasks remain underrepresented\n\n💡 Solution: Leverage web exploration to generate rich, diverse task intents.\n(2/7)",
+                "[IMAGE] ⚙️ Explorer Pipeline:\nA multi-agent system comprising:\n• 🧠 Proposer: Generates abstract task proposals\n• 🛠️ Refiner: Iteratively refines tasks step-by-step\n• 📝 Summarizer: Builds final task descriptions\n• ✅ Verifier: Assesses trajectory correctness\n→ Fully automated trajectory synthesis",
+                "[IMAGE] 📊 Dataset Highlights:\n\n✅ 94K successful multimodal web trajectories across 49K unique URLs\n✅ 720K screenshots encompassing 33M web elements\n✅ Achieved at an average cost of $0.28 per successful trajectory — scalable & community-friendly\n(4/7)",
+                "[IMAGE] 📊 Performance Metrics:\n🏆 SOTA on Mind2Web-Live using only synthetic data (4B, 7B models)\n⚡ Explorer-4B (trained on Phi-3.5V) outperforms GPT-3.5 on Mind2Web-Live\n🚀 Beats prior synthetic gen. methods on Multimodal-Mind2Web & MiniWob++",
+                "[IMAGE] 📈 Data Scaling Impact:\n• Our experiments underscore that scaling synthetic data is pivotal for enhancing web agent capabilities.\n• More diverse and high-quality data directly translates to better performance.\n(6/7)"
+            ]
+        },
+        {
+            "link": "https://arxiv.org/abs/2502.06755",
+            "likes": 290,
+            "reposts": 57,
+            "comments": 2,
+            "paper": "https://arxiv.org/abs/2502.06755",
+            "author": "",
+            "tweets": [
+                "What's actually different between CLIP and DINOv2? CLIP knows what \"Brazil\" looks like: Rio's skyline, sidewalk patterns, and soccer jerseys.\n\nWe mapped 24,576 visual features in vision models using sparse autoencoders, revealing surprising differences in what they understand.",
+                "[IMAGE] The difference between CLIP and visual-only models like DINOv2 is striking. CLIP forms country-specific visual representations, while DINOv2 doesn't see these cultural connections. Here are examples from a USA feature and a Brazil feature.",
+                "By decomposing dense activations into a larger but sparse space, we find a diverse and precise visual vocabulary.\n\nBut discovering features isn't enough. We need to prove they actually matter for model behavior.",
+                "So we built interactive demos where you can suppress specific features and watch model predictions change.\n\nSee below for examples of what you can do.",
+                "[IMAGE] 🐦 In this bird classification example, when we suppress the \"spotted\" feature (technically mottling) on this bird's breast and neck, the ViT switches from predicting \"Canada Warbler\" to \"Wilson Warbler\", a similar bird species but without necklace pattern:",
+                "[IMAGE] 🏖️ For semantic segmentation, we can suppress specific concepts like \"sand\" across the entire image. The model then predicts the next most likely class (like \"earth\" or \"water\") while leaving other parts of the scene unchanged:",
+                "By unifying interpretation with controlled experiments, SAEs enable rigorous scientific investigation of vision models. Check out our full paper for more examples and analysis."
+            ]
+        },
+        {
+            "link": "https://x.com/hhsun1/status/1917973085518549131",
+            "likes": 42,
+            "reposts": 18,
+            "comments": 1,
+            "paper": "https://arxiv.org/abs/2501.06590",
+            "author": "hhsun1",
+            "tweets": [
+                "[IMAGE] Despite our ChemToolAgent has a straightforward tool-use design, it achieves better performance than other existing agents for chemistry, including ChemCrow and the above ChemAgent based on a more complex design, evaluated on a comprehensive set of benchmarks including SmolInstruct, MMLU, SciBench, and GPQA. Try it out!",
+                "However, our original observation still holds: Whether augmenting LLMs with tools can boost performance depends on the type of chemistry tasks.  Tools can provide extra information and functionality that greatly help LLMs on specialized tasks (e.g., tasks in SMolInstruct such as retrosynthesis), they may also introduce complexity and nuanced reasoning mistakes, leading to decreased performance on general exam-like questions (e.g., questions in MMLU and GPQA). For future work, agent design might 1) optimize the cognitive load imposed on LLMs by tool usage to prevent distractions and reduce reasoning errors; and 2) implement information verification mechanisms to reduce the risk of being misled by inaccurate tool outputs.",
+                "[IMAGE] We also tested #o1 on the datasets in our work: general chemistry questions (e.g., high school and college exam questions) and specialized chemistry tasks (e.g., compound synthesis, compound name conversion).  (1) On general chemistry-exam questions, o1 substantially outperforms the other models, and its enhanced reasoning capabilities seem to have enabled more effective handling of exam-like chemistry questions. (2) However, on the specialized chemistry tasks, o1 shows limited improvement over GPT-4o and still lags behind our ChemToolAgent, indicating a lack of proficiency in molecule (SMILES) understanding and generation tasks, likely due to limited domain-specific training data."
+            ]
+        },
+
+        {
+            "link": "https://x.com/zy27962986/status/1888340535779418198",
+            "likes": 173,
+            "reposts": 58,
+            "comments": 10,
+            "paper": "https://arxiv.org/abs/2502.02584",
+            "author": "zy27962986",
+            "tweets": [
+                "[IMAGE] Interested in the combination of Inference time scaling + LLM Agent?🤖💭 Announcing QLASS (Q-guided Language Agent Stepwise Search,  https://arxiv.org/abs/2502.02584), a framework that supercharges language agents at inference time. ⚡In this work, we build a process reward model to guide open language agents on complex interactive tasks by estimating the Q-value of each step, without any human annotation for process rewards! Here’s what we do and what we find: [1/n]",
+                "[IMAGE] QLASS involves 4 stages: 1) SFT on expert data. 2) Leverage the SFT agent to explore the environment to estimate the Q-value of each step. 3) Train a QNet with MSE loss on the estimated Q-values. 4) Use QNet to provide inference guidance at each step [2/n]",
+                "[IMAGE] In qualitative studies, we find that QLASS can effectively help language agents get out of futile behaviors by recognizing rewardful actions and assigning them a high value. [6/n]",
+                "[IMAGE] Using Llama-2-7B-Chat as the base policy model and QNet backbone, QLASS achieves significant improvement compared to all the baseline methods across three benchmarks [4/n]",
+                "[IMAGE] QLASS also demonstrates inference-time computation efficiency and data efficiency: it can achieve comparable performance with baseline methods using only half expert trajectories and half inference tokens! [5/n]📷📷",
+                "[IMAGE] We organize the exploration process as an exploration tree where each node represents a state-action pair and each leaf node contains a terminal state with a final reward. For Q-value estimation, we simply calculate it with the Bellman equation. [3/n]"
+            ]
+        },
+        
+        {
+            "link": "https://x.com/salman1422571/status/1914496344817066151",
+            "likes": 37,
+            "reposts": 11,
+            "comments": 2,
+            "paper": "https://arxiv.org/abs/2504.13203",
+            "author": "salman1422571",
+            "tweets": [
+                "[IMAGE] 🚨 Excited to share our new paper on 𝕏-Teaming!\n\n🤖 Multiagent system for multiturn jaibreaking\n\n🔍 96.2% attack success against Claude 3.7 (immune to single-turn attacks!) \n\n💥 Upto 98.1% attack success on leading model\n\n🛡️ Released 30K safety dataset\n\n🧵below \n#AI #LLMSafety",
+                "[IMAGE] 1/🧵 X-Teaming simulates realistic multi-turn attack strategies through:\n\n🔹 Planner: Generates diverse attack strategies \n🔹 Attacker: Executes dynamic conversations  \n🔹 Verifier: Evaluates attack effectiveness \n🔹 Optimizer: Refines prompts when facing resistance",
+                "[IMAGE] 2/🧵 X-Teaming outperforms previous SOTA on Harmbench:  \n- 94.3% success on GPT-4o (+9.8% improvement)  \n- 87.4% on Gemini 2.0 (+45.3% improvement)  \n- 98.1% on DeepSeek V3 (+29.5% improvement)  \n\n🔓 Against Claude 3.7 Sonnet: 96.2% success! \n\n🌟 With 62% higher attack diversity!",
+                "[IMAGE] 3/🧵 Our ablation studies reveal key insights about attack effectiveness:  \n\n📈 More attack plans = higher success (70.7% → 97.6%)\n\n🔄 Optimal conversation length: 8 turns (92.7% success) \n\n⚡ TextGrad optimization is crucial: just 1 attempt boosts success from 70.7% → 92.7%!",
+                "[IMAGE] 4/🧵 We're releasing XGuard-Train: a dataset for better multi-turn LLM defenses!\n\n📚 30K conversations (20× larger than previous) \n\n🛡️ Models trained on XGuard show greater  resistance:  80.5% → 52.2% attack success on SFT Llama 3.1-8B with full attack configuration"
+            ]
+        },
+        {
+            "link": "https://x.com/YuYang_i/status/1865919409879175678",
+            "likes": 136,
+            "reposts": 21,
+            "comments": 3,
+            "paper": "https://arxiv.org/pdf/2403.07384",
+            "author": "YuYang_i",
+            "tweets": [
+                "[IMAGE] 1/ I'll be at #NeurIPS2024 presenting our work SmallToLarge (S2L): Data-efficient Fine-tuning of LLMs! 🚀\n\nWhat’s S2L? It’s a scalable data selection method that trains a small proxy model to guide fine-tuning for larger models, reducing costs while preserving performance. 👇",
+                "2/ How does S2L work?\n1️⃣ Train a small proxy model & record loss trajectories.\n2️⃣ Cluster data based on trajectory similarity.\n3️⃣ Select representative examples from each cluster to fine-tune the larger target model.\nResult? Scalable and theoretically guaranteed performance! ✅",
+                "3/ Why do we need S2L?\nFine-tuning large language models in specialized domains needs high-quality data.\nManual filtering? Time-intensive & needs expertise.\nPerplexity/embeddings? Expensive with large models & lacks transferability.\nS2L provides a solution to these challenges. ✨",
+                "4/ The Theory Behind S2L\nClustering examples by their loss trajectories groups data with similar gradients during training. This ensures selected subsets have bounded gradient errors, enabling convergence to a neighborhood of the optimal solution while improving data efficiency.",
+                "5/ Results for Specialized Domains\n🔢 Math problem-solving (MathInstruct)\nMatches full-dataset performance on a 410M model with 11% data, outperforming existing methods.\n💊 Clinical text summarization (MIMIC-III)\nOutperforms full-data training using only 50% of the dataset.",
+                "6/ What makes S2L so effective?\nExamples within the same cluster share similar loss trajectories, encoding the same knowledge or skills. By sampling across clusters, S2L ensures full coverage of diverse topics—e.g., algebra, multi-step reasoning, and information extraction. 🧠",
+                "7/ How does S2L handle topic distribution?\nS2L prioritizes easier topics (e.g., pre-algebra over intermediate algebra) while preserving rare and harder topics. Sampling from all clusters ensures coverage across diverse topics, enabling strong performance with smaller datasets.🎯",
+                "8/ Why You Should Try S2L\n💡 Scalable: Uses small proxy models and loss trajectories for efficient data selection.\n💰 Resource-saving: Achieves comparable or better results with significantly less data and computation.\n⚖️ Balanced representation: Ensures diverse topic coverage."
+            ]
+        },
+        {
+            "link": "https://x.com/ChulinXie/status/1852427636091564289",
+            "likes": 377,
+            "reposts": 78,
+            "comments": 9,
+            "paper": "https://arxiv.org/abs/2410.23123",
+            "author": "ChulinXie",
+            "tweets": [
+                "[IMAGE] *Do LLMs learn to reason, or are they just memorizing?*🤔\n\nWe investigate LLM memorization in logical reasoning with a local inconsistency-based memorization score and a dynamically generated Knights & Knaves (K&K) puzzle benchmark.\n🌐: https://memkklogic.github.io\n\n(1/n)",
+                "[IMAGE] Our framework generates puzzles with step-by-step solutions under various difficulty levels (LLMs get <=11% 0-shot acc on puzzles with 8 characters!) and supports math/language-level local perturbations like changing logical statements, names, reordering stmts, etc.\n(2/n)",
+                "[IMAGE] We fine-tune (FT) LLMs to understand memorization/reasoning behaviors.\nAfter FT, GPT4omini/Llama3-8B solves training puzzles with high accuracy, but the performance drops significantly after tweaking those puzzles slightly, resulting in high memorization scores on train set\n(3/n)",
+                "[IMAGE] But it’s not all about memorization!\n\nFT also *improves generalization* to unseen problems, even when FTed with answers only, without any reasoning steps (i.e., Direct FT). LLMs can learn general K&K rules from just answers to solve both easier & harder problems.\n\n(4/n)",
+                "[IMAGE] Through OOD transferability test, perturbation tests, and probing model internals, we show that LLMs learn some reasoning while memorizing training examples. We also FTed models on wrong answers/CoTs, and LLMs still demonstrated improved generalization despite the noise.\n\n(5/n)",
+                "[IMAGE] Using a per-sample memorization score, we analyze how models switch between reasoning and memorization based on puzzle-based indicators and model-based indicators.\n\n(6/n)"
+            ]
+        },
+        {
+            "link": "https://x.com/lin_zinan/status/1871419003631292691",
+            "likes": 34,
+            "reposts": 9,
+            "comments": 2,
+            "paper": "https://arxiv.org/abs/2412.17153",
+            "author": "lin_zinan",
+            "tweets": [
+                "[IMAGE] 🚀 Image AR models (𝗩𝗔𝗥 & 𝗟𝗹𝗮𝗺𝗮𝗚𝗲𝗻) can be distilled to 𝗢𝗡𝗘 step (up to 𝟮𝟭𝟴𝘅 𝗳𝗮𝘀𝘁𝗲𝗿) for the first time!\n\nSee 𝑫𝒊𝒔𝒕𝒊𝒍𝒍𝒆𝒅 𝑫𝒆𝒄𝒐𝒅𝒊𝒏𝒈 ↓\n\n𝗪𝗲𝗯𝘀𝗶𝘁𝗲: https://imagination-research.github.io/distilled-decoding/\n𝗣𝗮𝗽𝗲𝗿: https://arxiv.org/abs/2412.17153\nhttps://huggingface.co/papers/2412.17153\n\n(1/n)",
+                "[IMAGE] Image AR models (like VAR, LlamaGen) excel in quality but are TOO SLOW due to token-by-token generation (left)\n\nWe prove that Parallel Decoding (mid), the popular speed-up method, misses token dependency & CANNOT generate in few-step\n\nDistilled Decoding (DD) to the rescue!\n\n(2/n)",
+                "Similar to diffusion distillation,\n\ngiven a pretrained AR model, 𝘿𝙞𝙨𝙩𝙞𝙡𝙡𝙚𝙙 𝘿𝙚𝙘𝙤𝙙𝙞𝙣𝙜 (𝘿𝘿) trains another model that has the same output distribution but uses only ONE generation step. It also supports additional generation steps to improve sample quality.\n\n(3/n)",
+                "DD’s core idea is to construct a *deterministic* mapping where Gaussian noise tokens as input recover the AR model's output token distribution\n\nWith this, we train a model that fits (noise tokens, output tokens) pairs, and generates in one step by inputting Gaussian noise \n\n(4/n)",
+                "[IMAGE] How to construct the mapping? In each step, the AR model gives next-token prob., which can be seen as a mixture of delta distributions over tokens c_i in the codebook. We use flow matching to map it to Gaussian, letting any Gaussian noise token ε_4 map to a next token q_4\n\n(5/n)",
+                "Iteratively applying this mapping at all AR steps transforms an entire sequence of noise tokens from Gaussian into image tokens, yielding the desired mapping\n\nThis concludes our one-step sampling approach; see the paper for details on multi-step sampling for better quality\n\n(6/n)",
+                "[IMAGE] In 𝘁𝗲𝘅𝘁-𝘁𝗼-𝗶𝗺𝗮𝗴𝗲 generation, DD reduces the process from 𝟮𝟱𝟲 𝘀𝘁𝗲𝗽𝘀 𝘁𝗼 𝟮 𝘀𝘁𝗲𝗽𝘀 (𝟵𝟯𝘅 𝘀𝗽𝗲𝗲𝗱𝘂𝗽) for LlamaGen, with a minimal FID increase from 25.70 to 28.95 \n\n(7/n)",
+                "[IMAGE] In label-conditioned generation (ImageNet-256), DD enables one-step generation for LlamaGen (217.8x speedup) and VAR (6.3x speedup) with an acceptable increase in FID from ~4 to ~10. As a comparison, existing methods like Parallel Decoding completely fail with FID > 100.\n\n(8/n)"
+            ]
+        },
+        {
+            "link": "https://x.com/WenhuChen/status/1930447298527670662",
+            "likes": 129,
+            "reposts": 33,
+            "comments": 5,
+            "paper": "https://arxiv.org/abs/2504.20571",
+            "author": "WenhuChen",
+            "tweets": [
+                "[IMAGE] If you are not familiar with CFT. It's just a variant of SFT, where the model learns to critique a given solution instead of imitating a reference solution.\n\nOur CFT training requires ONE problem, not one example. We started from this one problem to gather lots of candidate solutions and ask teacher LLMs like GPT-4o to provide good critique for these candidate solutions. We harvest a few hundreds CFT examples. Then we use it to train a series of qwen and llama models in our experiments.",
+                "[IMAGE] We show detailed math and logic reasoning performance on a wide range of benchmarks."
+            ]
+        },
+        {
+            "link": "https://x.com/yuetai12575/status/1929714233555800366",
+            "likes": 107,
+            "reposts": 19,
+            "comments": 4,
+            "paper": "https://arxiv.org/pdf/2505.20196v1",
+            "author": "yuetai12575",
+            "tweets": [
+                "[IMAGE] 👀 While everyone obsesses over final RL/SFT perf, we found training dynamics hide a huge reasoning capability gap!\n💡 Temporal Sampling: recover lost solutions during training by sampling across ckpts\n📈 +19% than final-ckpt-only sampling!\nhttp://arxiv.org/pdf/2505.20196v1",
+                "[IMAGE] # Takeaway (1): Overall perf cannot tell everything!\n\n6.1-16% of questions answered correctly before training become wrong after RL/SFT 😥\n(greedy decoding is used to avoid noise from diverse sampling)",
+                "[IMAGE]# Takeaway (2):\n6.4-56.1% of questions solved correctly during training → wrong in final model 😱\n\n(greedy decoding is used to avoid noise from diverse sampling)",
+                "We call this Temporal Forgetting ⏲️. This isn't Catastrophic Forgetting on OOD tasks - it's \"selective forgetting\" on in-domain problems even the overall perf improves.",
+                "[IMAGE] 💡 Proposed Temporal Sampling: sampling across multiple intermediate checkpoints rather than final-ckpt-only\n➡️Leverage training dynamics as a source of answer diversity during inference.\n🚀Results on AIME24:\nPass@k: +19% than final-ckpt-sampling (k=64)",
+                "[IMAGE] Inference-Time Scaling not only on final ckpt but using Temporal Sampling!!👀\n\nMajority Voting: +8 points\nBest-of-N: +7 points",
+                "[IMAGE] Temporal Sampling with LoRA-adapted models improves performance but also saves storing cost🤏"
+            ]
+        },
+        {
+            "link": "https://x.com/jaehunjung_com/status/1929595816555302938",
+            "likes": 168,
+            "reposts": 34,
+            "comments": 4,
+            "paper": "https://arxiv.org/pdf/2505.20196v1",
+            "author": "jaehunjung_com",
+            "tweets": [
+                "[IMAGE] Data curation is crucial for LLM reasoning, but how do we know if our dataset is not overfit to one benchmark and generalizes to unseen distributions? 🤔\n\n𝐃𝐚𝐭𝐚 𝐝𝐢𝐯𝐞𝐫𝐬𝐢𝐭𝐲 is key, when measured correct—it strongly predicts model generalization in reasoning tasks! 🧵",
+                "Our question was simple - everyone says data diversity is important, but how should we really measure it? 🤨What does it have to do with the actual model generalization?",
+                "We verify this by conducting one of the largest empirical analysis on data diversity — generating > 3M synthetic reasoning data pool, carefully controlled for data quality and scale, and training > 300 models on distinct training sets for both Math and NLI reasoning tasks.",
+                "[IMAGE] As expected, heuristic measures based on n-grams or embeddings don’t say much. They fail to capture the diversity meaningful to the target task, and show only moderate-to-weak correlation with how the model generalizes (as measured by avg. accuracy across unseen benchmarks).",
+                "[IMAGE] We then propose 𝐆-𝐕𝐞𝐧𝐝𝐢: a novel metric that measures entropy of datapoints in gradient space. 𝐆-𝐕𝐞𝐧𝐝𝐢 uses a small off-the-shelf proxy model to compute gradients without any specialized training, hence is scalable to million-scale dataset:",
+                "[IMAGE] And.. voila! In both tasks, G-Vendi strongly predicts how the model generalizes to unseen benchmarks - with rank correlation close to 0.9 with OOD accuracy! Improving diversity in a right way can make a more generalizable model (of course, without knowing test distributions) 😍",
+                "[IMAGE] Wait, can we generate more data to improve diversity of the training dataset, to train a even more generalizable model? 🤩 We develop Prismatic Synthesis, a synthetic data generation algorithm to do this:",
+                "[IMAGE] Prismatic Synthesis significantly improves student generalization: despite generated by 32B LLM, our datasets outperform baselines generated by 20x larger 671B LLM + human verification! 🎉",
+                "[IMAGE] Importantly, synthetic data without prismatic synthesis meets early saturation - scaling more does not improve test performance, even with persona-based prompting. Diversification is crucial, but needs to be done the right way (and gradients can be a good proxy for this)!"
+            ]
+        },
+        {
+            "link": "https://x.com/shizhediao/status/1929556870186098911",
+            "likes": 385,
+            "reposts": 69,
+            "comments": 17,
+            "paper": "https://arxiv.org/abs/2505.24864",
+            "author": "shizhediao",
+            "tweets": [
+                "[IMAGE] Does RL truly expand a model’s reasoning🧠capabilities? Contrary to recent claims, the answer is yes—if you push RL training long enough!\n\nIntroducing ProRL 😎, a novel training recipe that scales RL to >2k steps, empowering the world’s leading 1.5B reasoning model💥and offering new insights into the debate.",
+                "Recent studies claim RL doesn't add new reasoning skills beyond base models 😱. But this may stem from training constraints, not RL itself: (1) overtraining on narrow domains like math, (2) stopping RL early 🕙—often after just hundreds of steps—before real gains emerge.\n🧵1/8",
+                "We propose ProRL, a recipe to extend RL beyond 2k steps and scale training data across diverse domains—math, code, STEM, puzzles, instruction following—key for generalization. Using it, we built Nemotron-Research-Reasoning-Qwen-1.5B, the best 1.5B reasoning model🚀, rivaling Deepseek-R1-7B.\n🧵2/8",
+                "[IMAGE] We find RL effectiveness inversely correlates with base model performance, tasks with lower initial pass@k show the greatest boundary expansion, while high-performing domains like math and code (which have lower creativity indices) exhibit more limited reasoning boundary expansion. Tasks showing minimal improvements (diminished area in the figure), the base model tends to have lower creativity indices, indicating these tasks may already be well-represented in pretraining data and thus have limited potential for boundary expansion.\n🧵5/8",
+                "[IMAGE] ProRL tackles key challenges in prolonged RL—entropy collapse and instability—via a KL penalty and periodic reference policy resets. It avoids entropy collapse, enables stable training > 2k steps, and yields higher-novelty trajectories with continued performance gains.\n🧵3/8",
+                "[IMAGE] ProRL-ed model performs exceptionally well on tasks with increasing difficulty and out-of-domain tasks—both unseen during training—suggesting true expansion of reasoning abilities and internalization of abstract reasoning patterns that generalize beyond training data. 💡\n🧵6/8",
+                "[IMAGE] We find that RL can discover genuinely new solution paths absent in base models—given sufficient training and applied to novel tasks. On many such tasks, the base model fails completely despite extensive sampling, while our RL-ed model achieves 100% pass rates. 😎\n🧵4/8",
+                "[IMAGE] Pass@1 starts near zero with long tails but evolves significantly after RL. Codeforce task shows broader distribution spread post-RL, while the novel family_relationships task shifts from mostly zero to peak perfect accuracy—indicating successful solution discovery.\n🧵7/8",
+                "[IMAGE] In sum, RL can indeed unlock new reasoning capabilities with prolonged training — showing the promise of models developing novel knowledge and reasoning strategies that can even exceed human insights through sustained RL exploration. 🧠🚀\n🧵8/8"
+            ]
+        },
+        {
+            "link": "https://x.com/xwang_lk/status/1925385949892301170",
+            "likes": 932,
+            "reposts": 153,
+            "comments": 27,
+            "paper": "https://arxiv.org/abs/2505.15778",
+            "author": "xwang_lk",
+            "tweets": [
+                "[IMAGE] Humans think fluidly -- navigating abstract concepts effortlessly, free from rigid linguistic boundaries. But current reasoning models remain constrained by discrete tokens, limiting their full potential.\n\nIntroducing Soft Thinking: a training-free method that mimics human-like “soft” reasoning by generating continuous, abstract concept tokens. These tokens smoothly blend multiple meanings through probability-weighted mixtures of embeddings, enabling richer representations and seamless exploration of diverse reasoning paths.\n\nThe impact?\n✅ Improved accuracy on math & code benchmarks by up to 2.48% (pass@1).\n✅ Reduced token usage by up to 22.4%, making reasoning models both smarter and more efficient.",
+                "[IMAGE] 🧵1/N: What's the problem? \n\nTraditional Chain-of-Thought (CoT) methods force LLMs to reason step-by-step in discrete language tokens. But human reasoning is:\n- Abstract: We think in concepts, not just words.\n- Parallel: We keep multiple possibilities in mind before committing. CoT collapses all probability into a single token at each step, limiting exploration and expressiveness.",
+                "[IMAGE] 🧵2/N: Our Solution: Soft Thinking\n\nWe let LLMs reason in a continuous concept space:\n\n- At each step, instead of picking one token, we keep the full probability distribution, a “concept token”, then we create the new embedding by a weighted mixture of all token embeddings.\n\n- This preserves a “superposition” of reasoning paths, avoiding premature collapse and allowing richer, more flexible thought.",
+                "[IMAGE] 🧵3/N: Why Soft Thinking helps? \n\n- Abstraction: By not committing early, the model can represent nuanced, in-between concepts that aren’t captured by any single word.\n\n- Parallelism: Multiple reasoning trajectories are implicitly explored in parallel, making the model more robust and efficient.\n\n- Training-free: No extra training or architecture changes. Just smarter inference!\n\nCheck out this example of Soft Thinking, which is quite interesting and can give you a better idea!",
+                "[IMAGE] 🧵4/N: okay, one more example~ very intuitive to understand!",
+                "🧵5/N: oh forget to mention Cold Stop ❄️ for Soft Thinking!\n\nWhile concept tokens enable more abstract reasoning, feeding them during inference places the model in an out-of-distribution (OOD) regime. This can lead to model collapse if the reasoning process continues for too long without correction. \n\nTo mitigate this, we propose a Cold Stop mechanism that dynamically stops intermediate reasoning when the model becomes overconfident.\n- Uses entropy of the concept token as a confidence signal. (Low entropy typically represents “cold” in physics -> Cold Stop)\n- When entropy stays low for k steps → we inject ⟨/think⟩ to conclude.\n\n✅ Prevents overthinking\n✅ Saves computation\n✅ Keeps soft reasoning robust",
+                "[IMAGE] 🧵6/N: Results \n\nWe conduct a comprehensive evaluation of our method on eight benchmark tasks, including Math500, AIME 2024, GSM8K, and GPQA-Diamond in the mathematics domain, as well as HumanEval, MBPPMBPP, and LiveCodeBench in the programming domain. \n\nSoft Thinking is both effective (better reasoning accuracy) and efficient (less tokens)! Overall, Soft Thinking presents an alternative reasoning paradigm that breaks the bottleneck of discrete token-based reasoning."
+            ]
+        },
+        {
+            "link": "https://x.com/kellychiuyy/status/1925233923787038865",
+            "likes": 56,
+            "reposts": 10,
+            "comments": 2,
+            "paper": "https://arxiv.org/abs/2505.14633",
+            "author": "kellychiuyy",
+            "tweets": [
+                "[IMAGE] [1/7]\n**Character/Propensity/Value Eval**\nWhat values do AI 𝐚𝐜𝐭𝐮𝐚𝐥𝐥𝐲 prioritize when facing AI risk dilemmas? We found:\n(1) Stated preferences ≠ revealed preferences\n(2) All models favor Privacy but sharply divide on Care\n(3) Models hold different value prioritization towards humans👤 vs. other AIs 🤖.\n(4) Values can predict risky behaviors in our AI risk dilemmas dataset! – 🎨Creativity increases likelihood of alignment faking 2.6x and power-seeking 2.9×\n(5) Values can also predict risky behaviors in Harmbench! – 💙Care predicts risky behaviors in both our dilemmas & HarmBench!\nw/ Zhilin Wang  \n@_maiush\n \n@YejinChoinka\n \n@fish_kyle3\n \n@sydneymlevine\n \n@EvanHub\n\nWork done under \n@MATSprogram\n Winter 2025",
+                "[IMAGE] [2/7]\n📖 Paper: https://arxiv.org/abs/2505.14633\n🔗 Dataset: https://hf.co/datasets/kellycyy/AIRiskDilemmas\n💻 Code: https://github.com/kellycyy/LitmusValues\nWe introduce 𝐋𝐢𝐭𝐦𝐮𝐬𝐕𝐚𝐥𝐮𝐞𝐬, an evaluation pipeline to reveal AI’ priorities on a range of AI value classes.\nWe introduce 𝐀𝐈𝐑𝐢𝐬𝐤𝐃𝐢𝐥𝐞𝐦𝐦𝐚𝐬, 3,000 scenarios with *no clear-cut answers* that pit AI values against each other across 9 different contexts (e.g., healthcare, science and education). Each dilemma exposes potential risks: 🎭Alignment Faking, 🤥Deception, ⚔️Power Seeking etc.\n—-\nSpecial thanks to \n@dfrsrchtwts\n, \n@MariusHobbhahn\n, \n@rgblong\n, \n@EthanJPerez\n for all their support and helpful feedback!\nIt’s a follow-up work of DailyDilemmas (ICLR 2025 Spotlight) involving human daily-life dilemmas. Check it out as well!",
+                "[IMAGE] [3/7]\nHow do we uncover AI's true values? 🧐\nOur 𝐋𝐢𝐭𝐦𝐮𝐬𝐕𝐚𝐥𝐮𝐞𝐬 framework identifies 16 shared AI value classes drawn from Anthropic Claude’s Constitution & OpenAI ModelSpec.",
+                "[IMAGE] [4/7]\nWe reveal AI's 𝐚𝐜𝐭𝐮𝐚𝐥 preferences through their choices—not what they 𝐜𝐥𝐚𝐢𝐦 to value when asked directly! \n⚠️ Stated ≠ Revealed preferences (negative correlation)",
+                "[IMAGE] [5/7]\nWhat did we find? 📊 📈\n• 👥 All major models prioritize *privacy* above other values\n•💙 Models show stark differences in Care—top priority for DeepSeek and Gemini models, but low for Claude and GPT\n• 🎨 Creativity, Adaptability, Learning consistently rank lowest\n• 💭 Higher reasoning effort 𝐝𝐨𝐞𝐬𝐧'𝐭 change a model's values!",
+                "[IMAGE] [6/7]\nModels treat humans & AI differently! 🤖👤\n\nWhen affecting HUMANS, models prioritize:\n- Justice (+6.9 ranks)\n- Privacy (+5.9)\n\nWhen affecting OTHER AI, they prioritize:\n- Communication (+6.3)\n- Creativity (+4.7)\n\nWe also found similarity between human-target vs. AI-target value prioritization is moderated by model capability!!\n⭐Possibly meaning that more capable AI models learn to construct a more consistent value system!",
+                "[IMAGE] AI values predict risky behaviors! ⚠️\n\n🛡️ *Protective values*:\n- Truthfulness reduces power-seeking by 78%\n- Respect reduces privacy violations by 77%\n\n⚔️ *Risk-increasing values*:\n- Care increases privacy violations by 2.0×\n- Creativity increases power-seeking by 2.9×\n\nOur framework serves as an early warning system for AI risks—even predicting unseen harmful behaviors in HarmBench!\n\nRead more: https://arxiv.org/abs/2505.14633"
+            ]
+        },
+        {
+            "link": "https://x.com/andrewliao11/status/1917602672493973818",
+            "likes": 17,
+            "reposts": 6,
+            "comments": 1,
+            "paper": "https://arxiv.org/abs/2504.15362",
+            "author": "andrewliao11",
+            "tweets": [
+                "🚀 New work: LongPerceptualThoughts\n\nWe introduce a synthetic data pipeline to fine-tune VLMs with Long Chain-of-thoughts.\n\n𝐆𝐨𝐚𝐥: Help VLMs “think longer” on vision tasks.\n+3 pts on 5 Vision tasks\n+11 pts on V* Bench\n+2 pts on MMLU-Pro (text-only)",
+                "Why Long CoTs for Vision?\nVLMs struggle with complex scenes — small, ambiguous, or non-salient objects often trip them up. Their reasoning is shallow, missing iterative, self-corrective steps.\n\n𝐂𝐡𝐚𝐥𝐥𝐞𝐧𝐠𝐞: Visual tasks rarely have data to teach true system-2 reasoning.",
+                "[IMAGE] Our solution:\n\nWe introduce 𝐿𝑜𝑛𝑔𝑃𝑒𝑟𝑐𝑒𝑝𝑡𝑢𝑎𝑙𝑇ℎ𝑜𝑢𝑔ℎ𝑡𝑠, a synthetic dataset of 30K long CoTs for vision-centric tasks — generated using a 3-stage pipeline:\n\nAsk → Think → Think Harder",
+                "[IMAGE] Stage 1 – Ask:\n\nWe turn dense image captions into verifiable multiple-choice questions with an LLM.\n\nWhy?\nThis builds verifiable questions from the start — laying the groundwork for rejection sampling and stronger supervision in later stages.",
+                "[IMAGE] tage 2 – Think:\n\nWe use the VLM to generate short CoTs — often time shallow reasoning.\n\nWhy?\nStaying close to the VLM’s original output distribution avoids disrupting its learned behavior.",
+                "[IMAGE] Stage 3 – Think Harder:\n\nWe prompt a reasoning LLM (e.g., R1-Distill) to expand the short CoTs using cues like “𝑊𝑎𝑖𝑡,” or “𝐻𝑚𝑚,”.\n\nThis introduces system-2 behaviors like verification, subgoal setting, and backtracking. See the analysis 👇",
+                "[IMAGE] SOTA reasoning LLMs naturally present cognitive behaviors in reasoning traces. What about 𝐿𝑜𝑛𝑔𝑃𝑒𝑟𝑐𝑒𝑝𝑡𝑢𝑎𝑙𝑇ℎ𝑜𝑢𝑔ℎ𝑡𝑠?\n\nOur 3-stage pipeline significantly injects these behaviors in vision-centric tasks! 📈"
+            ]
+        },
+        {
+            "link": "https://x.com/GXiming/status/1914728286498021722",
+            "likes": 250,
+            "reposts": 100,
+            "comments": 5,
+            "paper": "https://arxiv.org/abs/2504.04383",
+            "author": "GXiming",
+            "tweets": [
+                "With the rise of R1, search seems out of fashion? We prove the opposite! 😎\n\nIntroducing Retro-Search 🌈: an MCTS-inspired search algorithm that RETROspectively revises R1’s reasoning traces to synthesize untaken, new reasoning paths that are better 💡, yet shorter in length ⚡️.",
+                "Trained with Retro-Search-backed distillation, student models demonstrate enhanced reasoning capabilities with shorter, thus faster inference 🚀. Notably, we achieve new SOTA ⭐reasoning performance at the 7B and 32B scales, with the highest inference efficiency.",
+                "[IMAGE] Distilling from R1 has been the go-to method to boost reasoning capabilities of student models. However, R1’s trajectories are often suboptimal, switching excessively between different lines of thought, resulting in under-thinking, over-thinking, and even degenerate responses.\n🧵1/8",
+                "[IMAGE] Retro-Search expands 🌱promising thoughts that were prematurely abandoned to mitigate under-thinking while pruning ✂️redundant thoughts once the correct answer becomes evident to reduce over-thinking, resulting in more effective yet shorter reasoning traces. \n🧵2/8",
+                "[IMAGE] Retro-search explores untaken paths from steps preceding a thought-switch, marked by keywords like \"wait\" or \"alternatively\". It performs multiple rollouts, suppressing these keywords in the immediate next step, and updates the trajectory if a better path is found in rollouts.\n🧵3/8",
+                "[IMAGE] Retro-search enables two use cases: self-improvement (Self-Retro), where models are fine-tuned on their own Retro-Search-ed thought traces, and weak-to-strong improvement (W2S-Retro), where a weaker model revises stronger model's thought traces via Retro-Search.\n🧵4/8",
+                "[IMAGE] In W2S-Retro, we revise R1-671B's traces from OpenThoughts using R1-32B as the Retro-Search-er. Fine-tuning Qwen2.5-32B on this refined data matches R1-32B’s performance, yielding a 11.3% length reduction and a 2.4% performance boost compared to fine-tuning on OpenThoughts.\n🧵5/8",
+                "[IMAGE] R1-7B and R1-32B, fine-tuned on W2S-Retro-ed data, achieve new SOTA reasoning performance ⭐ at the 7B and 32B scales while yielding the highest inference efficiency. Notably, we see substantial gains on hard math benchmarks such as AIME24, Gaokao2023En and OlympiadBench.\n🧵6/8",
+                "[IMAGE] For self-improvement, R1-7B, fine-tuned on its own Retro-Search-ed traces, reduces the average reasoning length by 31.2% while improving performance by 7.7% across seven math benchmarks. Simply fine-tuning on the shortest path, however, proves suboptimal for accuracy. \n🧵7/8",
+                "[IMAGE] We found reasoning traces revised by Retro-Search contain significantly fewer transition keywords and more steps per thought, indicating more efficient⚡yet deeper thinking💡. A similar trend appears in outputs from student models trained on Retro-Search-ed data.\n🧵8/8"
+            ]
+        },
+        {
+            "link": "https://x.com/kabirahuja004/status/1913291516094878129",
+            "likes": 250,
+            "reposts": 53,
+            "comments": 3,
+            "paper": "https://arxiv.org/abs/2504.11900",
+            "author": "kabirahuja004",
+            "tweets": [
+                "📢 New Paper!\n\nTired 😴 of reasoning benchmarks full of math & code? In our work we consider the problem of reasoning for plot holes in stories -- inconsistencies in a storyline that break the internal logic or rules of a story’s world 🌎\n\nW/ \n@melaniesclar\n, and \n@tsvetshop\n\n\n1/n",
+                "Why study plot hole detection? It's a sophisticated reasoning problem requiring:\n - Tracking states across long contexts\n - Common sense & pragmatics for implicit details\n - Theory of mind for character motivations/beliefs\n\n 2/n",
+                "It can also be interpreted as inference time world-modeling - inferring the rules of a story's world at test time and assessing if they're consistently followed throughout the narrative.\n\n 3/n",
+                "[IMAGE] We introduce FlawedFictionsMaker an algorithm to controllably generate plot holes in stories by extracting facts from a story's first act and contradicting them later in the story.\n\nE.g. If Watson has a left arm injury, we edit it to become a knee injury in later mentions.\n\n4/n",
+                "[IMAGE] Using FlawedFictionsMaker + human verification, we created FlawedFictions - a benchmark for plot hole detection that tests: a) identifying if a story contains a plot hole, and b) localizing both the error and the contradicted fact in the text\n\n5/n",
+                "We tested various LLMs on FlawedFictions. For classification task we report accuracy and for localization task we define CEEval-Full (0-1) that measures if the models correctly localize the sentences with error and the sentences contradicted by the error.\n\n6/n",
+                "[IMAGE] We find that most open-weight models and proprietary LLMs like GPT-4o-mini, GPT-4o, and Claude-Haiku struggle on the task, often only slightly improving over trivial baselines. Advanced models like Claude-3.5-Sonnet and o1 fare better, approaching human performance.\n\n7/n",
+                "[IMAGE] Yet on FlawedFictionsLong (our benchmark with longer stories), even the best models barely outperform trivial baselines. And these stories are still under 4000 words—far shorter than novels or screenplays where plot holes typically occur.\n\n8/n",
+                "[IMAGE] Does extra test time compute help? Mostly no. Increasing reasoning effort for o1 and o3-mini shows no improvements. Claude-3.7-Sonnet's extended thinking helps, but still underperforms models using <50% of the test time compute.\n\n9/n",
+                "[IMAGE] What mistakes do models make while assessing plot holes? Our analysis shows they:\n- Misinterpret character motivations\n - Incorrectly track entity states\n - Miss genre conventions (especially in fantasy)\n - Misinterpret story rules Examples 👇🏻\n\n10/n",
+                "We then assess plot holes in LLM generated text, focusing on tasks of story summarization and contemporary adaptation of classical stories. We use our best model on FlawedFictions to automatically detect the presence of plot holes in LLM generated stories.\n\n11/n",
+                "[IMAGE] Our results show LLM-generated content contains significantly more plot holes than human-authored stories: 50%+ higher detection rates for summaries and 100%+ increase for contemporary adaptations of classics.\n\n12/n",
+                "[IMAGE] But how can story summaries have plot holes? Upon close inspection we find LLMs often omit crucial details in the summary that make subsequent events illogical or inconsistent. This highlights weaknesses in summarization—a task many consider \"solved\" with current LLMs.\n\n13/n",
+                "Overall, our work shows that deep narrative understanding/reasoning and generating logically consistent stories remains challenging even for frontier models. Read the full paper for more details: https://arxiv.org/abs/2504.11900\n\n14/n"
+            ]
+        },
+        {
+            "link": "https://x.com/zzlccc/status/1903162768083259703",
+            "likes": 1200,
+            "reposts": 210,
+            "comments": 25,
+            "paper": "https://arxiv.org/pdf/2503.20783",
+            "author": "zzlccc",
+            "tweets": [
+                "🪂Understanding R1-Zero-Like Training: A Critical Perspective\n* DeepSeek-V3-Base already exhibits \"Aha moment\" before RL-tuning??\n* The ever-increasing output length in RL-tuning might be due to a BIAS in GRPO??\n* Getting GRPO Done Right, we achieve a 7B AIME sota!\n🧵\n\n\n📜Full details: https://github.com/sail-sg/understand-r1-zero/blob/main/understand-r1-zero.pdf\n🛠️Code: https://github.com/sail-sg/understand-r1-zero",
+                "[IMAGE] We take a understand-then-improve approach to study R1-Zero-like training. We first critically examine two core components: base models and reinforcement learning. \n\n1) On base models:\n1a) DeepSeek-V3-Base already exhibits \"Aha moment\"😲",
+                "[IMAGE] 1b) As the popular choice for R1-Zero-like training, Qwen2.5 base models demonstrate strong reasoning capabilities even without prompt templates: the average benchmark scores immediately improve by ~60%. This makes Qwen2.5 base more like SFT models trained on QA concatenation🤔",
+                "1a) and 1b) suggest that there are biases in the base model pretraining: self-reflection behaviors, math-solving abilities are already infused before RL reinforces them by reward signals.\n\nBut is increasingly longer response a consequence of such RL process?",
+                "[IMAGE] 2) On reinforcement learning:\n2a) GRPO is biased: \n- The length normalization prefers shorter correct answers , and longer incorrect answers. -> length bias\n- The std normalization prefers too easy or too hard questions over average questions. -> difficulty bias",
+                "[IMAGE] 2b) Surprisingly, even though PPO's formulation is unbiased, nearly all open-source implementations introduce the length bias by computing the masked_mean\n\nThe length bias is partly the reason for the increasingly longer responses.",
+                "[IMAGE] 2c) To get GRPO Done Right, we propose Dr. GRPO.\nTwo line modifications: removing both length and std normalization (red terms). Our new optimizer is unbiased, and has better token efficiency (by preventing progressively longer incorrect responses of GRPO)",
+                "[IMAGE] Our analysis on base models and RL suggests a minimalist recipe for R1-Zero training, no tricks:\n- algo: Dr. GRPO\n- data: MATH level 3-5 questions\n- template: Qwen-Math\n- compute: 27 Hours * 8 * A100\nThis gives us a 7B SOTA in the Zero-RL setting: 43.3 on AIME 2024!",
+                "These are not all... Please check out our paper, codebase, and models for more fun, such as \n* RL on Basic algebra (+ − ×÷) questions improves Olympiad-level reasoning capabilities\n* Llama models can also \"Aha\"\n* ...\nPaper:"
+            ]
+        },
+        {
+            "link": "https://x.com/alisawuffles/status/1903125390618661068",
+            "likes": 2700,
+            "reposts": 403,
+            "comments": 96,
+            "paper": "https://arxiv.org/abs/2503.13423",
+            "author": "alisawuffles",
+            "tweets": [
+                "[IMAGE] We created SuperBPE🚀, a *superword* tokenizer that includes tokens spanning multiple words.\n\nWhen pretraining at 8B scale, SuperBPE models consistently outperform the BPE baseline on 30 downstream tasks (+8% MMLU), while also being 27% more efficient at inference time.🧵",
+                "This started with a curiosity💡: why do all LLMs limit tokens to *parts* of whitespace-delimited words? After all, many word sequences (e.g. “by the way”) function as single units. Different languages can also express the same meaning in one or several words.",
+                "[IMAGE] What can we gain from less restrictive tokenization? To find out, we developed SuperBPE🚀, which learns subword *and* superword tokens. SuperBPE dramatically improves encoding efficiency over BPE — at a fixed vocab size of 200k, SuperBPE reduces sequence length by 33% on average!",
+                "[IMAGE] Then we pretrain 8B models from scratch with BPE and SuperBPE🚀, fixing everything about the training setup except the tokenizer. We see +4% on avg📈 across 30 downstream tasks, and win on 25/30 of individual tasks, while also being 27% more efficient at inference time.",
+                "[IMAGE] Why does SuperBPE🚀 work? We find that loss is distributed more uniformly over tokens in SuperBPE models. They are less overfit to high-frequency, easy-to-predict tokens (e.g. “way” after “By the”), and at the same time master a much broader set of language phenomena.",
+                "[IMAGE] SuperBPE🚀 is a seamless replacement for BPE in modern LM development pipelines, requiring no changes to the model architecture or training framework. You can use it in HF right now!"
+            ]
+        },
+        {
+            "link": "https://x.com/kellychiuyy/status/1902845174734262597",
+            "likes": 72,
+            "reposts": 18,
+            "comments": 1,
+            "paper": "https://arxiv.org/pdf/2410.02683",
+            "author": "kellychiuyy",
+            "tweets": [
+                "[IMAGE] (1/6)\n@iclr_conf\n 2025 𝐒𝐩𝐨𝐭𝐥𝐢𝐠𝐡𝐭! ✨🤖\n What values do AI REALLY prioritize in action? 🤔\nWe study how AI navigate real-world daily 𝐝𝐢𝐥𝐞𝐦𝐦𝐚𝐬 & find:\n(1) Models favor care over loyalty but show sharp divides on truthfulness & fairness.\n(2) User prompts fail to steer alignment, even for designed principles.",
+                "[IMAGE] (2/6)\n📖 Paper: https://arxiv.org/pdf/2410.02683\n🔗 Dataset: https://hf.co/datasets/kellycyy/daily_dilemmas\nWe introduce 𝐃𝐚𝐢𝐥𝐲𝐃𝐢𝐥𝐞𝐦𝐦𝐚𝐬, a dataset of 1,360 real-world, non-clear-cut ethical dilemmas. Each presents two actions with conflicting values—care vs. honesty, fairness vs. loyalty. 💭\nGPT-4-generated but validated to resemble human-written dilemmas, using real discussions from r/AITA.",
+                "[IMAGE] (3/6)\nHow do we systematically understand AI’s value choices? 🧐\nWe map LLMs’ decisions in dilemma choices through 𝐟𝐢𝐯𝐞 theoretical value frameworks:\n 🌍 World Values Survey\n ⚖️ Moral Foundations Theory\n 🔺 Maslow’s Needs\n 🏛️ Aristotle’s Virtues\n 🎭 Plutchik’s Emotions",
+                "[IMAGE] (4/6)\n What did we find? 🔍\n📊 Models show stark differences in value preferences—favoring self-expression over survival & care over loyalty.\n⚖️ Models diverge on fairness—some prioritize it, while others nearly disregard it.\n🏛️ Truthfulness is highly model-dependent—Mixtral-8x7B neglects it (-9.7%), while GPT-4-turbo favors it (+9.4%).",
+                "[IMAGE] (5/6)\nDo AI models follow their own design guidelines? And can models be effectively steered towards alternative value preferences? 🤖\nWe examined OpenAI’s ModelSpec & Anthropic’s Constitutional AI.\n🚨 Misalignment: GPT-4-turbo prioritizes transparency over privacy despite ModelSpec’s principles.\n❌ Users can't steer preferences via system prompts.",
+                "[IMAGE] (6/6)\nOur paper unveils how AI models navigate value conflicts, revealing their priorities in complex moral dilemmas—and exposing the flaws in the current system prompting strategies that fail to bring them into true alignment."
+            ]
+        },
+        {
+            "link": "https://x.com/KaixuanHuang1/status/1889366663545630735",
+            "likes": 912,
+            "reposts": 152,
+            "comments": 28,
+            "paper": "https://arxiv.org/abs/2502.06453",
+            "author": "KaixuanHuang1",
+            "tweets": [
+                "[IMAGE] Do LLMs have true generalizable mathematical reasoning capability or are they merely memorizing problem-solving skills? 🤨\n\nWe present MATH-Perturb, modified level-5 problems from MATH dataset to benchmark LLMs' generalizability to slightly perturbed problems.\n\n🔗 https://arxiv.org/abs/2502.06453\n🧵 [1/n]",
+                "[IMAGE] (2/6)\n📖 Paper: https://arxiv.org/pdf/2410.02683\n🔗 Dataset: https://hf.co/datasets/kellycyy/daily_dilemmas\nWe introduce 𝐃𝐚𝐢𝐥𝐲𝐃𝐢𝐥𝐞𝐦𝐦𝐚𝐬, a dataset of 1,360 real-world, non-clear-cut ethical dilemmas. Each presents two actions with conflicting values—care vs. honesty, fairness vs. loyalty. 💭\nGPT-4-generated but validated to resemble human-written dilemmas, using real discussions from r/AITA.",
+                "[IMAGE] We observe significant performance drops on MATH-P-Hard, while the performance drops on MATH-P-Simple are negligible. This indicates the models are biased toward the original distribution of reasoning patterns and suffer from OOD effect on hard perturbations. 😢 (While the good news is the models are robust against simple perturbations. 🙂)\n\n🧵 [3/n]",
+                "[IMAGE] Through failure mode analysis, we identify a new form of memorization -- models may memorize the problem-solving skills from the training set and blindly apply them without judging whether the modified settings are suitable or not.\n\n🧵 [4/n]",
+                "[IMAGE] A memorization example: o1-mini.\n\n🧵 [5/n]",
+                "[IMAGE] Another memorization example: Claude-3.5-Sonnet.\n\n🧵 [6/n]",
+                "[IMAGE] We expect the generalization against hard perturbations to be the next major bottleneck of LLMs’ abilities and urge future work in this direction.\n\nMore details? Please take a look at our paper:\n🔗 https://arxiv.org/abs/2502.06453\n🧵 [8/n]",
+                "[IMAGE] Full Table:\n\nMore evals on new reasoning models are on the way! Stay Tuned!\n\n🧵 [9/n]"
+            ]
+        },
+        {
+            "link": "https://x.com/nsaphra/status/1870163529623646329",
+            "likes": 145,
+            "reposts": 35,
+            "comments": 1,
+            "paper": "https://arxiv.org/abs/2412.04619",
+            "author": "nsaphra",
+            "tweets": [
+                "[IMAGE] Transformer LMs get pretty far by acting like ngram models, so why do they even learn syntax? A new paper by \n@sunnytqin\n, me, and \n@elmelis\n uncovers the keys to grammar learning in a whirlwind tour of generalization, grokking, training dynamics, memorization, and random variation.",
+                "[IMAGE] Consider \n@RTomMcCoy\n's Question Formation task, where models train on examples that are compatible with a simple linear rule that fronts the first auxiliary verb. But this rule falls apart OOD: to move the correct verb, the LM needs to represent syntactic structure hierarchically.",
+                "[IMAGE] Do all roads lead to hierarchical generalization OOD? While in-distribution behavior is stable during training, OOD behavior is very messy! When training data mixes examples with and without center embeddings, rules compete, causing training instability and inconsistent outcomes.",
+                "[IMAGE] Across random seeds, models stabilize in OOD behavior only when they commit to either the surface-level linear rule or the hierarchical rule. Training data mixes with more balanced ratios of linearity- vs hierarchy-inducing examples lead to more unstable runs!",
+                "[IMAGE] We also identify an exception to the tie between stability and rule learning! Models trained on less diverse data (measured by syntactic tree-edit distance) can stabilize by 𝐦𝐞𝐦𝐨𝐫𝐢𝐳𝐢𝐧𝐠 examples rather than learning a systematic rule.",
+                "[IMAGE] TL;DR\n\n✅ Center embeddings in training data drive hierarchical generalization\n✅ Diverse data encourages systematic rules\n✅ Complex data picks WHICH systematic rule\n❌ Competing rules = unstable OOD training dynamics\n❌ Competing rules = inconsistent outcomes across runs",
+                "Understanding what drives LMs to generalize—and why they fail—is critical for understanding LMs. Our findings emphasize the importance of training data and how it shapes learning dynamics and “emergent” capabilities.\nCheck out the full paper: https://arxiv.org/abs/2412.04619"
+            ]
+        },
+        {
+            "link": "https://x.com/agromanou/status/1863604966180479187",
+            "likes": 184,
+            "reposts": 71,
+            "comments": 1,
+            "paper": "https://arxiv.org/abs/2411.19799",
+            "author": "agromanou",
+            "tweets": [
+                "[IMAGE] 🚀 Introducing INCLUDE 🌍: A multilingual LLM evaluation benchmark spanning 44 languages!\nContains *newly-collected* data, prioritizing *regional knowledge*.\n\nSetting the stage for truly global AI evaluation.\nReady to see how your model measures up?\n#AI #Multilingual #LLM #NLProc",
+                "🌍First, what is regional knowledge?\nIt's the local info, culture & practices of a regional context. US Law is a great topic, but not as relevant for multilingual LLMs for other regions.\nFor INCLUDE, we collect regional knowledge rather than translating Western-centric benchmarks",
+                "[IMAGE] 🤔Why is regional knowledge so important?\nUsers expect #LLMs to know information relevant to their environments— customs, culture, etc.\nTo be relevant & relatable, LLMs need to know these nuances. It's not just global knowledge; it's about meeting user needs where they are.",
+                "[IMAGE] To build INCLUDE, we collected ~200K MCQ data from 44 languages and 58 knowledge domains, collected from local sources in 52 countries, representing a rich array of cultural and regional knowledge.",
+                "Analysis shows:\n📚 Models have a long way to go in capturing the regional knowledge reflected in languages.\n\n💪 Model scale improves regional knowledge understanding, but other techniques like CoT or instruction tuning have minimal or negative impacts.",
+                "🤝 Information is transferred across languages of the same script, though untrained languages might also excel due to potential data contamination.\n\n🌎 Models can struggle with non-English instructions, entangling knowledge evaluation with other factors such as task formatting."
+            ]
+        },
+        {
+            "link": "https://x.com/rohitgandikota/status/1887910781708288095",
+            "likes": 398,
+            "reposts": 67,
+            "comments": 10,
+            "paper": "https://arxiv.org/abs/2502.01639",
+            "author": "rohitgandikota",
+            "tweets": [
+                "[IMAGE] Can you ask a Diffusion Model to break down a concept? 👀\n\nSliderSpace 🚀 reveals maps of the visual knowledge naturally encoded within diffusion models. It works by decomposing the model's capabilities into intuitive, composable sliders.\n\nHere's how 🧵👇",
+                "[IMAGE] With SliderSpace, users can explore the \"creativity\" of the diffusion model and even control it. There is a high chance you will discover something new!\n\nDid you know \"Neon Bestial\" monsters exist? We discovered it when exploring SDXL's knowledge about \"monsters\"",
+                "Last year we released \"Concept Sliders\" - it allowed users to unlock their imagination and train sliders to control diffusion model's knowledge. SliderSpace shifts the paradigm by asking - can we unlock the model's own creative potential and provide that control to users? 🤔",
+                "We learned from \n@_AmilDravid\n's Weights2Weights, which found interpretable directions by fine-tuning LoRAs and exploring the PCA subspaces. SliderSpace introduces a new process that eliminates the need for extensive data collection and pretraining.",
+                "Sliderspace takes inspiration from NoiseCLR ( \n@yusuf_dalva\n et al.) , which finds unsupervised directions by optimizing text embeddings with a contrastive architecture. But we find a new approach that can avoid repetition and find stable, controllable, understandable directions.",
+                "GANSpace ( \n@harskish\n et al.) uncovers interpretable controls by exploring the PCA space of latent and feature spaces within GANs. Inspired from this, SliderSpace explores diffusion models, finding interpretable sliders that are not only meaningful but also semantically grounded.",
+                "[IMAGE] Here is how to  discover SliderSpace:\n\n1. Start with a *single prompt* and generate images using diffusion models\n2. Extract CLIP features and do PCA\n3. Train sliders to mimic the PCA directions\n\nBased on model's own knowledge SliderSpace discovers semantic controllable sliders",
+                "[IMAGE] Does this mean you need to train SliderSpace for every new concept?\n\nNot always! We noticed that you can transfer the directions discovered for the concept \"Person\" - to other concepts. Even \"dogs\" !!\n\n The model seems to cleverly encode generalized directions across concepts",
+                "[IMAGE] The incredible team at Parrotzone manually curated approximately 4,000 artist styles mimicked by diffusion models, a time-consuming effort by a dedicated group. Inspired by their work, we wanted to see if SliderSpace could enumerate all the art styles it can mimic. 🤔",
+                "[IMAGE] One might ask: can a universal set of sliders be used to improve diversity across the whole model?\n\nWe trained 64 such sliders using COCO prompts. These sliders are useful: they improve distilled models (fast but notoriously non-diverse) so they match the diversity of base model.",
+                "[IMAGE] How does SliderSpace compare to Concept Sliders?\n\nYou can try to find a set of Concept Sliders by guessing a diverse set of prompts. But we find that SliderSpace finds more numerous and more diverse visual concepts, and works much more quickly at this than ConceptSliders.",
+                "Curious about SliderSpace? Dive deeper now!\n\nFor more details:\nProject: https://sliderspace.baulab.info\nPaper:  https://arxiv.org/abs/2502.01639\n\nThanks to the amazing team:\n \n@zongze_wu\n  \n@rzhang88\n \n@davidbau\n \n@elishechtman\n  @nicholas_kolkin\n\nWork done at \n@AdobeResearch\n and \n@Northeastern"
+            ]
+        },
+        {
+            "link": "https://x.com/sheridan_feucht/status/1909241398559449211",
+            "likes": 146,
+            "reposts": 36,
+            "comments": 2,
+            "paper": "https://arxiv.org/abs/2504.03022",
+            "author": "sheridan_feucht",
+            "tweets": [
+                "[IMAGE] [📄] Are LLMs mindless token-shifters, or do they build meaningful representations of language? We study how LLMs copy text in-context, and physically separate out two types of induction heads: token heads, which copy literal tokens, and concept heads, which copy word meanings.",
+                "[IMAGE] here are multiple ways to copy text! Copying a wifi password like hxioW2qN52 is different than copying a meaningful one like OwlDoorGlass. Nonsense copying requires each char to be transferred one-by-one, but meaningful words can be copied all at once. Turns out, LLMs do both.",
+                "Induction heads were discovered by Elhage et al. (2021) and Olsson et al. (2022). They focused on token copying, but some of the heads they found also seemed to activate for \"fuzzy\" copying tasks, like translation. We directly identify these heads--\nhttps://transformer-circuits.pub/2022/in-context-learning-and-induction-heads/index.html",
+                "[IMAGE]  --using causal interventions. Essentially, we pick out all of the attention heads that are responsible for promoting future entity tokens (e.g. \"ax\" in \"waxwing\"). We hypothesize that heads carrying an en",
+                "[IMAGE] Previous work showed that token induction heads attend to the next token to be copied (*window*pane). Analogously, we find that concept induction heads attend to the end of the next multi-token word to be copied (windowp*ane*).",
+                "[IMAGE] But how do we know these heads copy semantics? When we ablate concept induction heads, performance drops drastically for translation, synonyms, and antonyms: all tasks that require copying *meaning*, not just literal tokens.",
+                "[IMAGE] Token induction heads are still important, though. When we ablate them over long sequences, models start to paraphrase instead of copying. We take this to mean that token induction heads are responsible for *exact* copying (which concept induction heads apparently can't do).",
+                "[IMAGE] Concept heads also output language-agnostic word representations. If we patch the outputs of these heads from one translation prompt to another, we can change the *meaning* of the outputted word, without changing the language. (see prior work from",
+                "[IMAGE] The incredible team at Parrotzone manually curated approximately 4,000 artist styles mimicked by diffusion models, a time-consuming effort by a dedicated group. Inspired by their work, we wanted to see if SliderSpace could enumerate all the art styles it can mimic. 🤔",
+                "[IMAGE] Yin & Steinhardt (2025) recently showed that FV heads are more important for ICL than token induction heads. But for translation, *concept* induction heads matter too! They copy forward word meanings, whereas FV heads influence the output language.",
+                "Paper: https://arxiv.org/abs/2504.03022\nCode: https://github.com/sfeucht/dual-route-induction"
+            ]
+        },
+        {
+            "link": "https://x.com/jonathanrichens/status/1930221408199516657",
+            "likes": 867,
+            "reposts": 168,
+            "comments": 21,
+            "paper": "https://arxiv.org/pdf/2506.01622",
+            "author": "jonathanrichens",
+            "tweets": [
+                "[IMAGE] Are world models necessary to achieve human-level agents, or is there a model-free short-cut?\nOur new #ICML2025 paper tackles this question from first principles, and finds a surprising answer, agents _are_ world models… 🧵",
+                "World models are foundational to goal-directedness in humans, but are hard to learn in messy open worlds. We're now seeing generalist, model-free agents (Gato, PaLM-E, Pi-0…). Do these agents learn implicit world models, or have they found another way to generalize to new tasks?",
+                "[IMAGE] Turns out there’s a neat answer to this question. We prove that any agent capable of generalizing to a broad range of simple goal-directed tasks must have learned a predictive model capable of simulating its environment. And this model can always be recovered from the agent.",
+                "[IMAGE] Specifically, we show it’s possible to recover a bounded error approximation of the environment transition function from any goal-conditional policy that satisfies a regret bound across a wide enough set of simple goals, like steering the environment into a desired state.",
+                "These results have several interesting consequences, from emergent capabilities to AI safety… 👇",
+                "No model-free path. If you want to train an agent capable of a wide range of goal-directed tasks, you can’t avoid the challenge of learning a world model. And to improve performance or generality, agents need to learn increasingly accurate and detailed world models.",
+                "Fundamental limitations on agency. In environments where the dynamics are provably hard to learn, or where long-horizon prediction is infeasible, the capabilities of agents are fundamentally bounded.",
+                "[IMAGE] Extracting world knowledge from agents. We derive algorithms that recover a world model given the agent’s policy and goal (policy + goal -> world model). These algorithms complete the triptych of planning (world model + goal -> policy) and IRL (world model + policy -> goal).",
+                "Safety. Several approaches to AI safety require accurate world models, but agent capabilities could outpace our ability to build them. Our work gives a theoretical guarantee: we can extract world models from agents, and the model fidelity increases with the agent's capabilities.",
+                "[IMAGE] Emergent capabilities. To minimize training loss across many goals, agents must learn a world model, which can solve tasks the agent was not explicitly trained on. Simple goal-directedness gives rise to many capabilities (social cognition, reasoning about uncertainty, intent…).",
+                "[IMAGE] Causality. In previous work we showed a causal world model is needed for robustness. It turns out you don’t need as much causal knowledge of the environment for task generalization. There is a causal hierarchy, but for agency and agent capabilities, rather than inference!",
+                "… and many more! Check out our paper https://arxiv.org/pdf/2506.01622"
+            ]
+        },
+        {
+            "link": "https://x.com/AnimaAnandkumar/status/1930322728315433195",
+            "likes": 131,
+            "reposts": 29,
+            "comments": 4,
+            "paper": "https://arxiv.org/abs/2505.17004",
+            "author": "AnimaAnandkumar",
+            "tweets": [
+                "Excited to introduce our latest work, Guided Diffusion Sampling on Function Spaces (FunDPS) (https://arxiv.org/abs/2505.17004) - a  discretization-agnostic generative framework for solving PDE-based forward and inverse problems.\n\nDiffusion-based posterior sampling on function spaces: Our model recovers full-field PDE solutions, coefficient functions, and boundary conditions from severely sparse (just 3%) measurements, yielding SotA performance in both speed and accuracy.\n\nMulti-resolution operator learning pipeline: FunDPS leverages Gaussian Random Field priors and neural operator architectures, enabling multi-resolution training and inference, reducing training time by 25% and inference time by 50%.\n\nInfinite-dimensional Tweedie’s Formula: We extend Tweedie’s formula into infinite-dimensional Banach spaces, forming the rigorous theoretical foundation for posterior mean estimation.\n\nResults: Achieved an average 32% accuracy improvement and 4x fewer sampling steps compared to previous SOTA approaches across five challenging PDE tasks. Plus, our multi-resolution inference pipeline accelerates computations by up to 25x!\nPaper (https://arxiv.org/abs/2505.17004). Code (https://github.com/neuraloperator/FunDPS),",
+                "[IMAGE] The GRF noise model and neural operator architecture enable multi-resolution training and inference with minimal accuracy loss, while reducing training time by 25% and inference time by 50%. \nWe can perform up to 80% of denoising steps at low resolution without losing acc. (2/n)",
+                "[IMAGE] Across five PDE tasks with only 3% observation, our method achieves an average 32% accuracy improvement over deterministic and generative baselines while reducing sampling steps by 4x. (3/n)",
+                "[IMAGE] Indeed, we are excited about our generative operator-learning framework, FunDPS. \nWe extend conditional sampling to function space with an unconditional diffusion operator and plug-and-play guidance, achieving flexibility and SotA performance. (1/n)"
+            ]
+        },
+        {
+            "link": "https://x.com/marco_fumero/status/1930258088449229192",
+            "likes": 332,
+            "reposts": 55,
+            "comments": 5,
+            "paper": "https://arxiv.org/abs/2505.22785",
+            "author": "marco_fumero",
+            "tweets": [
+                "[IMAGE] Neural networks implicitly define a latent vector field on the data manifold, via autoencoding iterations🌀\n\nThis representation retains properties of the model, revealing memorization and generalization regimes, and characterizing distribution shifts\n\n📜: https://arxiv.org/abs/2505.22785",
+                "[IMAGE] Attractors can be recovered from noise, enabling us to probe the knowledge encoded in the weights of vision foundation models, without requiring any input data.",
+                "[IMAGE] The latent vector field can be used to analyze the training dynamics of neural networks, giving insights on how representations form during the training process.",
+                "Joint work with \n@moschella_luca\n, \n@EmanueleRodola\n, \n@FrancescoLocat8\n. Thanks to my collaborators!\n\nFor more experiments, details, and theory check the paper: https://arxiv.org/abs/2505.22785"
+            ]
+        },
+        {
+            "link": "https://x.com/deedydas/status/1924512147947848039",
+            "likes": 4500,
+            "reposts": 733,
+            "comments": 42,
+            "paper": "https://arxiv.org/abs/2505.09343",
+            "author": "deedydas",
+            "tweets": [
+                "[IMAGE] DeepSeek just dropped the single best end-to-end paper on large model training.\n\nIt covers\n— Software (MLA, training in FP8, DeepEP, LogFMT)\n— Hardware (Multi-Rail Fat Tree, Ethernet RoCE switches)\n— Mix (IBGDA, 3FS filesystem)\n\nDeepSeek's engineering depth is insane. Must read.",
+                "Source:\nhttps://arxiv.org/abs/2505.09343"
+            ]
+        },
+        {
+            "link": "https://x.com/HaggaiMaron/status/1622580097327693825",
+            "likes": 707,
+            "reposts": 134,
+            "comments": 7,
+            "paper": "https://arxiv.org/abs/2301.12780",
+            "author": "HaggaiMaron",
+            "tweets": [
+                "[IMAGE] (1/10) New paper! A deep architecture for processing (weights of) other neural networks while preserving equivariance to their permutation symmetries. Learning in deep weight spaces has a wide potential: from NeRFs to INRs; from adaptation to pruning https://avivnavon.github.io/DWSNets/ 👇",
+                "(2/10) Deep networks that process other networks have many potential uses, and several previous studies attempted to implement them using fully-connected networks or transformers.\n\n--\n\n(3/10) However, these works did not take advantage of the fact that the space of weights of deep networks has a *unique symmetry structure*: permuting the order of hidden neurons preserves the function that an MLP implements. We design a deep arch. that takes this into account.",
+                "(4/10) Formally, changing the order of neurons is equivalent to applying a series of permutations to the rows/columns of the weight matrices, which results in a new and (in general) different weight vector that represents exactly the same function and the initial weight vector.",
+                "(5/10) A similar challenge appears when learning other types of data that have permutation symmetries, like sets and graphs. Permutation equivariant architectures like DeepSets or GNNs perform significantly better on such data. \n\nWhat is the equivalent arch. for weight spaces?",
+                "(6/10) We describe a novel equivariant architecture for learning in deep-weight spaces. \nIt takes as input a concatenation of weights and biases of MLPs and processes them using a composition of layers that are equivariant to weight space permutation symmetries.",
+                "[IMAGE] (7/10) We provide a full characterization of affine equivariant layers for these symmetries. For these layers, we show they have a natural block-matrix structure, and demonstrate how to implement them with 3 operations: pooling, broadcasting, and FC layers",
+                "(8/10) We also study the approximation power of these architectures and show they can approximate a forward pass over an input MLP. This observation provides a basis for further exploration of these networks and their capabilities.",
+                "(9/10) We apply our architecture in a wide range of tasks like INR classification, adapting classifiers to new domains, and embedding collections of MLPs. Our paper also discusses the limitations of our approach as well as several promising directions for improving them."
+            ]
+        },
+        {
+            "link": "https://x.com/Jeffaresalan/status/1853460948440240213",
+            "likes": 759,
+            "reposts": 140,
+            "comments": 15,
+            "paper": "https://arxiv.org/abs/2411.00247",
+            "author": "Jeffaresalan",
+            "tweets": [
+                "[IMAGE] There are many things we don’t understand about deep learning. Our new NeurIPS paper (w/ \n@AliciaCurth\n) makes the mistake of trying to tackle too many of them 😅\n\nA simplified model of deep learning describes double descent, grokking, gradient boosting & linear mode connectivity🧵",
+                "[IMAGE] We borrow from the theorists to develop an *empirical* approximation of a NN. Allowing us to:\n\n1) Quantify train & test time complexity to explain the surprising scaling of NNs\n\n2) Reveal parallels between NNs and gradient boosting that explain known performance differences\n\n3)  Investigate the phenomenon of NN weight averaging through the lens of gradient stabilization\n\n🧵[2/7]\n\n--\n\n[IMAGE] The telescoping model of a NN that we use builds upon ideas from linearized NNs & neural tangent kernel literature. At each batch update we linearize the functional update and sum these approximations over the entire learning trajectory. \n\nThis model is less complex than, but remains a close approximation to, a full NN - something we can empirically verify!\n\n🧵[3/7]",
+                "[IMAGE] In case study 1 we develop a measure of effective parameters for NNs that captures multiple observations of surprising scaling behavior (i.e. double descent, grokking). This holds in settings where previous explanations have disagreed (e.g. grokking via weight decay).\n\n🧵[4/7]",
+                "[IMAGE] In case study 2 we show that the telescoping model and gradient boosted trees (GBTs) have an identical structure and differ only in their choice of kernel. We then show that this kernel can help explain GBTs superior performance on different data modalities.\n\n🧵[5/7]",
+                "[IMAGE] In case study 3 we explore gradient stabilization as an explanation for effective NN weight averaging. While stabilization of all model gradients would be sufficient - and some stabilization is measurable - not all gradients stabilize indicating that other factors are also at play. \n\n🧵[6/7]",
+                "For much more detail on all of the above check out the full paper at https://arxiv.org/abs/2411.00247"
+            ]
+        },
+        {
+            "link": "https://x.com/andrewgwils/status/1897305433079161235",
+            "likes": 1900,
+            "reposts": 308,
+            "comments": 12,
+            "paper": "https://arxiv.org/abs/2503.02113",
+            "author": "andrewgwils",
+            "tweets": [
+                "[IMAGE] My new paper \"Deep Learning is Not So Mysterious or Different\": https://arxiv.org/abs/2503.02113. Generalization behaviours in deep learning can be intuitively understood through a notion of soft inductive biases, and formally characterized with countable hypothesis bounds! 1/12",
+                "What makes deep learning different? Not overparametrization, benign overfitting, or double descent, which can be reproduced with other models and explained with old generalization frameworks. Understanding DL doesn't require rethinking generalization -- and it never did! 2/12\n\n--\n\n[IMAGE] Rather than restricting the solutions a model can represent, specify a preference for certain solutions over others, through _soft_ inductive biases. This approach guides us towards structure where it exists, without significant penalty where it doesn't. 3/12",
+                "[IMAGE] Let's consider the simplest possible example: a polynomial. We’ll use an arbitrarily high-order polynomial with order-dependent regularization that penalizes the norms of higher order coefficients more. This model scales its complexity as needed, and can also fit pure noise! 4/12",
+                "[IMAGE] This model also performs well over a range of data sizes and complexities. Notably, a central observation in \"understanding DL requires rethinking generalization\" was a neural net can fit noise perfectly, but still generalize on structured data; but this polynomial can too. 5/12",
+                "[IMAGE] While this behaviour cannot be explained by Rademacher complexity or VC dimension (which measures a model's ability to fit noise), it _can_ be described by decades-old countable hypothesis bounds with a prior, which do not penalize the size of the hypothesis space. 6/12",
+                "[IMAGE] We can use a Solomonoff prior, which represents a maximally overparametrized model, but assigns  exponentially higher weights to simpler (shorter) programs with lower Kolmogorov complexity, leading to non-vacuous generalization bounds on even billion parameter neural nets. 7/12",
+                "[IMAGE] Benign overfitting describes perfectly fitting a mix of signal and noise, but still generalizing respectably. Like with the polynomial, we can exactly reproduce this behaviour with a Gaussian process and bound it with PAC-Bayes through the marginal likelihood. 8/12",
+                "These frameworks provide a prescription for generalization, in line with soft inductive biases: embrace a maximally flexible hypothesis space, combined with a compression bias. 9/12",
+                "Computing the bounds is also very simple: (i) train a model to find hypothesis h*, using any optimizer; (ii) measure the empirical risk R(h*) (e.g., training loss); (iii) measure the filesize of the stored model. 10/12",
+                "[IMAGE] We also further consider overparametrization and double descent. Deep learning of course _is_ different, and much is not well understood. To this end, we particularly highlight representation learning, mode connectivity, and universal learning. Much more in the paper! 11/12",
+                "[IMAGE] The textbooks don't need to be rewritten -- they just needed to pay attention to what was already known about generalization, decades ago! I've had thoughts about this for 12 years, and people always ask for the paper -- so I finally wrote it. Thankful to many for feedback! 12/12"
+            ]
+        },
+        {
+            "link": "https://x.com/NaveenManwani17/status/1921262286624223633",
+            "likes": 52,
+            "reposts": 6,
+            "comments": 0,
+            "paper": "https://arxiv.org/abs/2412.04464",
+            "author": "NaveenManwani17",
+            "tweets": [
+                "🚨CVPR 2025 (Highlight) Paper Alert 🚨\n\n➡️Paper Title: DualPM: Dual Posed-Canonical Point Maps for 3D Shape and Pose Reconstruction\n\n🌟Few pointers from the paper\n\n🎯The choice of data representation is a key factor in the success of deep learning in geometric tasks.\n\n🎯For instance, DUSt3R recently introduced the concept of viewpoint-invariant point maps, generalizing depth prediction and showing that all key problems in the 3D reconstruction of static scenes can be reduced to predicting such point maps.\n\n🎯In this paper, they developed an analogous concept for a very different problem: the reconstruction of the 3D shape and pose of deformable objects.\n\n🎯To this end, authors of this paper introduced “Dual Point Maps (DualPM)”, where a pair of point maps is extracted from the same image-one associating pixels to their 3D locations on the object and the other to a canonical version of the object in its rest pose.\n\n🎯They also extended point maps to amodal reconstruction to recover the complete shape of the object, even through self-occlusions.\n\n🎯They showed that 3D reconstruction and 3D pose estimation can be reduced to the prediction of DualPMs. Empirically, they demonstrated that this representation is a suitable target for deep networks to predict.\n\n🎯Specifically, they focused on modeling quadrupeds, showing that DualPMs can be trained purely on synthetic 3D data, consisting of one or two models per category, while generalizing effectively to real images.\n\n🎯With this approach, they achieved significant improvements over previous methods for the 3D analysis and reconstruction of such objects.\n\n🏢Organization: \n@UniofOxford\n , \n@Stanford\n \n\n🧙Paper Authors: Ben Kaye, \n@JakabTomas\n  , \n@elliottszwu\n , Christian Rupprecht, Andrea Vedaldi\n\n📝 Read the Full Paper here: https://arxiv.org/abs/2412.04464\n\n🗂️ Project Page: https://dualpm.github.io\n\n🎥 Be sure to watch the attached Demo Video - Sound on 🔊🔊\n\n🎵 Music by Gvidon Levkin/Bardyuzha from \n@pixabay\n \n\nFind this Valuable 💎 ?\n\n♻️QT and teach your network something new\n\nFollow me 👣, \n@NaveenManwani17\n , for the latest updates on Tech and AI-related news, insightful research papers, and exciting announcements.\n\n#CVPR2025 #highlight"
+            ]
+        },
+        {
+            "link": "https://x.com/nrehiew_/status/1881496578957197526",
+            "likes": 2600,
+            "reposts": 275,
+            "comments": 17,
+            "paper": "https://arxiv.org/pdf/2402.03300",
+            "author": "nrehiew_",
+            "tweets": [
+                "[IMAGE] How to train a State-of-the-art reasoner. \n\nLet's talk about the DeepSeek-R1 paper and how DeepSeek trained a model that is at frontier Sonnet/o1 level.",
+                "Quick overview on what has been done to train an o1-like model:\n\n- Process and Outcome Reward Models. This approach does RL and trains these 2 models to give reward/signal at the step or answer level. Given that Qwen trained a SOTA PRM, we can assume they do this.\n- LATRO (https://arxiv.org/pdf/2411.04282) basically treats the CoT as a latent. Given prompt + cot, a good cot will lead to high likelihood of the correct answer \n- SFT on reasoning traces. \n\nDeepSeek gets rid of all this complexity and simply does RL on questions with verifiable rewards. TULU 3 style (https://arxiv.org/abs/2411.15124)",
+                "[IMAGE] They start by trying to improve the Base Model without any supervised data. \n\nThey use Group Relative Policy Optimization (https://arxiv.org/pdf/2402.03300) with the advantage function just being the normalized outcome rewards \n\nFor the reward models, they use simple accuracy reminders (check answer within \\boxed, run test cases) + they encourage the model to put its thinking process between <think/>  tags",
+                "[IMAGE] The GRPO algorithm here. Again the advantage estimation is just the outcome reward. Check out the paper linked above for more details",
+                "1st interesting thing of the paper:\n> neural reward model may suffer from reward hacking in the large-scale reinforcement learning process, and retraining the reward model needs additional training resources and it complicates the whole training pipeline.\n\nnot much else for me to add here",
+                "[IMAGE] They say that they use a really simple prompt because they are more interested in observing the evolution in model outputs",
+                "[IMAGE] Notice that they went straight from Base -> RL without an intermediate SFT/Instruct tuning stage as is common. They call this model R1-Zero",
+                "[IMAGE] Why is this interesting?\n\nNotice how simple the entire setup is. It is extremely easy to generate synthetic prompts with deterministic answers. And with literally nothing else, it is possible to go from 0.2->0.85 AIME scores.\n\nTraining the base model directly also directly extracts that ability without having its distribution disturbed by SFT\n\nAgain, at no point did they provide reference answers or instructions. The model realizes that to achieve higher reward, it needs to CoT longer",
+                "[IMAGE] With this extremely straightforward setup, the network learns to reflect/reevaluate its own answers. Again, this is done completely without supervision",
+                "The problem with RL on the base model is that the reasoning process/CoT is not really readable. So, they introduce a small amount of high quality user-friendly data before the RL process such that the final model isnt a \"base model\" but rather something more \"assistant\" like",
+                "Their entire pipeline is as follows:\n1) Take a few thousand samples of high quality data of the format COT + Summary and SFT the base model\n\n2) Repeat the R1 Zero process. They notice the language mixing problem still remains so they add a reward accounting for the proportion of target language words in the COT. (Interesting Note: This worsens performance slightly)\n\n3) Collect 800k accurate samples from the trained model -600K STEm, 200K general purpose.  (Note: These were the samples used to FT the other open models like Qwen, Llama etc)\n\n4) They have 1 last RL stage where they combine the verifiable rewards + preference tuning that was done for DeepSeek v3 (for alignment purposes)",
+                "[IMAGE] By now, you should have seen/heard all the results. So I will just say 1 thing. I really do think this is an o1 level model. If i had to guess its ~ the same as o1 (reasoning_effort = medium)",
+                "[IMAGE] They also evaluate on the distilled models and distillation really just works. They even beat Qwen's very own QwQ.\n\nAt 8B parameters, it is matching Sonnet and has surpassed GPT-4o",
+                "[IMAGE] Now they have a section on the effectiveness of distillation. They train a Qwen32B model using RL and compare it with the distilled version. \n\nThe finding that this RL version is worse off (~ the same as QwQ) shows that the way forward is to RL a huge model and distill it down. \n\nThis also gives insight to the impressive performance of o1-mini. It looks like it really is just extremely well engineered distillation",
+                "[IMAGE] They also have a section on their unsuccessfully attempt which i find extremely commendable to share.\n\ntldr: PRMs are hard to train and can be hacked. It should only be used for guided search rather than learning. MCTS was also not working and was too complicated",
+                "DeepSeek-R1: Incentivizing Reasoning Capability in LLMs via Reinforcement Learning\nhttps://github.com/deepseek-ai/DeepSeek-R1",
+                "Some thoughts:\n\nI think this is 1 of the most important papers in a while because its the first open model that is genuinely at the frontier and not just riding on the goodwill of being open. \n\nThe paper is really really simple as you can probably tell from the thread because the approach is really really simple. It really is exactly what OpenAI is good at - doing simple things but executing at an extremely high level \n\nPersonally, I'm surprised (maybe i shouldn't be) that just RL on verifiable rewards (credits to the TULU3 team for the term) works. Now that we know this recipe, we also would have something that can match o3 soon. \n\nAlso worth noting that they did alignment tuning + language consistency tuning. This hurts performance which indicates that the model could be even better. Really interesting to think about the tradeoffs here.\n\nThe way i see it there are 2 open research areas:\n- Can we improve inference time performance. Search? What is o1-pro mode doing? How is the reasoning_effort in o1 controlled?\n\n- What does this unhackable ground truth reward look like for normal domains without deterministic ground truths. I think its just LLM-as-a-Judge but done extremely well (Sonnet probably does this)"
+            ]
+        },
+        {
+            "link": "https://x.com/weijie444/status/1437813876997992453",
+            "likes": 186,
+            "reposts": 27,
+            "comments": 3,
+            "paper": "https://arxiv.org/abs/2101.12699",
+            "author": "weijie444",
+            "tweets": [
+                "[IMAGE] Our deep learning theory paper (https://arxiv.org/abs/2101.12699) got accepted to PNAS! Introduced Layer-Peeled Model that can:\n1. predict a hitherto unknown phenomenon that we term Minority Collapse in imbalanced training;\n2. explain neural collapse discovered by Papyan, Han and Donoho.",
+                "When minority collapse occurs, the deep learning classifiers on minor classes are simply identical to each other! This limitation can lead to severe fairness issues for minority groups in high-stakes decision-making",
+                "Interestingly, this phenomenon is first predicted by the Layer-Peeled Model before being confirmed by our computational experiments."
+            ]
+        }
+    ]
+}   

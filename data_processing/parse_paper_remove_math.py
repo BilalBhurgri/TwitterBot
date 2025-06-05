@@ -142,7 +142,7 @@ def is_mostly_math(text):
 
 def main():
     # Process all XML files in the pdfs directory
-    pdfs_dir = 'pdfs'
+    pdfs_dir = 'arxiv_papers'
     
     # Sections to exclude
     exclude_sections = ["Related Work", "References", "Bibliography", "Acknowledgements", 

@@ -1,0 +1,230 @@
+2025-06-05 10:06:38,011 - ERROR - Error loading JSON file: Expecting value: line 71 column 13 (char 14448)
+2025-06-05 10:06:38,011 - ERROR - No threads found in JSON file
+2025-06-05 10:06:38,012 - ERROR - Error loading JSON file: Expecting value: line 71 column 13 (char 14448)
+2025-06-05 10:06:38,013 - INFO - 📚 Bibliography created: arxiv_papers/bibliography.txt
+2025-06-05 10:09:15,770 - ERROR - JSON parsing error at line 71: Expecting value
+2025-06-05 10:09:15,770 - ERROR - Trying to extract URLs manually...
+2025-06-05 10:09:22,048 - ERROR - JSON parsing error at line 71: Expecting value
+2025-06-05 10:09:22,049 - ERROR - Trying to extract URLs manually...
+2025-06-05 10:09:22,049 - ERROR - No threads found in JSON file
+2025-06-05 10:09:22,050 - ERROR - JSON parsing error at line 71: Expecting value
+2025-06-05 10:09:22,050 - ERROR - Trying to extract URLs manually...
+2025-06-05 10:11:08,455 - ERROR - JSON parsing error at line 71: Expecting value
+2025-06-05 10:11:08,456 - ERROR - Trying to extract URLs manually...
+2025-06-05 10:11:08,458 - INFO - Manually extracted 52 threads
+2025-06-05 10:11:08,459 - INFO - Found 52 threads to process
+2025-06-05 10:11:08,459 - INFO - 
+[1/52] Processing thread by @JiayiGeng
+2025-06-05 10:11:08,459 - INFO - Downloading 2505.17968 by @JiayiGeng...
+2025-06-05 10:11:08,689 - INFO - ✅ Downloaded: 2505.17968_JiayiGeng.pdf (5001281 bytes)
+2025-06-05 10:11:10,690 - INFO - 
+[2/52] Processing thread by @JiahaoQiu99
+2025-06-05 10:11:10,690 - INFO - Downloading 2505.20286 by @JiahaoQiu99...
+2025-06-05 10:11:10,889 - INFO - ✅ Downloaded: 2505.20286_JiahaoQiu99.pdf (1113387 bytes)
+2025-06-05 10:11:12,890 - INFO - 
+[3/52] Processing thread by @theryanliu
+2025-06-05 10:11:12,890 - INFO - Downloading 2406.17055 by @theryanliu...
+2025-06-05 10:11:13,113 - INFO - ✅ Downloaded: 2406.17055_theryanliu.pdf (4946529 bytes)
+2025-06-05 10:11:15,114 - INFO - 
+[4/52] Processing thread by @StellaLisy
+2025-06-05 10:11:15,115 - WARNING - ⚠️  No arXiv ID found in URL: https://github.com/ruixin31/Rethink_RLVR/blob/main/paper/rethink-rlvr.pdf
+2025-06-05 10:11:15,115 - INFO - 
+[5/52] Processing thread by @qinan_yu
+2025-06-05 10:11:15,115 - INFO - Downloading 2505.20809 by @qinan_yu...
+2025-06-05 10:11:15,315 - INFO - ✅ Downloaded: 2505.20809_qinan_yu.pdf (2202197 bytes)
+2025-06-05 10:11:17,316 - INFO - 
+[6/52] Processing thread by @yueqi_song
+2025-06-05 10:11:17,317 - INFO - Downloading 2504.10342 by @yueqi_song...
+2025-06-05 10:11:17,530 - INFO - ✅ Downloaded: 2504.10342_yueqi_song.pdf (5309525 bytes)
+2025-06-05 10:11:19,531 - INFO - 
+[7/52] Processing thread by @theryanliu
+2025-06-05 10:11:19,531 - WARNING - ⚠️  No arXiv ID found in URL: https://t.co/wXJ9hFs3Vc
+2025-06-05 10:11:19,532 - INFO - 
+[8/52] Processing thread by @ericzelikman
+2025-06-05 10:11:19,532 - INFO - Downloading 2403.09629 by @ericzelikman...
+2025-06-05 10:11:19,708 - INFO - ✅ Downloaded: 2403.09629_ericzelikman.pdf (971557 bytes)
+2025-06-05 10:11:21,709 - INFO - 
+[9/52] Processing thread by @FahimTajwar10
+2025-06-05 10:11:21,709 - INFO - Downloading 2505.21444 by @FahimTajwar10...
+2025-06-05 10:11:21,944 - INFO - ✅ Downloaded: 2505.21444_FahimTajwar10.pdf (1056210 bytes)
+2025-06-05 10:11:23,944 - INFO - 
+[10/52] Processing thread by @Brown_NLP
+2025-06-05 10:11:23,945 - INFO - Downloading 2310.15910 by @Brown_NLP...
+2025-06-05 10:11:24,862 - INFO - ✅ Downloaded: 2310.15910_Brown_NLP.pdf (14992623 bytes)
+2025-06-05 10:11:26,863 - INFO - 
+[11/52] Processing thread by @SonglinYang4
+2025-06-05 10:11:26,864 - INFO - Downloading 2505.16381 by @SonglinYang4...
+2025-06-05 10:11:27,035 - INFO - ✅ Downloaded: 2505.16381_SonglinYang4.pdf (787932 bytes)
+2025-06-05 10:11:29,036 - INFO - 
+[12/52] Processing thread by @huybery
+2025-06-05 10:11:29,037 - INFO - Downloading 2505.10475 by @huybery...
+2025-06-05 10:11:29,285 - INFO - ✅ Downloaded: 2505.10475_huybery.pdf (4621752 bytes)
+2025-06-05 10:11:31,286 - INFO - 
+[13/52] Processing thread by @ZeyuanAllenZhu
+2025-06-05 10:11:31,286 - WARNING - ⚠️  No arXiv ID found in URL: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=5240330
+2025-06-05 10:11:31,286 - INFO - 
+[14/52] Processing thread by @jaseweston
+2025-06-05 10:11:31,286 - INFO - Downloading 2404.19733 by @jaseweston...
+2025-06-05 10:11:31,455 - INFO - ✅ Downloaded: 2404.19733_jaseweston.pdf (483109 bytes)
+2025-06-05 10:11:33,457 - INFO - 
+[15/52] Processing thread by @tengyuma
+2025-06-05 10:11:33,457 - INFO - Downloading 2502.00212 by @tengyuma...
+2025-06-05 10:11:33,651 - INFO - ✅ Downloaded: 2502.00212_tengyuma.pdf (1004956 bytes)
+2025-06-05 10:11:35,652 - INFO - 
+[16/52] Processing thread by @denny_zhou
+2025-06-05 10:11:35,652 - INFO - Downloading 2402.12875 by @denny_zhou...
+2025-06-05 10:11:35,901 - INFO - ✅ Downloaded: 2402.12875_denny_zhou.pdf (4746842 bytes)
+2025-06-05 10:11:37,902 - INFO - 
+[17/52] Processing thread by @CanyuChen3
+2025-06-05 10:11:37,902 - INFO - Downloading 2410.16251 by @CanyuChen3...
+2025-06-05 10:11:38,658 - INFO - ✅ Downloaded: 2410.16251_CanyuChen3.pdf (16562435 bytes)
+2025-06-05 10:11:40,659 - INFO - 
+[18/52] Processing thread by @DrogoKhal4
+2025-06-05 10:11:40,659 - INFO - Downloading 2411.06559 by @DrogoKhal4...
+2025-06-05 10:11:40,863 - INFO - ✅ Downloaded: 2411.06559_DrogoKhal4.pdf (4214030 bytes)
+2025-06-05 10:11:42,864 - INFO - 
+[19/52] Processing thread by @vardaanpahuja
+2025-06-05 10:11:42,864 - INFO - Downloading 2502.11357 by @vardaanpahuja...
+2025-06-05 10:11:43,056 - INFO - ✅ Downloaded: 2502.11357_vardaanpahuja.pdf (2133194 bytes)
+2025-06-05 10:11:45,056 - INFO - 
+[20/52] Processing thread by @hhsun1
+2025-06-05 10:11:45,057 - INFO - Downloading 2502.06755 by @hhsun1...
+2025-06-05 10:11:45,523 - INFO - ✅ Downloaded: 2502.06755_hhsun1.pdf (43784856 bytes)
+2025-06-05 10:11:47,524 - INFO - 
+[21/52] Processing thread by @zy27962986
+2025-06-05 10:11:47,524 - INFO - Downloading 2501.06590 by @zy27962986...
+2025-06-05 10:11:47,766 - INFO - ✅ Downloaded: 2501.06590_zy27962986.pdf (6627264 bytes)
+2025-06-05 10:11:49,767 - INFO - 
+[22/52] Processing thread by @salman1422571
+2025-06-05 10:11:49,767 - INFO - Downloading 2502.02584 by @salman1422571...
+2025-06-05 10:11:49,941 - INFO - ✅ Downloaded: 2502.02584_salman1422571.pdf (817069 bytes)
+2025-06-05 10:11:51,942 - INFO - 
+[23/52] Processing thread by @YuYang_i
+2025-06-05 10:11:51,942 - INFO - Downloading 2504.13203 by @YuYang_i...
+2025-06-05 10:11:52,135 - INFO - ✅ Downloaded: 2504.13203_YuYang_i.pdf (1508846 bytes)
+2025-06-05 10:11:54,136 - INFO - 
+[24/52] Processing thread by @ChulinXie
+2025-06-05 10:11:54,136 - INFO - Downloading 2403.07384 by @ChulinXie...
+2025-06-05 10:11:54,310 - INFO - ✅ Downloaded: 2403.07384_ChulinXie.pdf (972829 bytes)
+2025-06-05 10:11:56,311 - INFO - 
+[25/52] Processing thread by @lin_zinan
+2025-06-05 10:11:56,311 - INFO - Downloading 2410.23123 by @lin_zinan...
+2025-06-05 10:11:56,556 - INFO - ✅ Downloaded: 2410.23123_lin_zinan.pdf (2955126 bytes)
+2025-06-05 10:11:58,557 - INFO - 
+[26/52] Processing thread by @WenhuChen
+2025-06-05 10:11:58,558 - INFO - Downloading 2412.17153 by @WenhuChen...
+2025-06-05 10:11:59,647 - INFO - ✅ Downloaded: 2412.17153_WenhuChen.pdf (14073463 bytes)
+2025-06-05 10:12:01,648 - INFO - 
+[27/52] Processing thread by @yuetai12575
+2025-06-05 10:12:01,648 - INFO - Downloading 2504.20571 by @yuetai12575...
+2025-06-05 10:12:01,860 - INFO - ✅ Downloaded: 2504.20571_yuetai12575.pdf (2865125 bytes)
+2025-06-05 10:12:03,860 - INFO - 
+[28/52] Processing thread by @jaehunjung_com
+2025-06-05 10:12:03,861 - INFO - Downloading 2505.20196 by @jaehunjung_com...
+2025-06-05 10:12:04,055 - INFO - ✅ Downloaded: 2505.20196_jaehunjung_com.pdf (963281 bytes)
+2025-06-05 10:12:06,055 - INFO - 
+[29/52] Processing thread by @shizhediao
+2025-06-05 10:12:06,056 - INFO - Downloading 2505.20196 by @shizhediao...
+2025-06-05 10:12:06,175 - INFO - ✅ Downloaded: 2505.20196_shizhediao.pdf (963281 bytes)
+2025-06-05 10:12:08,176 - INFO - 
+[30/52] Processing thread by @xwang_lk
+2025-06-05 10:12:08,176 - INFO - Downloading 2505.24864 by @xwang_lk...
+2025-06-05 10:12:08,334 - INFO - ✅ Downloaded: 2505.24864_xwang_lk.pdf (4000413 bytes)
+2025-06-05 10:12:10,335 - INFO - 
+[31/52] Processing thread by @kellychiuyy
+2025-06-05 10:12:10,336 - INFO - Downloading 2505.15778 by @kellychiuyy...
+2025-06-05 10:12:10,502 - INFO - ✅ Downloaded: 2505.15778_kellychiuyy.pdf (646641 bytes)
+2025-06-05 10:12:12,503 - INFO - 
+[32/52] Processing thread by @andrewliao11
+2025-06-05 10:12:12,503 - INFO - Downloading 2505.14633 by @andrewliao11...
+2025-06-05 10:12:12,700 - INFO - ✅ Downloaded: 2505.14633_andrewliao11.pdf (3357718 bytes)
+2025-06-05 10:12:14,701 - INFO - 
+[33/52] Processing thread by @GXiming
+2025-06-05 10:12:14,701 - INFO - Downloading 2504.15362 by @GXiming...
+2025-06-05 10:12:15,437 - INFO - ✅ Downloaded: 2504.15362_GXiming.pdf (10212159 bytes)
+2025-06-05 10:12:17,438 - INFO - 
+[34/52] Processing thread by @kabirahuja004
+2025-06-05 10:12:17,438 - INFO - Downloading 2504.04383 by @kabirahuja004...
+2025-06-05 10:12:17,663 - INFO - ✅ Downloaded: 2504.04383_kabirahuja004.pdf (1987111 bytes)
+2025-06-05 10:12:19,664 - INFO - 
+[35/52] Processing thread by @zzlccc
+2025-06-05 10:12:19,665 - INFO - Downloading 2504.11900 by @zzlccc...
+2025-06-05 10:12:19,933 - INFO - ✅ Downloaded: 2504.11900_zzlccc.pdf (2445748 bytes)
+2025-06-05 10:12:21,934 - INFO - 
+[36/52] Processing thread by @alisawuffles
+2025-06-05 10:12:21,935 - INFO - Downloading 2503.20783 by @alisawuffles...
+2025-06-05 10:12:22,118 - INFO - ✅ Downloaded: 2503.20783_alisawuffles.pdf (1611721 bytes)
+2025-06-05 10:12:24,118 - INFO - 
+[37/52] Processing thread by @kellychiuyy
+2025-06-05 10:12:24,119 - INFO - Downloading 2503.13423 by @kellychiuyy...
+2025-06-05 10:12:24,334 - INFO - ✅ Downloaded: 2503.13423_kellychiuyy.pdf (1777822 bytes)
+2025-06-05 10:12:26,335 - INFO - 
+[38/52] Processing thread by @KaixuanHuang1
+2025-06-05 10:12:26,335 - INFO - Downloading 2410.02683 by @KaixuanHuang1...
+2025-06-05 10:12:26,532 - INFO - ✅ Downloaded: 2410.02683_KaixuanHuang1.pdf (2757287 bytes)
+2025-06-05 10:12:28,533 - INFO - 
+[39/52] Processing thread by @nsaphra
+2025-06-05 10:12:28,533 - INFO - Downloading 2502.06453 by @nsaphra...
+2025-06-05 10:12:28,713 - INFO - ✅ Downloaded: 2502.06453_nsaphra.pdf (1190720 bytes)
+2025-06-05 10:12:30,714 - INFO - 
+[40/52] Processing thread by @agromanou
+2025-06-05 10:12:30,714 - INFO - Downloading 2412.04619 by @agromanou...
+2025-06-05 10:12:31,277 - INFO - ✅ Downloaded: 2412.04619_agromanou.pdf (1341297 bytes)
+2025-06-05 10:12:33,278 - INFO - 
+[41/52] Processing thread by @rohitgandikota
+2025-06-05 10:12:33,278 - INFO - Downloading 2411.19799 by @rohitgandikota...
+2025-06-05 10:12:33,546 - INFO - ✅ Downloaded: 2411.19799_rohitgandikota.pdf (3539248 bytes)
+2025-06-05 10:12:35,547 - INFO - 
+[42/52] Processing thread by @sheridan_feucht
+2025-06-05 10:12:35,547 - INFO - Downloading 2502.01639 by @sheridan_feucht...
+2025-06-05 10:12:37,366 - INFO - ✅ Downloaded: 2502.01639_sheridan_feucht.pdf (36663280 bytes)
+2025-06-05 10:12:39,367 - INFO - 
+[43/52] Processing thread by @jonathanrichens
+2025-06-05 10:12:39,367 - INFO - Downloading 2504.03022 by @jonathanrichens...
+2025-06-05 10:12:41,075 - INFO - ✅ Downloaded: 2504.03022_jonathanrichens.pdf (17299146 bytes)
+2025-06-05 10:12:43,076 - INFO - 
+[44/52] Processing thread by @AnimaAnandkumar
+2025-06-05 10:12:43,076 - INFO - Downloading 2506.01622 by @AnimaAnandkumar...
+2025-06-05 10:12:43,216 - INFO - ✅ Downloaded: 2506.01622_AnimaAnandkumar.pdf (1136207 bytes)
+2025-06-05 10:12:45,217 - INFO - 
+[45/52] Processing thread by @marco_fumero
+2025-06-05 10:12:45,217 - INFO - Downloading 2505.17004 by @marco_fumero...
+2025-06-05 10:12:45,430 - INFO - ✅ Downloaded: 2505.17004_marco_fumero.pdf (5436873 bytes)
+2025-06-05 10:12:47,431 - INFO - 
+[46/52] Processing thread by @deedydas
+2025-06-05 10:12:47,431 - INFO - Downloading 2505.22785 by @deedydas...
+2025-06-05 10:12:48,325 - INFO - ✅ Downloaded: 2505.22785_deedydas.pdf (53234588 bytes)
+2025-06-05 10:12:50,326 - INFO - 
+[47/52] Processing thread by @HaggaiMaron
+2025-06-05 10:12:50,326 - INFO - Downloading 2505.09343 by @HaggaiMaron...
+2025-06-05 10:12:50,525 - INFO - ✅ Downloaded: 2505.09343_HaggaiMaron.pdf (2308236 bytes)
+2025-06-05 10:12:52,526 - INFO - 
+[48/52] Processing thread by @Jeffaresalan
+2025-06-05 10:12:52,526 - INFO - Downloading 2301.12780 by @Jeffaresalan...
+2025-06-05 10:12:52,850 - INFO - ✅ Downloaded: 2301.12780_Jeffaresalan.pdf (5291953 bytes)
+2025-06-05 10:12:54,851 - INFO - 
+[49/52] Processing thread by @andrewgwils
+2025-06-05 10:12:54,852 - INFO - Downloading 2411.00247 by @andrewgwils...
+2025-06-05 10:12:55,787 - INFO - ✅ Downloaded: 2411.00247_andrewgwils.pdf (9929365 bytes)
+2025-06-05 10:12:57,788 - INFO - 
+[50/52] Processing thread by @NaveenManwani17
+2025-06-05 10:12:57,788 - INFO - Downloading 2503.02113 by @NaveenManwani17...
+2025-06-05 10:12:57,974 - INFO - ✅ Downloaded: 2503.02113_NaveenManwani17.pdf (1440160 bytes)
+2025-06-05 10:12:59,975 - INFO - 
+[51/52] Processing thread by @nrehiew_
+2025-06-05 10:12:59,976 - INFO - Downloading 2412.04464 by @nrehiew_...
+2025-06-05 10:13:00,217 - INFO - ✅ Downloaded: 2412.04464_nrehiew_.pdf (7670007 bytes)
+2025-06-05 10:13:02,218 - INFO - 
+[52/52] Processing thread by @weijie444
+2025-06-05 10:13:02,219 - INFO - Downloading 2402.03300 by @weijie444...
+2025-06-05 10:13:02,388 - INFO - ✅ Downloaded: 2402.03300_weijie444.pdf (1844642 bytes)
+2025-06-05 10:13:02,389 - INFO - 
+📊 DOWNLOAD SUMMARY:
+2025-06-05 10:13:02,389 - INFO - ✅ Successful: 49
+2025-06-05 10:13:02,389 - INFO - ❌ Failed: 0
+2025-06-05 10:13:02,389 - INFO - ⚠️  Skipped: 3
+2025-06-05 10:13:02,390 - INFO - 📁 Papers saved to: /home/emilykang/TwitterBot/data_processing/arxiv_papers
+2025-06-05 10:13:02,391 - ERROR - JSON parsing error at line 71: Expecting value
+2025-06-05 10:13:02,391 - ERROR - Trying to extract URLs manually...
+2025-06-05 10:13:02,393 - INFO - Manually extracted 52 threads
+2025-06-05 10:13:02,393 - INFO - 📚 Bibliography created: arxiv_papers/bibliography.txt
