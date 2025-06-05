@@ -1,0 +1,13 @@
+{
+    "link": "https://x.com/weijie444/status/1437813876997992453",
+    "likes": 186,
+    "reposts": 27,
+    "comments": 3,
+    "paper": "https://arxiv.org/abs/2101.12699",
+    "author": "weijie444",
+    "tweets": [
+        "[IMAGE] Our deep learning theory paper (https://arxiv.org/abs/2101.12699) got accepted to PNAS! Introduced Layer-Peeled Model that can:\n1. predict a hitherto unknown phenomenon that we term Minority Collapse in imbalanced training;\n2. explain neural collapse discovered by Papyan, Han and Donoho.",
+        "When minority collapse occurs, the deep learning classifiers on minor classes are simply identical to each other! This limitation can lead to severe fairness issues for minority groups in high-stakes decision-making",
+        "Interestingly, this phenomenon is first predicted by the Layer-Peeled Model before being confirmed by our computational experiments."
+    ]
+}
