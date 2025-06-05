@@ -46,7 +46,6 @@ tokenizer = None
 model_name = "Qwen/Qwen3-4B"  # Default model
 
 NUM_BOTS = 6
-NUM_INDICES = 10
 
 def load_model():
     """Load the model and tokenizer. Currently both are based on Qwen3-4B."""
@@ -174,7 +173,7 @@ def get_bot_statistics(tracking_data):
         }
     return stats
 
-def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=True):
+def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=True, threads=False, prefix='papers/'):
     """
     Process a paper and generate a summary, tweet, and optionally an eval
     Params: 
@@ -188,7 +187,7 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
     print(f"Curr paper_id = {paper_id}")
     paper_text = ''
     try:
-        obj = s3.get_object(Bucket=os.environ.get('BUCKET_NAME'), Key=f'papers/{paper_id}.txt')
+        obj = s3.get_object(Bucket=os.environ.get('BUCKET_NAME'), Key=f'{prefix}{paper_id}.txt')
         paper_text = obj['Body'].read().decode('utf-8')
     except ClientError as e:
         print(f"Error getting object papers/{paper_id}.txt: {e}")
@@ -235,11 +234,16 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
         'model_used': model_name,
         'eval_mode': eval
     }
-
+    
+    # If eval provided, then eval will happen. If eval_threads, will put into results-eval-threads. Otherwise, don't. 
     today = datetime.now().strftime("%Y-%m-%d")
     s3_key = f"results/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
-    if eval:
-        s3_key = f"results-eval/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
+
+    if threads and eval:
+        s3_key = s3_key.replace("results", "results-eval-threads")
+    elif threads and not eval:
+        s3_key = s3_key.replace("results", "results-threads")
+
     print(f"s3_key = {s3_key}")
     
     try:
@@ -256,14 +260,14 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
         print(f"Error putting object {s3_key} into s3 dir: {e}")
         return None
 
-def get_all_papers_from_bucket():
+def get_all_papers_from_bucket(prefix):
     """
     Returns all paper keys. This excludes the paper path and extension,
     so it only keeps the arxiv paper ID.
     """
     response = s3.list_objects_v2(
         Bucket=os.environ.get('BUCKET_NAME'),
-        Prefix='papers/'
+        Prefix=prefix
     )
 
     paper_keys = []
@@ -286,6 +290,8 @@ def main():
     parser.add_argument('--no_eval', action='store_true', help='Turns off eval when this flag is added')
     parser.add_argument('--force_reprocess', action='store_true', help='Force reprocessing of already processed papers')
     parser.add_argument('--show_stats', action='store_true', help='Show bot processing statistics')
+    parser.add_argument('--prefix', required=True, help='The prefix that indicates where this script should get all objects. Include / at end, like papers/')
+    parser.add_argument('--threads', action='store_true', help='Put results into some threads folder')
     args = parser.parse_args()
     
     global model_name
@@ -304,11 +310,13 @@ def main():
         print("=====================================\n")
     
     load_model()
-    paper_ids = get_all_papers_from_bucket()
+    paper_ids = get_all_papers_from_bucket(args.prefix)
     print(f"Found {len(paper_ids)} papers in bucket")
 
     eval_mode = not args.no_eval
+    threads = args.threads
     print(f"Eval mode: {eval_mode}")
+    print(f"threads mode: {threads}")
     
     # Process papers for each bot
     processed_this_run = 0
@@ -330,7 +338,7 @@ def main():
             continue
             
         # Select papers for this bot
-        num_to_select = min(NUM_INDICES, len(available_papers))
+        num_to_select = len(available_papers)
         selected_papers = random.sample(available_papers, num_to_select)
         
         print(f"Bot {bot_num} selected papers: {selected_papers}")
@@ -339,7 +347,7 @@ def main():
         for paper_id in selected_papers:
             print(f"\nProcessing {paper_id} for bot {bot_num}")
             
-            s3_key = process_paper_for_bot(paper_id, bot_num, args.num_summaries, eval_mode)
+            s3_key = process_paper_for_bot(paper_id, bot_num, args.num_summaries, eval_mode, threads, args.prefix)
             
             if s3_key:
                 # Add to in-memory tracking (batch save at end)
