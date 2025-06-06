@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "paper_id": "2505.24835",
+  "bot_num": 0,
+  "processed_date": "2025-06-04T21:58:08.436331",
+  "all_summaries": [
+    "The paper introduces a risk-aware time-series forecasting Predict-and-Optimize (RTS-PnO) framework for fund allocation, addressing the challenge of balancing prediction accuracy and decision quality by integrating uncertainty quantification with an end-to-end training approach. It proposes two methods: RTS-PtO for a two-stage solution with fixed uncertainty constraints and RTS-PnO for an end-to-end solution with adaptive uncertainty constraints. The framework shows improved performance across multiple financial datasets, achieving significant reductions in regret compared to baselines. The online experiment on WeChat Pay\u2019s cross-border payments demonstrates the practical applicability of the proposed method, reducing average regret by 8.4% over 12 time slots.",
+    "This paper proposes a risk-aware time-series forecasting Predict-and-Allocate (RTS-PnO) framework for fund allocation, addressing the challenge of timing in asset acquisition by integrating predictive modeling and optimization with adaptive uncertainty constraints, achieving improved decision quality through end-to-end training aligned with business objectives and demonstrating effectiveness on both offline benchmarks and online cross-border payment scenarios, reducing average regret by 8.4% compared to a product-line baseline."
+  ],
+  "best_summary_idx": 0,
+  "summary": "The paper introduces a risk-aware time-series forecasting Predict-and-Optimize (RTS-PnO) framework for fund allocation, addressing the challenge of balancing prediction accuracy and decision quality by integrating uncertainty quantification with an end-to-end training approach. It proposes two methods: RTS-PtO for a two-stage solution with fixed uncertainty constraints and RTS-PnO for an end-to-end solution with adaptive uncertainty constraints. The framework shows improved performance across multiple financial datasets, achieving significant reductions in regret compared to baselines. The online experiment on WeChat Pay\u2019s cross-border payments demonstrates the practical applicability of the proposed method, reducing average regret by 8.4% over 12 time slots.",
+  "evaluation": "Step 1: Check for factual consistency by verifying if all claims in the summaries are supported by the source text.\nStep 2: Assess the engagingness by evaluating the clarity and interest level of the summaries for a general audience.\nStep 3: Compare the summaries to determine which one is the best based on the evaluation criteria.\n\nSummary 0 Factual Consistency: 3 (Consistent)\nSummary 1 Factual Consistency: 2 (Overall consistent)\nSummary 0 Engagingness: 3 (Interesting)\nSummary 1 Engagingness: 2 (Somewhat interesting)\nBest Summary: 0\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n",
+  "tweet": "\"\ud83d\ude80 New paper: Risk-aware RTS-PnO framework boosts fund allocation with 8.4% regret reduction on WeChat",
+  "real_tweet": "\"\ud83d\ude80 New paper: Risk-aware RTS-PnO framework boosts fund allocation with 8.4% regret reduction on WeChat\n Link: https://arxiv.org/abs/2505.24835",
+  "model_used": "Qwen/Qwen3-4B",
+  "eval_mode": true
+}

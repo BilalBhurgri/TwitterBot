@@ -67,7 +67,7 @@
                 "[IMAGE] We empirically prove this with surgical experiments: \n 🐍 Directly rewarding string “python” → +11.8% performance \n 🚫 Random rewards BUT blocking code → gains disappear \n The 'magic' is just surfacing useful patterns already learned in pre-training.",
                 "[IMAGE] The case of random rewards is particularly intriguing. We tested different thresholds for when we assign a reward of 1 – even if we only assign a reward 0.1% of the time, it still works!  HOW?  This motivates us to look into the GRPO loss to see exactly what is happening🕵👇",
                 "[IMAGE] ⚙️ Looking closer into GRPO: there is a 'clipping bias' that amplifies high-prior model behaviors. Code reasoning could be one of the magical behaviors for Qwen-Math💻 Empirically, we disabled clipping (fig.)-the gains disappeared‼️",
-                "[IMAGE] 🚨Future RLVR research should be validated on diverse models rather than a single de facto choice, as we show that it's easy to get significant gains on Qwen even with completely spurious reward signals. 📄 Details, code, and full paper in our blogpost:",
+                "[IMAGE] 🚨Future RLVR research should be validated on diverse models rather than a single de facto choice, as we show that it's easy to get significant gains on Qwen even with completely spurious reward signals. 📄 Details, code, and full paper in our blogpost:"
             ]
         },
         {

@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "paper_id": "2112.10752",
+  "bot_num": 4,
+  "processed_date": "2025-06-04T23:10:06.976137",
+  "all_summaries": [
+    "The paper presents Latent Diffusion Models (LDMs), which use autoencoders to compress images into a latent space before diffusion modeling, enabling efficient high-resolution image synthesis. LDMs improve upon pixel-based diffusion models by reducing computational costs, achieving competitive performance on tasks like image synthesis, inpainting, and super-resolution, and offering better quality and efficiency through latent space compression. They outperform existing methods in terms of FID scores and reduce training/inference times significantly, with applications in text-to-image generation and semantic tasks. The authors also release pretrained models for broader usage.",
+    "High-resolution image synthesis with latent diffusion models (LDMs) reduces computational demands by operating in a latent space, improving efficiency and quality. LDMs combine autoencoding with diffusion models to achieve better performance in tasks like super-resolution, inpainting, and text-to-image generation, with significant reductions in training and inference costs compared to pixel-based methods. They outperform existing models in FID scores and offer flexible conditioning mechanisms, enabling diverse applications and reducing resource consumption while maintaining high-quality outputs."
+  ],
+  "best_summary_idx": 1,
+  "summary": "High-resolution image synthesis with latent diffusion models (LDMs) reduces computational demands by operating in a latent space, improving efficiency and quality. LDMs combine autoencoding with diffusion models to achieve better performance in tasks like super-resolution, inpainting, and text-to-image generation, with significant reductions in training and inference costs compared to pixel-based methods. They outperform existing models in FID scores and offer flexible conditioning mechanisms, enabling diverse applications and reducing resource consumption while maintaining high-quality outputs.",
+  "evaluation": "Step 1: Check for factual consistency by verifying that all claims in the summaries are supported by the source text.\nStep 2: Assess engagingness by evaluating how well the summaries capture the significance and novelty of the research.\nStep 3: Compare the summaries to determine which one is the most accurate and engaging.\n\nSummary 0 Scores:\nFactual Consistency: 2\nEngagingness: 2\n\nSummary 1 Scores:\nFactual Consistency: 3\nEngagingness: 3\n\nBest Summary: 1:\nSummary 0\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1\nSummary 1:\nSummary 1\nSummary 1",
+  "tweet": "\ud83d\ude80 Latent Diffusion Models (LDMs) boost image gen efficiency & quality, slashing costs w/ autoenc",
+  "real_tweet": "\ud83d\ude80 Latent Diffusion Models (LDMs) boost image gen efficiency & quality, slashing costs w/ autoenc\n Link: https://arxiv.org/abs/2112.10752",
+  "model_used": "Qwen/Qwen3-4B",
+  "eval_mode": true
+}

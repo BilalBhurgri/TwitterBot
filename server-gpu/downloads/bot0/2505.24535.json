@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "paper_id": "2505.24535",
+  "bot_num": 0,
+  "processed_date": "2025-06-04T22:06:38.371632",
+  "all_summaries": [
+    "Answer: This paper proposes K-Steering, a method for multi-attribute control in language models by extending non-linear gradient-based steering to handle multiple attributes simultaneously. Unlike prior methods that independently control each attribute, K-Steering uses a single classifier to learn a joint representation of multiple behaviors, allowing for unified control. Experiments show that K-Steering outperforms baselines in steering effectiveness and maintains model coherence, demonstrating its utility in guiding language models toward desired behaviors without retraining.",
+    "Beyond linear steering, the paper proposes K-Steering, a method for multi-attribute control in language models using a unified non-linear classifier to guide behavior adjustments. It demonstrates improved performance over baselines in controlling multiple attributes simultaneously and provides datasets for evaluation. "
+  ],
+  "best_summary_idx": 0,
+  "summary": "Answer: This paper proposes K-Steering, a method for multi-attribute control in language models by extending non-linear gradient-based steering to handle multiple attributes simultaneously. Unlike prior methods that independently control each attribute, K-Steering uses a single classifier to learn a joint representation of multiple behaviors, allowing for unified control. Experiments show that K-Steering outperforms baselines in steering effectiveness and maintains model coherence, demonstrating its utility in guiding language models toward desired behaviors without retraining.",
+  "evaluation": "Step 1: Check if the summary accurately reflects the content of the paper, including the main contributions, methodology, and experimental results.\nStep 2: Assess the clarity and interest level of the summary for a general audience.\nStep 3: Verify that the summary does not contain any factual errors or unsupported claims.\n\nSummary 0 Scores:\nFactual Consistency: 3\nEngagingness: 3\n\nSummary 1 Scores:\nFactual Consistency: 2\nEngagingness: 2\n\nBest Summary: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0: 0",
+  "tweet": "K-Steering \ud83d\ude80 enables multi-attribute control in language models via joint learning, surpassing baselines in effectiveness while",
+  "real_tweet": "K-Steering \ud83d\ude80 enables multi-attribute control in language models via joint learning, surpassing baselines in effectiveness while\n Link: https://arxiv.org/abs/2505.24535",
+  "model_used": "Qwen/Qwen3-4B",
+  "eval_mode": true
+}
