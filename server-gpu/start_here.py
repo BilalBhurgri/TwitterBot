@@ -34,31 +34,46 @@ from try_models.query_full_paper_verbose import (
 )
 
 from try_models.summary_to_tweet import (
-    generate_tweet_qwen
+    generate_tweet_qwen,
+    generate_tweet_mistral,
+    generate_tweet_olmo
 )
 
 load_dotenv()
 s3 = boto3.client('s3', region_name='us-west-1')
 response = s3.list_buckets()
 
+summarizer_model = None
 model = None
 tokenizer = None
 model_name = "Qwen/Qwen3-4B"  # Default model
+summarizer_model_name = "Qwen/Qwen3-4B"
 
 NUM_BOTS = 6
 
 def load_model():
-    """Load the model and tokenizer. Currently both are based on Qwen3-4B."""
-    global model, tokenizer
+    """
+    Fixes the summarizer_model and tokenizer as Qwen/Qwen3-4B.
+    The model for summary->tweet can vary.
+    """
+    global summarizer_model, model, tokenizer
+
+    tokenizer = AutoTokenizer.from_pretrained(summarizer_model_name)
+    summarizer_model = AutoModelForCausalLM.from_pretrained(
+        summarizer_model_name,
+        torch_dtype=torch.float16,
+        device_map="auto"
+    )
+
     if model is None or tokenizer is None:
         print(f"Loading model: {model_name}")
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
             torch_dtype=torch.float16,
             device_map="auto"
         )
         print("Model loaded successfully")
+    
 
 def load_processed_papers_tracker():
     """Load the tracking file from S3. Returns empty dict if file doesn't exist."""
@@ -197,7 +212,7 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
     
     best_summary = ""
     if eval:
-        all_summaries, best_summary_idx, evaluation = sum_eval(paper_text, tokenizer, model, model_name, num_summaries)
+        all_summaries, best_summary_idx, evaluation = sum_eval(paper_text, tokenizer, summarizer_model, summarizer_model_name, num_summaries)
         if best_summary_idx < 0 or best_summary_idx >= len(all_summaries):
             best_summary = random.choice(all_summaries)
         else:
@@ -205,16 +220,22 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
         evaluation = evaluation.replace('\nAnswer', '').replace('```', '')
     
     else:
-        if 'mistral' in model_name.lower():
-            best_summary = generate_summary_mistral(paper_text, tokenizer, model)
-        else:
-            best_summary = generate_summary(paper_text, tokenizer, model)
+        if 'qwen' in model_name.lower():
+            best_summary = generate_summary(paper_text, tokenizer, summarizer_model, bot_num)
+
         best_summary_idx = -1
         all_summaries = []
         evaluation = "Evaluation turned off"
 
     print(f"APP.PY: CALLING GENERATE TWEET")
-    tweet = generate_tweet_qwen(best_summary, tokenizer, model, max_new_tokens=26, bot_num=bot_num)
+
+    if 'mistral' in model_name.lower():
+        tweet = generate_tweet_mistral(best_summary, tokenizer, model, max_new_tokens=26, bot_num=bot_num)
+    elif 'olmo' in model_name.lower():
+        tweet = generate_tweet_olmo(best_summary, tokenizer, model, max_new_tokens=26, bot_num=bot_num)
+    elif 'qwen' in model_name.lower():
+        tweet = generate_tweet(best_summary, tokenizer, model, max_new_tokens=26, bot_num=bot_num)
+
     real_tweet = tweet.split('\n')[0]
     real_tweet += f"\n Link: https://arxiv.org/abs/{paper_id}"
 
@@ -321,7 +342,8 @@ def main():
     # Process papers for each bot
     processed_this_run = 0
     
-    for bot_num in range(NUM_BOTS):
+    # TODO: CHANGE THIS BACK TO NUM_BOTS ONCE EVERYTHING WORKS. 
+    for bot_num in range(1):
         print(f"\n--- Processing for Bot {bot_num} ---")
         
         if args.force_reprocess:
