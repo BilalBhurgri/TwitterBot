@@ -103,25 +103,30 @@ def generate_summary_olmo(text, tokenizer, model, max_new_tokens=250):
 
 def generate_summary_llama(text, tokenizer, model, max_new_tokens=250):
     """
-    Generates a summary with: meta-llama/Llama-3.1-8B-Instruct, 
+    Generates a summary with: meta-llama/Llama-3.1-8B-Instruct (128K context window!!!!)
     meta-llama/Llama-3.2-3B-Instruct.
+    Notice that it is recommended to use the chat template for the Instruct model.
     """
-    prompt = prompts['tweet']['prompt_llama']
-    max_context = model.config.max_position_embeddings
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant that writes concise research paper summaries."},
+        {"role": "user", "content": f"You will be given a scientific paper. Please write a 150-word summary based on the instructions.\n\nPaper text:\n{text}\n\nInstructions:\nInclude key findings of the paper in your summary.\nMake sure the summary is factually consistent with the paper. Do not include non-factual information.\nOutput the summary text in a single line and nothing else. Do not output your thought process.\n\nYour summary:"}
+    ]
+    prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    max_context = 70000 # model.config.max_position_embeddings # doesn't matter. It's huge. 
     max_prompt_len = max_context - max_new_tokens
     if max_prompt_len < 0:
         print("ERROR: max_new_tokens is too long?")
         return "max_new_tokens is too long?"
     try:
         # Tokenize with conservative limits
-        print("Tokenizing input with olmo...")
-        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=7000)
+        print("Tokenizing input with llama...")
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=70000)
         inputs = inputs.to(model.device)
         
         print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
         
         # Generate tweet with verbose logging
-        print("Starting generation with olmo...")
+        print("Starting generation with llama...")
         start_time = time.time()
         
         outputs = model.generate(
@@ -139,14 +144,15 @@ def generate_summary_llama(text, tokenizer, model, max_new_tokens=250):
         )
 
         input_length = inputs.input_ids.shape[1]
-        lines = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        # lines = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        generated_text = tokenizer.decode(outputs[0, input_length:], skip_special_tokens=True)
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
         
-        lines = generated_text.strip().split('\n')
-        for line in lines:
-            if line.strip() and len(line.strip()) > 20:
-                return line.strip()
+        # lines = generated_text.strip().split('\n')
+        # for line in lines:
+        #     if line.strip() and len(line.strip()) > 20:
+        #         return line.strip()
 
         
         return generated_text.strip()
@@ -246,8 +252,10 @@ Your summary:
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
 
-def generate_summary_mistral(text, tokenizer, model, max_length=7000, max_new_tokens=250):
-    """Generate a summary using Mistral model - uses 8K context window"""
+def generate_summary_mistral(text, tokenizer, model, max_length=32000, max_new_tokens=250):
+    """
+    Generate a summary using Mistral model
+    """
     if not text or text.strip() == "":
         print("ERROR: Cannot generate summary from empty text")
         return "No text was provided for summarization."
@@ -259,23 +267,21 @@ def generate_summary_mistral(text, tokenizer, model, max_length=7000, max_new_to
         text = text[:max_chars]
     
     # Create a prompt
-    prompt = f"""<s>[INST] Write a concise 200-word summary of this research paper. Focus on key findings and contributions. Write it like a tweet - engaging and accessible to a general audience. Do not include phrases like "this paper" or "the authors". Only use English.
-
-Paper text:
-{text} [/INST]</s>"""
+    prompt_template = prompts['summary']['prompt_mistral']
+    prompt = prompt_template.format(text=text)
 
     print(f"Prompt created with {len(prompt)} characters")
     
     try:
         # Tokenize with conservative limits
         print("Tokenizing input...")
-        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=7000)
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=max_length)
         inputs = inputs.to(model.device)
         
         print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
         
         # Generate summary with verbose logging
-        print("Starting generation...")
+        print("Starting generation with mistral...")
         start_time = time.time()
         
         outputs = model.generate(
@@ -298,8 +304,8 @@ Paper text:
         print(f"Output shape: {outputs.shape}")
         
         # Decode the full output first to debug
-        full_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
-        print(f"Full output: {full_output}")
+        # full_output = tokenizer.decode(outputs[0], skip_special_tokens=True)
+        # print(f"Full output: {full_output}")
         
         # Decode only the newly generated tokens
         summary = tokenizer.decode(outputs[0, input_length:], skip_special_tokens=True)
@@ -332,7 +338,11 @@ def generate_eval(text, summaries, tokenizer, model, model_name):
     elif 'olmo' in model_name.lower():
         prompt = prompts['eval']['prompt_olmo']
     elif 'llama' in model_name.lower():
-        prompt = prompts['eval']['prompt_llama']
+        messages = [
+            {"role": "system", "content": "You are a helpful assistant that writes concise research paper summaries."},
+            {"role": "user", "content": f"{prompt_template}"}
+        ]
+        prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
     else:
         print(f'invalid model {model_name}, stopping early')
 
@@ -374,8 +384,6 @@ Evaluation Steps:
         prompt += "[/INST]"
     elif 'olmo' in model_name.lower():
         prompt += "<|assistant|>"
-    elif 'llama' in model_name.lower():
-        prompt += "whatever llama uses"
 
     print(f"Prompt created with {len(prompt)} characters")
 
@@ -389,6 +397,10 @@ Evaluation Steps:
         return "Too many summaries to evaluate at the same time"
     
     try:
+        print("Testing tokenizer...")
+        test_tokens = tokenizer("Hello", return_tensors="pt")
+        print(f"Test tokenization successful: {test_tokens}")
+
         print("Tokenizing input...")
         encoded = tokenizer(
             prompt,
@@ -427,6 +439,8 @@ Evaluation Steps:
             # eval = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0] 
         elif 'mistral' in model_name.lower():
             eval = tokenizer.decode(outputs[0, input_ids.shape[1]:], skip_special_tokens=True)
+        elif 'llama' in model_name.lower():
+            eval = tokenizer.decode(outputs[0, input_ids.shape[1]:], skip_special_tokens=True)
     
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
@@ -438,24 +452,21 @@ Evaluation Steps:
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
 
-def generate_eval_mistral(text, summary, tokenizer, model, max_length=7000):
-    return "not implemented"
-
 # Takes in paper text, returns best summary & eval
-def sum_eval(paper_text, tokenizer, model, model_name, num_summaries=2):
+def sum_eval(paper_text, tokenizer, model, model_name, num_summaries=2, max_new_tokens=250):
     summaries = [None] * num_summaries
     for i in range(num_summaries):
         # Generate summary
         print("Generating summary...")
         if 'mistral' in model_name.lower():
-            summaries[i] = generate_summary_mistral(paper_text, tokenizer, model)
+            summaries[i] = generate_summary_mistral(paper_text, tokenizer, model, max_new_tokens=max_new_tokens)
         elif 'olmo' in model_name.lower():
-            summaries[i] = generate_summary_olmo(paper_text, tokenizer, model)
+            summaries[i] = generate_summary_olmo(paper_text, tokenizer, model, max_new_tokens=max_new_tokens)
         elif 'llama' in model_name.lower():
-            summaries[i] = generate_summary_llama(paper_text, tokenizer, model)
+            summaries[i] = generate_summary_llama(paper_text, tokenizer, model, max_new_tokens=max_new_tokens)
         else:
             # qwen code
-            summaries[i] = generate_summary(paper_text, tokenizer, model)
+            summaries[i] = generate_summary(paper_text, tokenizer, model, max_new_tokens=max_new_tokens)
         
         # Verify summary
         if not summaries[i] or summaries[i].strip() == "":

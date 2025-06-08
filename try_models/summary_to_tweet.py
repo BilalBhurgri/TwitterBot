@@ -16,9 +16,13 @@ sys.path.append(project_root)
 print(f"project_root is {project_root}")
 
 prompt_path = os.path.join(project_root, "try_models", "prompt_contexts.json")
+data_path = os.path.join(project_root, "server-gpu", "data", "all_threads.json")
 
 with open(prompt_path, 'r') as f:
     prompts = json.load(f)
+
+with open(data_path, 'r') as f:
+    thread_data = json.load(f)
 
 prompt_template = prompts['tweet']['prompt']
 
@@ -31,7 +35,35 @@ def print_memory_usage(label=""):
         gpu_allocated = torch.cuda.memory_allocated() / (1024 * 1024)
         print(f"[{label}] GPU Memory: {gpu_allocated:.2f} MB allocated")
 
-def generate_tweet_olmo(summary: str, tokenizer, model, max_new_tokens=26, max_length=3000, bot_num=0):
+
+def summary_splitting(summary: str, tokenizer, model, model_name, max_new_tokens=40, max_length=3000, bot_num=0):
+    """
+    Create a tweet out of 1 sentences at a time. This expects a longer summary.
+    """
+    sentences = summary.split('. ')
+    chunks = []
+    for i in range(0, len(sentences), 1):
+        chunk = '. '.join(sentences[i:i+1])
+        if not chunk.endswith('.'):
+            chunk += '.'
+        chunks.append(chunk)
+    
+    tweets = []
+    for chunk in chunks:
+        print(f"Feeding {chunk} into {model_name} for tweet generation...")
+        if 'mistral' in model_name.lower():
+            tweet = generate_tweet_mistral(chunk, tokenizer, model, max_new_tokens=max_new_tokens, bot_num=bot_num, thread_chunk=chunk)
+        elif 'olmo' in model_name.lower():
+            tweet = generate_tweet_olmo(chunk, tokenizer, model, max_new_tokens=max_new_tokens, bot_num=bot_num, thread_chunk=chunk)
+        elif 'qwen' in model_name.lower():
+            tweet = generate_tweet_qwen(chunk, tokenizer, model, max_new_tokens=max_new_tokens, bot_num=bot_num, thread_chunk=chunk)
+        elif 'llama' in model_name.lower(): 
+            tweet = generate_tweet_llama(chunk, tokenizer, model, max_new_tokens=max_new_tokens, bot_num=bot_num, thread_chunk=chunk)
+        tweets.append(tweet)
+    return tweets
+
+
+def generate_tweet_olmo(summary: str, tokenizer, model, max_new_tokens=26, max_length=3000, bot_num=0, thread_chunk=None):
     """
     Uses https://huggingface.co/allenai/OLMo-2-0425-1B-Instruct
     """
@@ -40,15 +72,27 @@ def generate_tweet_olmo(summary: str, tokenizer, model, max_new_tokens=26, max_l
         return "No summary was provided for tweet generation."
 
     # Create a prompt
-    prompt = prompts['tweet']['prompt_olmo']
     example = ''
-    if bot_num >= 0:
-        persona = prompts[f'bot{bot_num}']['persona']
-        example_text = prompts[f'bot{bot_num}']['example']
-        print(f"example text: {example_text}")
-        example = f'Talk in a similar style to this example. Example: {example_text}'
+    if thread_chunk:
+        prompt = prompts['tweet']['prompt_olmo']
+        if bot_num >= 0:
+            persona = prompts[f'bot{bot_num}']['persona']
+            example_text = prompts[f'bot{bot_num}']['example']
+        prompt = prompt.format(thread_tweet_example=prompts['thread_tweet']['example'], tweet_example=example_text, text=thread_chunk)
+    else:
+        prompt = prompts['thread_tweet']['prompt']
+        if bot_num >= 0:
+            persona = prompts[f'bot{bot_num}']['persona']
+            example_text = prompts[f'bot{bot_num}']['example']
+            print(f"example text: {example_text}")
+            example = f'Talk in a similar style to this example. Example: {example_text}'
+        prompt = prompt.format(example=example, summary=summary)
+    
+    prompt = "<|user|>" + prompt + "<|assistant|>"
+    
+    
 
-    prompt = prompt.format(example=example, summary=summary)
+    
     print(f"Prompt created with {len(prompt)} characters")
 
     try:
@@ -98,9 +142,96 @@ def generate_tweet_olmo(summary: str, tokenizer, model, max_new_tokens=26, max_l
         traceback.print_exc()
         return f"Error generating tweet: {str(e)}"
 
-    
 
-def generate_tweet_mistral(summary: str, tokenizer, model, max_new_tokens=26, max_length=7000, bot_num=0):
+def generate_tweet_llama(summary: str, tokenizer, model, max_new_tokens=26, max_length=70000, bot_num=0):
+    """
+    Generates a tweet with: meta-llama/Llama-3.1-8B-Instruct
+    """
+    example = get_persona_example(bot_num)
+
+    # example = ''
+    # if thread_chunk:
+    #     prompt = prompts['tweet']['prompt_olmo']
+    #     if bot_num >= 0:
+    #         persona = prompts[f'bot{bot_num}']['persona']
+    #         example_text = prompts[f'bot{bot_num}']['example']
+    #     prompt = prompt.format(thread_tweet_example=prompts['thread_tweet']['example'], tweet_example=example_text, text=summary, text=thread_chunk)
+    # else:
+    #     prompt = prompts['thread_tweet']['prompt']
+    #     if bot_num >= 0:
+    #         persona = prompts[f'bot{bot_num}']['persona']
+    #         example_text = prompts[f'bot{bot_num}']['example']
+    #         print(f"example text: {example_text}")
+    #         example = f'Talk in a similar style to this example. Example: {example_text}'
+    #     prompt = prompt.format(example=example, summary=summary)
+
+    messages = [
+        {"role": "system", "content": "You are a helpful assistant that writes fun and insightful deep learning tweets."},
+        {"role": "user", "content": prompts['tweet']['prompt']}
+    ]
+
+    prompt = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+    prompt = prompt.format(example=example, summary=summary)
+    max_context = 70000
+    max_prompt_len = max_context - max_new_tokens
+    print(f"Prompt created with {len(prompt)} characters")
+
+    try:
+        # Tokenize with conservative limits
+        print("Tokenizing input with llama...")
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=70000)
+        inputs = inputs.to(model.device)
+        
+        print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
+        
+        # Generate tweet with verbose logging
+        print("Starting generation with llama...")
+        start_time = time.time()
+        
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,  # Twitter's character limit
+            min_new_tokens=20,  # Force at least some generation
+            do_sample=True,
+            temperature=0.2,
+            top_p=0.95,
+            top_k=50,
+            repetition_penalty=1.2,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+            num_return_sequences=1
+        )
+
+        input_length = inputs.input_ids.shape[1]
+        # lines = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        tweet = tokenizer.decode(outputs[0, input_length:], skip_special_tokens=True)
+        print(f"Generated tweet: {tweet}")
+        
+        generation_time = time.time() - start_time
+        print(f"Generation completed in {generation_time:.2f} seconds")
+        
+        return tweet.strip()
+        
+    except Exception as e:
+        print(f"ERROR during generation: {e}")
+        traceback.print_exc()
+        return f"Error generating tweet: {str(e)}"
+
+
+def get_persona_example(bot_num):
+    """
+    Every generate_tweet_* method should use this.
+    """
+    if bot_num >= 0:
+        persona = prompts[f'bot{bot_num}']['persona']
+        example_text = prompts[f'bot{bot_num}']['example']
+        print(f"example text: {example_text}")
+        example = f'Talk like the style of this tweet. Example: {example_text}'
+        return example
+    return 'INVALID BOT NUM!!!'
+
+
+def generate_tweet_mistral(summary: str, tokenizer, model, max_new_tokens=26, max_length=7000, bot_num=0, thread_chunk=None):
     """
     Uses https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3
     """
@@ -109,16 +240,24 @@ def generate_tweet_mistral(summary: str, tokenizer, model, max_new_tokens=26, ma
         return "No summary was provided for tweet generation."
     
     # Create a prompt
-    prompt = prompts['tweet']['prompt_mistral']
-    example = ''
-    if bot_num >= 0:
-        persona = prompts[f'bot{bot_num}']['persona']
-        example_text = prompts[f'bot{bot_num}']['example']
-        print(f"example text: {example_text}")
-        example = f'Talk like {persona}. Example: {example_text}'
+    example = get_persona_example(bot_num)
+    if thread_chunk:
+        prompt = prompts['thread_tweet']['prompt']
+        if bot_num >= 0:
+            persona = prompts[f'bot{bot_num}']['persona']
+            example_text = prompts[f'bot{bot_num}']['example']
+        prompt = prompt.format(thread_tweet_example="🤔How well can LLMs infer the internal mechanisms of black box systems from passive observations?  We looked at three kinds of black box systems inspired by cognitive studies: 1) list-mapping programs 2) rules of formal languages 3) parameters of math equations  Our findings suggest that, when limited to observational data, LLMs significantly underperform compared to Bayesian inference. However, active interventions substantially boost their performance!", tweet_example=example_text, text=thread_chunk)
+    else:
+        prompt = prompts['tweet']['prompt']
+        if bot_num >= 0:
+            persona = prompts[f'bot{bot_num}']['persona']
+            example_text = prompts[f'bot{bot_num}']['example']
+            print(f"example text: {example_text}")
+            example = f'Talk in a similar style to this example. Example: {example_text}'
+        prompt = prompt.format(example=example, summary=summary)
+    prompt = '<s>[INST]' + prompt + '[/INST]'
 
-    prompt = prompt.format(example=example, summary=summary)
-    print(f"Prompt created with {len(prompt)} characters")
+    print(f"Prompt created with {len(prompt)} characters. Prompt is: \n {prompt}")
     
     try:
         # Tokenize with conservative limits
@@ -295,6 +434,8 @@ def main():
             tweet = generate_tweet_mistral(summary, tokenizer, model)
         elif 'olmo' in model_name.lower():
             tweet = generate_tweet_olmo(summary, tokenizer, model)
+        elif 'llama' in model_name.lower():
+            tweet = generate_tweet_llama(summary, tokenizer, model)
         else:
             tweet = generate_tweet_qwen(summary, tokenizer, model)
         

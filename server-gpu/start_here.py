@@ -11,7 +11,7 @@ This generates today's tweets.
 import os
 from dotenv import load_dotenv
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 import sys
 import json
 from pathlib import Path
@@ -36,7 +36,9 @@ from try_models.query_full_paper_verbose import (
 from try_models.summary_to_tweet import (
     generate_tweet_qwen,
     generate_tweet_mistral,
-    generate_tweet_olmo
+    generate_tweet_olmo,
+    generate_tweet_llama,
+    summary_splitting
 )
 
 load_dotenv()
@@ -44,18 +46,36 @@ s3 = boto3.client('s3', region_name='us-west-1')
 response = s3.list_buckets()
 
 model = None
+tokenizer = None
 model_name = "Qwen/Qwen3-4B"
 
 NUM_BOTS = 6
+
+# 8-bit config with more options
+quantization_config = BitsAndBytesConfig(
+    load_in_8bit=True,
+    llm_int8_threshold=6.0,  # Default threshold
+)
 
 def load_model():
     """
     Fixes the model and model as Qwen/Qwen3-4B.
     The model for summary->tweet can vary.
     """
-    global model
+    global model, tokenizer
 
-    if model is None or model is None:
+    tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+    if '7b' or '8b' in model_name.lower():
+        print('running with 8bit!!')
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            quantization_config=quantization_config,
+            device_map="auto",
+            low_cpu_mem_usage=True
+        )
+    else:
+        # assumes smaller model
         print(f"Loading model: {model_name}")
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
@@ -178,7 +198,7 @@ def get_bot_statistics(tracking_data):
         }
     return stats
 
-def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=True, threads=False, prefix='papers/', disable_s3=False):
+def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=True, threads=False, prefix='papers/', disable_s3=False, upload_prefix=''):
     """
     Process a paper and generate a summary, tweet, and optionally an eval
     Params: 
@@ -200,9 +220,13 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
     
     print(f"generating summary with {len(paper_text)} characters")
     
+    max_new_tokens_summary, max_new_tokens_tweet = 250, 26
+    if threads:
+        max_new_tokens_summary, max_new_tokens_tweet = 300, 60
+        
     best_summary = ""
     if eval:
-        all_summaries, best_summary_idx, evaluation = sum_eval(paper_text, model, model, model_name, num_summaries)
+        all_summaries, best_summary_idx, evaluation = sum_eval(paper_text, tokenizer, model, model_name, num_summaries, max_new_tokens_summary)
         if best_summary_idx < 0 or best_summary_idx >= len(all_summaries):
             best_summary = random.choice(all_summaries)
         else:
@@ -211,7 +235,7 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
     
     else:
         if 'qwen' in model_name.lower():
-            best_summary = generate_summary(paper_text, model, model, bot_num)
+            best_summary = generate_summary(paper_text, tokenizer, model, bot_num)
 
         best_summary_idx = -1
         all_summaries = []
@@ -219,42 +243,72 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
 
     print(f"APP.PY: CALLING GENERATE TWEET")
 
-    if 'mistral' in model_name.lower():
-        tweet = generate_tweet_mistral(best_summary, model, model, max_new_tokens=26, bot_num=bot_num)
-    elif 'olmo' in model_name.lower():
-        tweet = generate_tweet_olmo(best_summary, model, model, max_new_tokens=26, bot_num=bot_num)
-    elif 'qwen' in model_name.lower():
-        tweet = generate_tweet(best_summary, model, model, max_new_tokens=26, bot_num=bot_num)
+    if threads:
+        tweets = summary_splitting(best_summary, tokenizer, model, model_name, max_new_tokens=max_new_tokens_tweet, max_length=7000, bot_num=bot_num)
+        real_tweets = []
+        for t in tweets:
+            print(f"t: {t}")
+            real_tweet = t.split('\n')[0]
+            print(f"real_tweet: {real_tweet}")
+            real_tweets.append(t)
 
-    real_tweet = tweet.split('\n')[0]
-    real_tweet += f"\n Link: https://arxiv.org/abs/{paper_id}"
+        result = {
+            'status': 'success',
+            'paper_id': paper_id,
+            'bot_num': bot_num,
+            'processed_date': datetime.now().isoformat(),
+            'all_summaries': all_summaries,
+            'best_summary_idx': best_summary_idx,
+            'summary': best_summary,
+            'evaluation': evaluation,
+            'tweet': tweet,
+            'chunks': chunks,
+            'real_tweet_list': real_tweets,
+            'model_used': model_name,
+            'eval_mode': eval
+        }
+        print(f"Result: {result}")
 
-    print(f"evaluation is: {evaluation}")
+    else:
+        if 'mistral' in model_name.lower():
+            tweet = generate_tweet_mistral(best_summary, tokenizer, model, max_new_tokens=max_new_tokens_tweet, bot_num=bot_num)
+        elif 'olmo' in model_name.lower():
+            tweet = generate_tweet_olmo(best_summary, tokenizer, model, max_new_tokens=max_new_tokens_tweet, bot_num=bot_num)
+        elif 'qwen' in model_name.lower():
+            tweet = generate_tweet(best_summary, tokenizer, model, max_new_tokens=max_new_tokens_tweet, bot_num=bot_num)
+        elif 'llama' in model_name.lower():
+            tweet = generate_tweet_llama(best_summary, tokenizer, model, max_new_tokens=max_new_tokens_tweet, bot_num=bot_num)
 
-    result = {
-        'status': 'success',
-        'paper_id': paper_id,
-        'bot_num': bot_num,
-        'processed_date': datetime.now().isoformat(),
-        'all_summaries': all_summaries,
-        'best_summary_idx': best_summary_idx,
-        'summary': best_summary,
-        'evaluation': evaluation,
-        'tweet': tweet,
-        'real_tweet': real_tweet,
-        'model_used': model_name,
-        'eval_mode': eval
-    }
+        real_tweet = tweet.split('\n')[0]
+        real_tweet += f"\n Link: https://arxiv.org/abs/{paper_id}"
+
+        print(f"evaluation is: {evaluation}")
+
+        result = {
+            'status': 'success',
+            'paper_id': paper_id,
+            'bot_num': bot_num,
+            'processed_date': datetime.now().isoformat(),
+            'all_summaries': all_summaries,
+            'best_summary_idx': best_summary_idx,
+            'summary': best_summary,
+            'evaluation': evaluation,
+            'tweet': tweet,
+            'real_tweet': real_tweet,
+            'model_used': model_name,
+            'eval_mode': eval
+        }
+
+        print(f"Result: {result}")
     
-    # If eval provided, then eval will happen. If eval_threads, will put into results-eval-threads. Otherwise, don't. 
     if not disable_s3:
         today = datetime.now().strftime("%Y-%m-%d")
-        s3_key = f"results/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
+        s3_key = f"{upload_prefix}/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
 
-        if threads and eval:
-            s3_key = s3_key.replace("results", "results-eval-threads")
-        elif threads and not eval:
-            s3_key = s3_key.replace("results", "results-threads")
+        # if threads and eval:
+        #     s3_key = s3_key.replace("results", "results-eval-threads")
+        # elif threads and not eval:
+        #     s3_key = s3_key.replace("results", "results-threads")
 
         print(f"s3_key = {s3_key}")
         
@@ -305,6 +359,7 @@ def main():
     parser.add_argument('--prefix', required=True, help='The prefix that indicates where this script should get all objects. Include / at end, like papers/')
     parser.add_argument('--threads', action='store_true', help='Put results into some threads folder')
     parser.add_argument('--disable_s3', action='store_true', help='Disables s3 uploads. Useful for testing.')
+    parser.add_argument('--upload_prefix', required=True, help='The base folder path that you want to upload to. Example: results-eval-threads. Don\'t include the / at the end.')
     args = parser.parse_args()
     
     global model_name
@@ -327,6 +382,7 @@ def main():
     print(f"Found {len(paper_ids)} papers in bucket")
 
     eval_mode = not args.no_eval
+    # disable_s3 = not args.disable_s3
     threads = args.threads
     print(f"Eval mode: {eval_mode}")
     print(f"threads mode: {threads}")
@@ -335,7 +391,7 @@ def main():
     processed_this_run = 0
     
     # TODO: CHANGE THIS BACK TO NUM_BOTS ONCE EVERYTHING WORKS. 
-    for bot_num in range(1):
+    for bot_num in range(NUM_BOTS):
         print(f"\n--- Processing for Bot {bot_num} ---")
         
         if args.force_reprocess:
@@ -352,7 +408,7 @@ def main():
             continue
             
         # Select papers for this bot
-        num_to_select = 1 # len(available_papers) # TODO: Change later
+        num_to_select = len(available_papers)
         selected_papers = random.sample(available_papers, num_to_select)
         
         print(f"Bot {bot_num} selected papers: {selected_papers}")
@@ -361,7 +417,7 @@ def main():
         for paper_id in selected_papers:
             print(f"\nProcessing {paper_id} for bot {bot_num}")
             
-            s3_key = process_paper_for_bot(paper_id, bot_num, args.num_summaries, eval_mode, threads, args.prefix, args.disable_s3)
+            s3_key = process_paper_for_bot(paper_id, bot_num, args.num_summaries, eval_mode, threads, args.prefix, args.disable_s3, args.upload_prefix)
             
             if s3_key:
                 # Add to in-memory tracking (batch save at end)

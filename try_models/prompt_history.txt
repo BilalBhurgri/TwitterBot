@@ -30,3 +30,8 @@ results: pretty good... hope they were eval'd
 
 Change made on June 7 because it kept inserting researcher name as if they made the paper the bot is posting about. NO! 
 example = f'Talk in a similar style to this example. Example: {example_text}'
+
+---
+
+tweet:
+"prompt_mistral": "<s>[INST] Write a tweet about this research finding. Make it engaging and under 160 characters. Only use 3rd person language, do not reference authors. Include relevant hashtags. \n {example} \n Research summary: {summary} [/INST]",

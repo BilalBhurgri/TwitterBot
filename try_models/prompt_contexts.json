@@ -23,6 +23,10 @@
         "persona": "lilianweng",
         "example": "Giving your models more time to think before prediction, like via smart decoding, chain-of-thoughts reasoning, latent thoughts, etc, turns out to be quite effective for unblocking the next level of intelligence. \n New post is here :) \n 'Why we think':"
     },
+    "thread_tweet": {
+        "prompt": "You will be given 3 sentences of a scientific paper. Please write a 180 character tweet explaining it like a deep learning researcher to a layperson audience. Write it in a similar style to these 2 examples, but do not use the information from them. \n Example: \n {thread_tweet_example}. \n Example 2: \n {tweet_example}. \n Source Text: {text} ",
+        "example": "🤔How well can LLMs infer the internal mechanisms of black box systems from passive observations?  We looked at three kinds of black box systems inspired by cognitive studies: 1) list-mapping programs 2) rules of formal languages 3) parameters of math equations  Our findings suggest that, when limited to observational data, LLMs significantly underperform compared to Bayesian inference. However, active interventions substantially boost their performance!"
+    },
     "summary": {
         "prompt":  "You will be given a scientific paper. Please write a 150-word summary based on the instructions.\n\nPaper text:\n{text}\n\nInstructions:\nInclude key findings of the paper in your summary.\nMake sure the summary is factually consistent with the paper. Do not include non-factual information.\nOutput the summary text in a single line and nothing else. Do not output your thought process.\n\nYour summary:",
         "prompt_olmo":  "<|user|>You will be given a scientific paper. Please write a 150-word summary based on the instructions.\n\nPaper text:\n{text}\n\nInstructions:\nInclude key findings of the paper in your summary.\nMake sure the summary is factually consistent with the paper. Do not include non-factual information.\nOutput the summary text in a single line and nothing else. Do not output your thought process.\n\nYour summary:<|assistant|>",
@@ -36,8 +40,8 @@
         "criteria": "Criteria: 1. Factual Consistency (1-3): Does the summary only contain facts supported by the source text? \n - 1 (Inconsistent): Major errors or many minor errors \n - 2 (Overall consistent): At most one minor error \n - 3 (Consistent): All facts supported \n 2. Engagingness (1-3): Is the summary interesting to most audiences? \n - 1 (Dull): Only interesting to specialists \n - 2 (Somewhat interesting): Engages those familiar with the field \n - 3 (Interesting): Engages general audiences regardless of expertise \n Instructions: \n 1. Design up to 3 evaluation steps based on the evaluation criteria. Output each step on a new line. \n 2. Based on your evaluation steps, output the factual consistency and engagingness scores of each summary on a new line. \n 3. Choose the best summary based on your evaluation. Output its index on a new line. \n 4. Output nothing else. Do not output your thought process. \n Evaluation Steps: \n"
     },
     "tweet": {
-        "prompt": "Output a 10-word headline from this summary like a tweet with 2 emojis. Only use 3rd person language, do not reference authors. \n {example} \n Summary: \n {summary} \n Your tweet: \n",
-        "prompt_mistral": "<s>[INST] Write a tweet about this research finding. Make it engaging and under 160 characters. Only use 3rd person language, do not reference authors. Include relevant hashtags. \n {example} \n Research summary: {summary} [/INST]",
+        "prompt": "Output a 10-word headline from this summary like a tweet with 2 emojis. Only use 3rd person language, do not reference authors. Include 1-2 hashtags. Don't include quotation marks around your tweet. \n {example} \n Summary: \n {summary} \n Your tweet: \n",
+        "prompt_mistral": "<s>[INST] Output a 10-word headline from this summary like a tweet with 2 emojis. Only use 3rd person language, do not reference authors. Include 1-2 hashtags. \n {example} \n Summary: \n {summary} \n Your tweet: \n [/INST]",
         "prompt_olmo": "<|user|> Output a 10-word headline from this summary like a tweet with 2 emojis. Only use 3rd person language, do not reference authors. Include 1-2 hashtags. \n {example} \n Summary: \n {summary} \n Your tweet: \n <|assistant|>"
     }
 }
