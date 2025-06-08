@@ -10,4 +10,4 @@ abstracts
 snippets
 try_models/finetune_summarization/twitter-personality-model/*
 try_models/finetune_summarization/twitter-personality-final/*
-try_models/
+server-gpu/downloads

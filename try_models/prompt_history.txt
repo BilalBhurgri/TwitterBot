@@ -1,0 +1,32 @@
+Bot0's tweet outputs are sometimes too long: 
+Prompt: "One of the “holy grails” of robotic learning is to perform generalizable everyday household mobile manipulation tasks. With a new bimanual mobile robot, our latest work BEHAVIOR Robot Suite (BRS) takes a stab at this very very hard, still yet-to-be-solved problem!🤖🦾🤩"
+
+Result (452 characters)
+'🚀 A groundbreaking advancement in 3D scene reconstruction! VGGT, a feed-forward transformer, directly rebuilds 3D attributes from 1–N images ⚡️, outperforming prior methods in speed & accuracy across camera pose, multi-view depth, and point maps 🎯. No post-processing needed—VGGT’s predictions rival optimization techniques, even boosting results when paired with Bundle Adjustment! 🧠🔧 #AI #ComputerVision\n Link: https://arxiv.org/abs/2503.11651'
+
+Result (764 words!!!)
+'real_tweet': '"A groundbreaking open-source library, #ByzFL, simplifies evaluating robust FL algorithms through standardized benchmarks & adversarial simulations 🧪📊. It supports advanced aggregation methods like MultiKrum, geometric median, and coordinate-wise median, alongside pre-aggregation techniques such as nearest neighbor mixing and adaptive clipping. ByzFL enables systematic testing of FL models against Byzantine clients via simulated attacks including Sign Flipping, Label Flipping, and optimized variations (Opt-IPM, Opt-ALIE). With a modular framework, single JSON config, and visualization tools, it empowers researchers to compare aggregation methods fairly, scalably, and reproducibly in adversarial settings. 🔬📈"\n Link: https://arxiv.org/abs/2505.24802'
+
+---
+
+"prompt": "Convert this research paper summary into an engaging tweet with emojis. \n Do not output your thought process. Output your tweet into one final line under 200 characters and at most 2 sentences, without repetition. Only use 3rd person language, do not @ any users. \n {example} \n Summary: \n {summary} \n Your tweet: \n"
+Result: 
+STILL TOO long
+
+----
+
+"prompt": "Convert this research paper summary into an engaging tweet with emojis. \n Do not output your thought process. Output your tweet into one final line in 2 extremely concise sentences, without repetition. Only use 3rd person language, do not @ any users. \n {example} \n Summary: \n {summary} \n Your tweet: \n"
+
+
+---
+
+summary / tweet prompt on 2025-06-04
+"prompt":  "You will be given a scientific paper. Please write a 150-word summary based on the instructions.\n\nPaper text:\n{text}\n\nInstructions:\nInclude key findings of the paper in your summary.\nMake sure the summary is factually consistent with the paper. Do not include non-factual information.\nOutput the summary text in a single line and nothing else. Do not output your thought process.\n\nYour summary:"
+"prompt": "Output a 10-word headline from this summary like a tweet with  emojis. Only use 3rd person language, do not reference authors. \n {example} \n Summary: \n {summary} \n Your tweet: \n",
+
+results: pretty good... hope they were eval'd 
+
+---
+
+Change made on June 7 because it kept inserting researcher name as if they made the paper the bot is posting about. NO! 
+example = f'Talk in a similar style to this example. Example: {example_text}'

@@ -14,6 +14,7 @@ import sys
 project_root = str(Path(__file__).parent.parent)
 sys.path.append(project_root)
 EXAMPLES_PATH = os.path.join(project_root, 'try_models','example_outputs', 'examples.json')
+PROMPT_PATH = os.path.join(project_root, "try_models", "prompt_contexts.json")
 
 # Must come after project_root is appended
 import data_processing.parse_paper_remove_math as parse_paper_remove_math
@@ -24,6 +25,9 @@ examples = {}
 # Load examples from JSON
 with open(EXAMPLES_PATH, 'r') as f:
     examples = json.load(f)
+
+with open(PROMPT_PATH, 'r') as f:
+    prompts = json.load(f)
 
 def print_memory_usage(label=""):
     """Print current memory usage"""
@@ -43,6 +47,114 @@ def load_paper(paper_path):
     except Exception as e:
         print(f"Error reading text file: {str(e)}")
         return None
+
+def generate_summary_olmo(text, tokenizer, model, max_new_tokens=250):
+    """
+    Generates a summary using https://huggingface.co/allenai/OLMo-2-1124-7B-Instruct
+    """
+    prompt_template = prompts['summary']['prompt_olmo']
+    prompt = prompt_template.format(text=text)
+    max_context = 4096 # model.config.max_position_embeddings
+    max_prompt_len = max_context - max_new_tokens
+    if max_prompt_len < 0:
+        print("ERROR: max_new_tokens is too long?")
+        return "max_new_tokens is too long?"
+    try:
+        # Tokenize with conservative limits
+        print("Tokenizing input with olmo...")
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=max_context)
+        inputs = inputs.to(model.device)
+        
+        print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
+        
+        # Generate tweet with verbose logging
+        print("Starting generation with olmo...")
+        start_time = time.time()
+        
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,  # Twitter's character limit
+            min_new_tokens=20,  # Force at least some generation
+            do_sample=True,
+            temperature=0.2,
+            top_p=0.95,
+            top_k=50,
+            repetition_penalty=1.2,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+            num_return_sequences=1
+        )
+
+        input_length = inputs.input_ids.shape[1]
+        full_output = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        input_text = tokenizer.batch_decode(inputs.input_ids, skip_special_tokens=True)[0]
+        generated_text = full_output[len(input_text):].strip()
+
+        generation_time = time.time() - start_time
+        print(f"Generation completed in {generation_time:.2f} seconds")
+        print(f"Summary: {generated_text.strip()}")
+        
+        return generated_text.strip()
+        
+    except Exception as e:
+        return f"Error generating summary: {str(e)}"
+
+
+
+def generate_summary_llama(text, tokenizer, model, max_new_tokens=250):
+    """
+    Generates a summary with: meta-llama/Llama-3.1-8B-Instruct, 
+    meta-llama/Llama-3.2-3B-Instruct.
+    """
+    prompt = prompts['tweet']['prompt_llama']
+    max_context = model.config.max_position_embeddings
+    max_prompt_len = max_context - max_new_tokens
+    if max_prompt_len < 0:
+        print("ERROR: max_new_tokens is too long?")
+        return "max_new_tokens is too long?"
+    try:
+        # Tokenize with conservative limits
+        print("Tokenizing input with olmo...")
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=7000)
+        inputs = inputs.to(model.device)
+        
+        print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
+        
+        # Generate tweet with verbose logging
+        print("Starting generation with olmo...")
+        start_time = time.time()
+        
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,  # Twitter's character limit
+            min_new_tokens=20,  # Force at least some generation
+            do_sample=True,
+            temperature=0.2,
+            top_p=0.95,
+            top_k=50,
+            repetition_penalty=1.2,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+            num_return_sequences=1
+        )
+
+        input_length = inputs.input_ids.shape[1]
+        lines = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        generation_time = time.time() - start_time
+        print(f"Generation completed in {generation_time:.2f} seconds")
+        
+        lines = generated_text.strip().split('\n')
+        for line in lines:
+            if line.strip() and len(line.strip()) > 20:
+                return line.strip()
+
+        
+        return generated_text.strip()
+        
+    except Exception as e:
+        return f"Error generating summary: {str(e)}"
+
+
 
 def generate_summary(text, tokenizer, model, max_new_tokens=250):
     """
@@ -134,7 +246,7 @@ Your summary:
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
 
-def generate_summary_mistral(text, tokenizer, model, max_length=7000):
+def generate_summary_mistral(text, tokenizer, model, max_length=7000, max_new_tokens=250):
     """Generate a summary using Mistral model - uses 8K context window"""
     if not text or text.strip() == "":
         print("ERROR: Cannot generate summary from empty text")
@@ -168,8 +280,8 @@ Paper text:
         
         outputs = model.generate(
             **inputs,
-            max_new_tokens=400,
-            min_new_tokens=50,  # Force at least some generation
+            max_new_tokens=max_new_tokens,
+            min_new_tokens=20,  # Force at least some generation
             do_sample=True,
             temperature=0.8,  # Slightly higher temperature
             top_p=0.95,
@@ -203,7 +315,7 @@ Paper text:
         traceback.print_exc()
         return f"Error generating summary: {str(e)}"
 
-def generate_eval(text, summaries, tokenizer, model):
+def generate_eval(text, summaries, tokenizer, model, model_name):
     if not summaries:
         print("ERROR: Cannot generate evaluation from empty summary")
         return "No summary was provided for evaluation."
@@ -213,13 +325,18 @@ def generate_eval(text, summaries, tokenizer, model):
         print("ERROR: Cannot generate evaluation from empty text")
         return "No text was provided for evaluation."
     
-    # Create a prompt
-    prompt = f"""You will be given several summaries written for the same research paper. Your task is to rate the summaries on two metrics.
+    # Create the basic prompt based on the model
+    prompt_template = prompts['eval']['prompt'] # for qwen
+    if 'mistral' in model_name.lower():
+        prompt = prompts['eval']['prompt_mistral']
+    elif 'olmo' in model_name.lower():
+        prompt = prompts['eval']['prompt_olmo']
+    elif 'llama' in model_name.lower():
+        prompt = prompts['eval']['prompt_llama']
+    else:
+        print(f'invalid model {model_name}, stopping early')
 
-Source Text:
-{text}
-
-"""
+    prompt = prompt_template.format(text=text)
 
     for i in range(len(summaries)):
         prompt = prompt + f"""
@@ -252,6 +369,13 @@ Instructions:
 
 Evaluation Steps:
 """
+    # APPEND END OF INSTRUCTION TOKEN, if needed
+    if 'mistral' in model_name.lower():
+        prompt += "[/INST]"
+    elif 'olmo' in model_name.lower():
+        prompt += "<|assistant|>"
+    elif 'llama' in model_name.lower():
+        prompt += "whatever llama uses"
 
     print(f"Prompt created with {len(prompt)} characters")
 
@@ -283,7 +407,7 @@ Evaluation Steps:
         start_time = time.time()
         
         # Setting return_dict_in_generate=True to get more debug info
-        output_ids = model.generate(
+        outputs = model.generate(
             input_ids,
             attention_mask=attention_mask,
             max_new_tokens=max_new_tokens,
@@ -291,10 +415,19 @@ Evaluation Steps:
             pad_token_id=tokenizer.eos_token_id
         )
 
-        # # Decode only the newly generated tokens
-        new_tokens = output_ids[0][input_ids.shape[1]:]
-        eval = tokenizer.decode(new_tokens, skip_special_tokens=True)
-        
+        # Decode only the newly generated tokens - model-specific.
+        eval = None 
+        if 'qwen' in model_name.lower():
+            new_tokens = outputs[0][input_ids.shape[1]:]
+            eval = tokenizer.decode(new_tokens, skip_special_tokens=True)
+        elif 'olmo' in model_name.lower():
+            full_output = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+            input_text = tokenizer.batch_decode(input_ids, skip_special_tokens=True)[0]
+            eval = full_output[len(input_text):].strip()
+            # eval = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0] 
+        elif 'mistral' in model_name.lower():
+            eval = tokenizer.decode(outputs[0, input_ids.shape[1]:], skip_special_tokens=True)
+    
         generation_time = time.time() - start_time
         print(f"Generation completed in {generation_time:.2f} seconds")
         
@@ -316,6 +449,10 @@ def sum_eval(paper_text, tokenizer, model, model_name, num_summaries=2):
         print("Generating summary...")
         if 'mistral' in model_name.lower():
             summaries[i] = generate_summary_mistral(paper_text, tokenizer, model)
+        elif 'olmo' in model_name.lower():
+            summaries[i] = generate_summary_olmo(paper_text, tokenizer, model)
+        elif 'llama' in model_name.lower():
+            summaries[i] = generate_summary_llama(paper_text, tokenizer, model)
         else:
             # qwen code
             summaries[i] = generate_summary(paper_text, tokenizer, model)
@@ -325,13 +462,9 @@ def sum_eval(paper_text, tokenizer, model, model_name, num_summaries=2):
             print("ERROR: Generated summary is empty")
             return summaries[:i], -1, "ERROR: Generated summary is empty"
 
-    # Generate evaluation
+    # Generate evaluation - could do if/else stuff here but not really needed. generate_eval handles that.
     print("Generating evaluation...")
-    if 'mistral' in model_name.lower():
-        eval = generate_eval_mistral(paper_text, summaries, tokenizer, model)
-    else:
-        # qwen code
-        eval = generate_eval(paper_text, summaries, tokenizer, model)
+    eval = generate_eval(paper_text, summaries, tokenizer, model, model_name)
     
     # Verify summary
     if not eval or eval.strip() == "":

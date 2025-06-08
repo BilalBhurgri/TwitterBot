@@ -1,0 +1,1 @@
+Check out how simple yet powerful pre-trained word vectors can be for sentence classification using just a single CNN layer 😮🤖 #NLP #DeepLearning

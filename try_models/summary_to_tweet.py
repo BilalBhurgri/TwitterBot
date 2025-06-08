@@ -31,24 +31,93 @@ def print_memory_usage(label=""):
         gpu_allocated = torch.cuda.memory_allocated() / (1024 * 1024)
         print(f"[{label}] GPU Memory: {gpu_allocated:.2f} MB allocated")
 
-def generate_tweet_mistral(summary: str, tokenizer, model, max_length=7000):
+def generate_tweet_olmo(summary: str, tokenizer, model, max_new_tokens=26, max_length=3000, bot_num=0):
     """
-    Generate a tweet from a summary using Mistral model
+    Uses https://huggingface.co/allenai/OLMo-2-0425-1B-Instruct
+    """
+    if not summary or summary.strip() == "":
+        print("ERROR: Cannot generate tweet from empty summary")
+        return "No summary was provided for tweet generation."
+
+    # Create a prompt
+    prompt = prompts['tweet']['prompt_olmo']
+    example = ''
+    if bot_num >= 0:
+        persona = prompts[f'bot{bot_num}']['persona']
+        example_text = prompts[f'bot{bot_num}']['example']
+        print(f"example text: {example_text}")
+        example = f'Talk in a similar style to this example. Example: {example_text}'
+
+    prompt = prompt.format(example=example, summary=summary)
+    print(f"Prompt created with {len(prompt)} characters")
+
+    try:
+        # Tokenize with conservative limits
+        print("Tokenizing input...")
+        inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=7000)
+        inputs = inputs.to(model.device)
+        
+        print(f"Input tokenized to {inputs.input_ids.shape[1]} tokens")
+        
+        # Generate tweet with verbose logging
+        print("Starting generation...")
+        start_time = time.time()
+        
+        outputs = model.generate(
+            **inputs,
+            max_new_tokens=max_new_tokens,  # Twitter's character limit
+            min_new_tokens=20,  # Force at least some generation
+            do_sample=True,
+            temperature=0.2,
+            top_p=0.95,
+            top_k=50,
+            repetition_penalty=1.2,
+            pad_token_id=tokenizer.eos_token_id,
+            eos_token_id=tokenizer.eos_token_id,
+            num_return_sequences=1
+        )
+
+        # Get input length in tokens
+        input_length = inputs.input_ids.shape[1]
+
+        full_output = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        input_text = tokenizer.batch_decode(inputs.input_ids, skip_special_tokens=True)[0]
+        tweet = full_output[len(input_text):].strip()
+        # Decode only the newly generated tokens
+        # tweet = tokenizer.decode(outputs[0][input_length:], skip_special_tokens=True)[0]
+        # tweet = tokenizer.batch_decode(outputs, skip_special_tokens=True)[0]
+        print(f"Generated tweet: {tweet}")
+        
+        generation_time = time.time() - start_time
+        print(f"Generation completed in {generation_time:.2f} seconds")
+        
+        return tweet.strip()
+        
+    except Exception as e:
+        print(f"ERROR during generation: {e}")
+        traceback.print_exc()
+        return f"Error generating tweet: {str(e)}"
+
+    
+
+def generate_tweet_mistral(summary: str, tokenizer, model, max_new_tokens=26, max_length=7000, bot_num=0):
+    """
+    Uses https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.3
     """
     if not summary or summary.strip() == "":
         print("ERROR: Cannot generate tweet from empty summary")
         return "No summary was provided for tweet generation."
     
     # Create a prompt
-    prompt = f"""<s>[INST] Convert this research paper summary into an engaging tweet. Highlight the most interesting finding and keep it under 200 characters. Do not output your thought process. Only use English.
-        Prefix your final answer with Answer.
+    prompt = prompts['tweet']['prompt_mistral']
+    example = ''
+    if bot_num >= 0:
+        persona = prompts[f'bot{bot_num}']['persona']
+        example_text = prompts[f'bot{bot_num}']['example']
+        print(f"example text: {example_text}")
+        example = f'Talk like {persona}. Example: {example_text}'
 
-        Summary:
-        {summary} 
-        
-        Tweet:
-        [/INST]</s>"""
-
+    prompt = prompt.format(example=example, summary=summary)
     print(f"Prompt created with {len(prompt)} characters")
     
     try:
@@ -65,7 +134,7 @@ def generate_tweet_mistral(summary: str, tokenizer, model, max_length=7000):
         
         outputs = model.generate(
             **inputs,
-            max_new_tokens=40,  # Twitter's character limit
+            max_new_tokens=max_new_tokens,  # Twitter's character limit
             min_new_tokens=20,  # Force at least some generation
             do_sample=True,
             temperature=0.2,
@@ -224,6 +293,8 @@ def main():
         print("Generating tweet...")
         if 'mistral' in model_name.lower():
             tweet = generate_tweet_mistral(summary, tokenizer, model)
+        elif 'olmo' in model_name.lower():
+            tweet = generate_tweet_olmo(summary, tokenizer, model)
         else:
             tweet = generate_tweet_qwen(summary, tokenizer, model)
         
