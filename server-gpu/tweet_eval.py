@@ -15,10 +15,13 @@ s3 = boto3.client('s3', region_name='us-west-1')
 rouge = evaluate.load("rouge")
 bertscore = evaluate.load("bertscore")
 
-def eval_human():
+def eval_human(label):
     with open("data/all_threads.json", "r") as f:
         data = json.load(f)
-    threads = [(item["paper"].split('/')[-1], ''.join(item["tweets"])) for item in data["threads"]]
+    if label == "full":
+        threads = [(item["paper"].split('/')[-1], ''.join(item["tweets"])) for item in data["threads"]]
+    else:
+        threads = [(item["paper"].split('/')[-1], item["tweets"][0]) for item in data["threads"]]
     references = []
     predictions = []
     rouge_results = []
@@ -50,6 +53,7 @@ def eval_human():
             "bertscore_precision": bert_results["precision"][i],
             "bertscore_recall": bert_results["recall"][i],
             "bertscore_f1": bert_results["f1"][i],
+            "len": len(predictions[i])
         }
         combined_results.append(combined)
     
@@ -62,11 +66,11 @@ def eval_human():
         for metric in metric_keys
     }
 
-    results = {"method": "human", "scores": combined_results, "means": metric_means}
-    with open("eval_results/human.json", "w") as f:
+    results = {"method": f"human_{label}", "scores": combined_results, "means": metric_means}
+    with open(f"eval_results/human_{label}.json", "w") as f:
         json.dump(results, f, indent=2)
 
-def eval_Qwen3_4B(num_bot, label):
+def eval_model(num_bot, model, label):
     with open("data/all_threads.json", "r") as f:
         data = json.load(f)
     threads = [item["paper"].split('/')[-1] for item in data["threads"]]
@@ -81,7 +85,7 @@ def eval_Qwen3_4B(num_bot, label):
             obj = s3.get_object(Bucket=os.environ.get('BUCKET_NAME'), Key=f'papers/threads/{paper_id}.txt')
             paper_text = obj['Body'].read().decode('utf-8')
             tweet = ''
-            path = f"thread_downloads/bot{num_bot}/{paper_id}.json"
+            path = f"downloads/thread_downloads/{model}/bot{num_bot}/{paper_id}.json"
 
             if os.path.exists(path):
                 with open(path, "r") as f:
@@ -114,6 +118,7 @@ def eval_Qwen3_4B(num_bot, label):
             "bertscore_precision": bert_results["precision"][i],
             "bertscore_recall": bert_results["recall"][i],
             "bertscore_f1": bert_results["f1"][i],
+            "len": len(predictions[i])
         }
         combined_results.append(combined)
     
@@ -124,13 +129,14 @@ def eval_Qwen3_4B(num_bot, label):
         metric: mean(result[metric] for result in combined_results)
         for metric in metric_keys
     }
-    results = {"method": f"bot{num_bot}_{label}_Qwen3_4B", "scores": combined_results, "means": metric_means}
+    results = {"method": f"{model}_bot{num_bot}_{label}", "scores": combined_results, "means": metric_means}
 
-    with open(f"eval_results/bot{num_bot}_{label}_Qwen3_4B.json", "w") as f:
+    with open(f"eval_results/{model}/bot{num_bot}/{label}.json", "w") as f:
         json.dump(results, f, indent=2)
 
 def main():
-    eval_Qwen3_4B(0, "bad_summary")
+    for j in ["real_tweet", "summary", "bad_summary"]:
+        eval_model(0, "Llama-3.1-8B-Instruct", j)
 
 if __name__ == "__main__":
     main()
