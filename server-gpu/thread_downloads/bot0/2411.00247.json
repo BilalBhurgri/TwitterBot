@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "paper_id": "2411.00247",
+  "bot_num": 0,
+  "processed_date": "2025-06-05T21:51:08.116520",
+  "all_summaries": [
+    "This paper introduces a telescoping model for analyzing deep learning phenomena, demonstrating how linearized functional updates can reveal insights into non-monotonic generalization curves, the performance differences between gradient boosting and neural networks on tabular data, and the success of weight averaging in deep learning.",
+    "This paper introduces a telescoping model to analyze deep learning phenomena by approximating functional updates during training, enabling insights into model complexity, generalization curves, and performance differences between gradient boosting and neural networks. It shows that the model helps quantify benign overfitting, explains why gradient boosting can outperform neural networks on irregular datasets, and highlights the role of gradient stabilization in weight averaging success."
+  ],
+  "best_summary_idx": 1,
+  "summary": "This paper introduces a telescoping model to analyze deep learning phenomena by approximating functional updates during training, enabling insights into model complexity, generalization curves, and performance differences between gradient boosting and neural networks. It shows that the model helps quantify benign overfitting, explains why gradient boosting can outperform neural networks on irregular datasets, and highlights the role of gradient stabilization in weight averaging success.",
+  "evaluation": "Step 1: Check if the summaries accurately reflect the key contributions and findings of the paper as described in the source text.\nStep 2: Assess whether the summaries are written in a way that is accessible to a general audience or require prior knowledge of the field.\nStep 3: Verify that the summaries do not contain any information not present in the source text.\n\nFactual Consistency Scores:\nSummary 0: 3\nSummary 1: 3\n\nEngagingness Scores:\nSummary 0: 2\nSummary 1: 3\n\nBest Summary:\n1\nOkay, let's start by evaluating the factual consistency of each summary based on the source text. \n\nFor Summary 0, it mentions the telescoping model for analyzing deep learning phenomena, non-monotonic generalization curves, performance differences between gradient boosting and neural networks on tabular data, and the success of weight averaging. The source text does discuss these points, so it's accurate.\n\nSummary 1 covers the same key points: telescoping model, model complexity, generalization curves, performance differences between gradient boosting and neural networks, benign overfitting, and gradient stabilization in weight averaging. The source text supports all these elements, so it's also factually consistent.\n\nNext, assessing engagingness. Summary 0 is more technical and might be less engaging for a general audience, requiring prior knowledge. Summary 1 uses terms like \"quantify benign overfitting\" and \"role of gradient stabilization,\" which",
+  "tweet": "\"A new study reveals how telescoping models explain deep learning behaviors, highlighting benign overfitting, gradient boosting advantages, and weight",
+  "real_tweet": "\"A new study reveals how telescoping models explain deep learning behaviors, highlighting benign overfitting, gradient boosting advantages, and weight\n Link: https://arxiv.org/abs/2411.00247",
+  "model_used": "Qwen/Qwen3-4B",
+  "eval_mode": true
+}

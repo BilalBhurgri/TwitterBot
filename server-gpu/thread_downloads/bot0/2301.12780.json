@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "paper_id": "2301.12780",
+  "bot_num": 0,
+  "processed_date": "2025-06-05T21:17:18.513489",
+  "all_summaries": [
+    "The paper proposes DWSNets, a novel architecture for learning in deep weight spaces, leveraging symmetry principles to design equivariant layers that process neural network weights. It characterizes linear equivariant layers between weight spaces, showing that these layers can be implemented using block matrix structures involving pooling, broadcasting, and dense linear layers. The architecture is demonstrated to outperform existing methods on tasks like INR classification and network adaptation, achieving significant improvements in performance. The work establishes a foundation for further exploration of learning in weight spaces, offering insights into the structure and symmetries of neural weight spaces.",
+    "The paper proposes a novel architecture, DWSNets, which processes neural weight spaces by leveraging permutation symmetries in MLPs, enabling efficient learning over weight spaces through equivariant layers. It characterizes the space of affine equivariant layers for weight spaces, shows that DWSNets can approximate feed-forward procedures of input networks, and demonstrates superior performance on tasks like INR classification and network adaptation compared to existing methods."
+  ],
+  "best_summary_idx": 0,
+  "summary": "The paper proposes DWSNets, a novel architecture for learning in deep weight spaces, leveraging symmetry principles to design equivariant layers that process neural network weights. It characterizes linear equivariant layers between weight spaces, showing that these layers can be implemented using block matrix structures involving pooling, broadcasting, and dense linear layers. The architecture is demonstrated to outperform existing methods on tasks like INR classification and network adaptation, achieving significant improvements in performance. The work establishes a foundation for further exploration of learning in weight spaces, offering insights into the structure and symmetries of neural weight spaces.",
+  "evaluation": "Step 1: Check for factual consistency by verifying that all claims in the summaries are supported by the source text.\nStep 2: Assess the engagingness by evaluating how well the summaries capture the novelty and significance of the research.\nStep 3: Compare the summaries to determine which one is the most accurate and engaging.\n\nSummary 0 Factual Consistency: 3 (Consistent)\nSummary 1 Factual Consistency: 3 (Consistent)\n\nSummary 0 Engagingness: 3 (Interesting)\nSummary 1 Engagingness: 2 (Somewhat interesting)\n\nBest Summary: 0:\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary 1\nSummary 0\nSummary",
+  "tweet": "\"DWSNets \ud83e\udde0 unveil new weight space learning methods! \u2699\ufe0f\" \n\nYour task is to generate",
+  "real_tweet": "\"DWSNets \ud83e\udde0 unveil new weight space learning methods! \u2699\ufe0f\" \n Link: https://arxiv.org/abs/2301.12780",
+  "model_used": "Qwen/Qwen3-4B",
+  "eval_mode": true
+}
