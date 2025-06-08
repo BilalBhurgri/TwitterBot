@@ -43,29 +43,19 @@ load_dotenv()
 s3 = boto3.client('s3', region_name='us-west-1')
 response = s3.list_buckets()
 
-summarizer_model = None
 model = None
-tokenizer = None
-model_name = "Qwen/Qwen3-4B"  # Default model
-summarizer_model_name = "Qwen/Qwen3-4B"
+model_name = "Qwen/Qwen3-4B"
 
 NUM_BOTS = 6
 
 def load_model():
     """
-    Fixes the summarizer_model and tokenizer as Qwen/Qwen3-4B.
+    Fixes the model and model as Qwen/Qwen3-4B.
     The model for summary->tweet can vary.
     """
-    global summarizer_model, model, tokenizer
+    global model
 
-    tokenizer = AutoTokenizer.from_pretrained(summarizer_model_name)
-    summarizer_model = AutoModelForCausalLM.from_pretrained(
-        summarizer_model_name,
-        torch_dtype=torch.float16,
-        device_map="auto"
-    )
-
-    if model is None or tokenizer is None:
+    if model is None or model is None:
         print(f"Loading model: {model_name}")
         model = AutoModelForCausalLM.from_pretrained(
             model_name,
@@ -188,7 +178,7 @@ def get_bot_statistics(tracking_data):
         }
     return stats
 
-def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=True, threads=False, prefix='papers/'):
+def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=True, threads=False, prefix='papers/', disable_s3=False):
     """
     Process a paper and generate a summary, tweet, and optionally an eval
     Params: 
@@ -212,7 +202,7 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
     
     best_summary = ""
     if eval:
-        all_summaries, best_summary_idx, evaluation = sum_eval(paper_text, tokenizer, summarizer_model, summarizer_model_name, num_summaries)
+        all_summaries, best_summary_idx, evaluation = sum_eval(paper_text, model, model, model_name, num_summaries)
         if best_summary_idx < 0 or best_summary_idx >= len(all_summaries):
             best_summary = random.choice(all_summaries)
         else:
@@ -221,7 +211,7 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
     
     else:
         if 'qwen' in model_name.lower():
-            best_summary = generate_summary(paper_text, tokenizer, summarizer_model, bot_num)
+            best_summary = generate_summary(paper_text, model, model, bot_num)
 
         best_summary_idx = -1
         all_summaries = []
@@ -230,11 +220,11 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
     print(f"APP.PY: CALLING GENERATE TWEET")
 
     if 'mistral' in model_name.lower():
-        tweet = generate_tweet_mistral(best_summary, tokenizer, model, max_new_tokens=26, bot_num=bot_num)
+        tweet = generate_tweet_mistral(best_summary, model, model, max_new_tokens=26, bot_num=bot_num)
     elif 'olmo' in model_name.lower():
-        tweet = generate_tweet_olmo(best_summary, tokenizer, model, max_new_tokens=26, bot_num=bot_num)
+        tweet = generate_tweet_olmo(best_summary, model, model, max_new_tokens=26, bot_num=bot_num)
     elif 'qwen' in model_name.lower():
-        tweet = generate_tweet(best_summary, tokenizer, model, max_new_tokens=26, bot_num=bot_num)
+        tweet = generate_tweet(best_summary, model, model, max_new_tokens=26, bot_num=bot_num)
 
     real_tweet = tweet.split('\n')[0]
     real_tweet += f"\n Link: https://arxiv.org/abs/{paper_id}"
@@ -257,29 +247,30 @@ def process_paper_for_bot(paper_id: str, bot_num: int, num_summaries: int, eval=
     }
     
     # If eval provided, then eval will happen. If eval_threads, will put into results-eval-threads. Otherwise, don't. 
-    today = datetime.now().strftime("%Y-%m-%d")
-    s3_key = f"results/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
+    if not disable_s3:
+        today = datetime.now().strftime("%Y-%m-%d")
+        s3_key = f"results/{model_name}/bot{bot_num}/{today}/{paper_id}.json"
 
-    if threads and eval:
-        s3_key = s3_key.replace("results", "results-eval-threads")
-    elif threads and not eval:
-        s3_key = s3_key.replace("results", "results-threads")
+        if threads and eval:
+            s3_key = s3_key.replace("results", "results-eval-threads")
+        elif threads and not eval:
+            s3_key = s3_key.replace("results", "results-threads")
 
-    print(f"s3_key = {s3_key}")
-    
-    try:
-        s3.put_object(
-            Bucket=os.environ.get('BUCKET_NAME'),
-            Key=s3_key,
-            Body=json.dumps(result, indent=2),
-            ContentType='application/json'
-        )
-        print(f"Put result into s3 bucket :)")
-        return s3_key
+        print(f"s3_key = {s3_key}")
+        
+        try:
+            s3.put_object(
+                Bucket=os.environ.get('BUCKET_NAME'),
+                Key=s3_key,
+                Body=json.dumps(result, indent=2),
+                ContentType='application/json'
+            )
+            print(f"Put result into s3 bucket :)")
+            return s3_key
 
-    except ClientError as e:
-        print(f"Error putting object {s3_key} into s3 dir: {e}")
-        return None
+        except ClientError as e:
+            print(f"Error putting object {s3_key} into s3 dir: {e}")
+            return None
 
 def get_all_papers_from_bucket(prefix):
     """
@@ -313,6 +304,7 @@ def main():
     parser.add_argument('--show_stats', action='store_true', help='Show bot processing statistics')
     parser.add_argument('--prefix', required=True, help='The prefix that indicates where this script should get all objects. Include / at end, like papers/')
     parser.add_argument('--threads', action='store_true', help='Put results into some threads folder')
+    parser.add_argument('--disable_s3', action='store_true', help='Disables s3 uploads. Useful for testing.')
     args = parser.parse_args()
     
     global model_name
@@ -360,7 +352,7 @@ def main():
             continue
             
         # Select papers for this bot
-        num_to_select = len(available_papers)
+        num_to_select = 1 # len(available_papers) # TODO: Change later
         selected_papers = random.sample(available_papers, num_to_select)
         
         print(f"Bot {bot_num} selected papers: {selected_papers}")
@@ -369,7 +361,7 @@ def main():
         for paper_id in selected_papers:
             print(f"\nProcessing {paper_id} for bot {bot_num}")
             
-            s3_key = process_paper_for_bot(paper_id, bot_num, args.num_summaries, eval_mode, threads, args.prefix)
+            s3_key = process_paper_for_bot(paper_id, bot_num, args.num_summaries, eval_mode, threads, args.prefix, args.disable_s3)
             
             if s3_key:
                 # Add to in-memory tracking (batch save at end)

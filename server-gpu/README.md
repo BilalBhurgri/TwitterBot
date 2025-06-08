@@ -1,115 +1,32 @@
-# Flask Server for Paper Processing
+# start_here.py 
 
-This server provides endpoints for processing papers and generating summaries using language models.
+Generally, you run this like. Make sure to include the extra `/` after any path.
 
-## Setup
-
-1. Make sure you're in the project root directory
-2. Activate the virtual environment:
-   ```bash
-   source .venv/bin/activate
-   ```
-3. Ensure all dependencies are installed:
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-## Running the Server
-
-To run the server:
-
-```bash
-python server/app.py
+```
+python start_here.py --model_name <model_name> --force_reprocess --prefix papers/threads/ --threads
 ```
 
-The server will start on port 5000 by default. You can change this by setting the `PORT` environment variable.
+The prefix is the path where you download the papers from.
+`--force_reprocess` allows you to reprocess papers and ignore the methods that check if a paper was reprocessed. 
 
-## Available Endpoints
+## Qwen
 
-### Health Check
-- **URL**: `/health`
-- **Method**: `GET`
-- **Description**: Check if the server is running and if the model is loaded
-- **Response**: 
-  ```json
-  {
-    "status": "healthy",
-    "message": "Server is running",
-    "model_loaded": true
-  }
-  ```
+Qwen/Qwen3-4B
 
-### Process Paper
-- **URL**: `/process-paper/<key>`
-- **Method**: `POST`
-- **Description**: Process a paper and generate a summary using the s3 key, which is in the format papers/arxiv_id.txt
-- **Request Body**:
-  ```json
-  {
-    "paper_text": "Your paper text here...",
-    "evaluate": true  // Optional: whether to generate an evaluation
-  }
-  ```
-- **Response**: 
-  ```json
-  {
-    "status": "success",
-    "summary": "Generated summary...",
-    "evaluation": "Evaluation scores..."  // Only if evaluate=true
-  }
-  ```
+`python start_here.py --model_name Qwen/Qwen3-4B --force_reprocess --prefix papers/threads/`
 
-### Set Model
-- **URL**: `/set-model`
-- **Method**: `POST`
-- **Description**: Change the model being used for processing
-- **Request Body**:
-  ```json
-  {
-    "model_name": "Qwen/Qwen3-1.7B"  // or "Qwen/Qwen3-4B"
-  }
-  ```
-- **Response**: 
-  ```json
-  {
-    "status": "success",
-    "message": "Model set to Qwen/Qwen3-1.7B"
-  }
-  ```
+`python start_here.py --model_name Qwen/Qwen3-1.7B --force_reprocess --prefix papers/threads/`
 
-## Example Usage
+## LLAMA 
 
-1. Check server health:
-   ```bash
-   curl http://localhost:5000/health
-   ```
+Prompt not made yet, generate_summary_llama is untested code. generate_tweet_llama isn't written yet.
 
-2. Process a paper:
-   ```bash
-   curl -X POST http://localhost:5000/process-paper \
-     -H "Content-Type: application/json" \
-     -d '{"paper_text": "Your paper text here...", "evaluate": true}'
-   ```
+## OLMO
 
-3. Change the model:
-   ```bash
-   curl -X POST http://localhost:5000/set-model \
-     -H "Content-Type: application/json" \
-     -d '{"model_name": "Qwen/Qwen3-4B"}'
-   ```
+`python start_here.py --model_name allenai/OLMo-2-0425-1B-Instruct --force_reprocess --prefix papers/threads/ --threads`
 
-## Notes
+`python start_here.py --model_name allenai/OLMo-2-1124-7B-Instruct --force_reprocess --prefix papers/threads/ --threads`
 
-- The server uses Qwen3-1.7B by default
-- Models are loaded lazily (only when needed)
-- The server supports both summary generation and evaluation
-- All endpoints return JSON responses
-- Error handling is implemented for all endpoints
+## Mistral 
 
-## Development
-
-To add new endpoints or modify existing ones, edit `app.py`. Make sure to:
-1. Add proper error handling
-2. Document the endpoint in this README
-3. Add appropriate logging
-4. Consider rate limiting for production use 
+`python start_here.py --model_name mistralai/Mistral-7B-Instruct-v0.3 --force_reprocess --prefix papers/threads/ --threads`
