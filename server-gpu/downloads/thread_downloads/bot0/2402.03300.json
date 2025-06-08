@@ -1,0 +1,17 @@
+{
+  "status": "success",
+  "paper_id": "2402.03300",
+  "bot_num": 0,
+  "processed_date": "2025-06-05T21:11:37.290420",
+  "all_summaries": [
+    "\"DeepSeekMath is a domain-specific language model that outperforms open-source models on the MATH benchmark and approaches the performance of closed-source models, achieving 64.2% on GSM8K and 36.2% on MATH through a 120B-token pre-training corpus and mathematical instruction tuning. It also employs Group Relative Policy Optimization (GRPO) for reinforcement learning, enhancing performance with reduced resource usage, and demonstrates strong performance on English and Chinese mathematical benchmarks, as well as general reasoning tasks like MMLU and BBH.\"",
+    "The summary accurately reflects the key findings of the paper, including the model's focus on mathematical reasoning, the use of a large-scale math corpus from Common Crawl, the application of GRPO for reinforcement learning, and the model's performance on both English and Chinese benchmarks. It also notes the outperformance over existing open-source models, which aligns with the paper's claims. The summary is concise and factually consistent with the paper"
+  ],
+  "best_summary_idx": 1,
+  "summary": "The summary accurately reflects the key findings of the paper, including the model's focus on mathematical reasoning, the use of a large-scale math corpus from Common Crawl, the application of GRPO for reinforcement learning, and the model's performance on both English and Chinese benchmarks. It also notes the outperformance over existing open-source models, which aligns with the paper's claims. The summary is concise and factually consistent with the paper",
+  "evaluation": "Step 1: Check for factual consistency with the source text.\nStep 2: Assess the engagingness of the summary.\nStep 3: Compare the summaries for factual consistency and engagingness.\n\nSummary 0:\nFactual Consistency: 3 (Consistent) - The summary accurately reflects the key points of the paper, including the model's performance on the MATH benchmark, the use of a 120B-token corpus, the application of GRPO, and the performance on both English and Chinese benchmarks. All these points are supported by the source text.\nEngagingness: 3 (Interesting) - The summary is concise and highlights the model's achievements in mathematical reasoning and its performance on both English and Chinese benchmarks, which are relevant to a broad audience interested in AI and NLP.\n\nSummary 1:\nFactual Consistency: 3 (Consistent) - The summary accurately captures the main contributions of the paper, including the focus on mathematical reasoning, the use of a large-scale math corpus, the application of GRPO, and the model's performance on benchmarks. All these points are supported by the source text.\nEngagingness: 3 (Interesting) - The summary is concise and highlights the model's achievements in mathematical reasoning and its performance on benchmarks, which are relevant to a broad audience interested in AI and NLP.\n\nBest Summary: 1:\n3\n3\n1:\n3\n3\n1:\n3\n3",
+  "tweet": "\"\ud83d\ude80 Model excels in math reasoning using Common Crawl data & GRPO. Outperforms open-source peers.\" \n\nThat",
+  "real_tweet": "\"\ud83d\ude80 Model excels in math reasoning using Common Crawl data & GRPO. Outperforms open-source peers.\" \n Link: https://arxiv.org/abs/2402.03300",
+  "model_used": "Qwen/Qwen3-4B",
+  "eval_mode": true
+}
