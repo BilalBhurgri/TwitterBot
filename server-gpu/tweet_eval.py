@@ -85,7 +85,10 @@ def eval_model(num_bot, model, label):
             obj = s3.get_object(Bucket=os.environ.get('BUCKET_NAME'), Key=f'papers/threads/{paper_id}.txt')
             paper_text = obj['Body'].read().decode('utf-8')
             tweet = ''
-            path = f"downloads/thread_downloads/{model}/bot{num_bot}/{paper_id}.json"
+            if label == "thread":
+                path = f"threads/{model}/bot{num_bot}/{paper_id}.json"
+            else:
+                path = f"downloads/thread_downloads/{model}/bot{num_bot}/{paper_id}.json"
 
             if os.path.exists(path):
                 with open(path, "r") as f:
@@ -94,6 +97,8 @@ def eval_model(num_bot, model, label):
                         if data["best_summary_idx"] < 0:
                             continue
                         tweet = data["all_summaries"][1 - data["best_summary_idx"]]
+                    elif label == "thread":
+                        tweet = ''.join(data["thread"])
                     else:
                         tweet = data[label]
                     rouge_result = rouge.compute(predictions=[tweet], references=[paper_text])
@@ -135,8 +140,7 @@ def eval_model(num_bot, model, label):
         json.dump(results, f, indent=2)
 
 def main():
-    for j in ["real_tweet", "summary", "bad_summary"]:
-        eval_model(0, "Llama-3.1-8B-Instruct", j)
+    eval_model(0, "Qwen3-4B", "thread")
 
 if __name__ == "__main__":
     main()

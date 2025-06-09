@@ -1,0 +1,9 @@
+{
+  "thread": [
+    "The Dual-Route Model explains how LLMs use token and concept induction to copy text. \ud83e\udde0\ud83d\udca1 #AIResearch #NLP\n Link: https://arxiv.org/abs/2504.03022",
+    "Token induction copies tokens, concept induction copies meaning. \ud83d\udd0d\ud83e\udde0 #AIResearch",
+    "Researchers show ablation of token induction heads disrupts literal copying but preserves semantic tasks, while concept induction head ablation harms semantics but not literals. \ud83e\udde0\ud83d\udd0d #AIResearch #Neuroscience",
+    "Drfeifei's new paper shows how induction heads function differently in separate layers, focusing on word ends vs. next tokens. \ud83e\udde0\ud83d\udca1 #NLP #DeepLearning",
+    "Researchers reveal LLMs use dual mechanisms for flexible learning. \ud83e\udde0\ud83e\udd16 #AIResearch #LLMs"
+  ]
+}
