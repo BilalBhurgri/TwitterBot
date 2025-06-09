@@ -1,0 +1,9 @@
+{
+  "thread": [
+    "This paper presents SuperBPE, a tokenization method combining subword and superword tokens, enhancing encoding efficiency and performance on downstream tasks. #NLP #AI\n Link: https://arxiv.org/abs/2503.13423",
+    "SuperBPE improves tokenization efficiency, enhancing model performance. \ud83d\udca1 #NLP #AI",
+    "\"SuperBPE models improve training/inference efficiency by 4x. \ud83d\ude80 #AI #Efficiency\"",
+    "The advancements in NLP models are yielding significant improvements. \ud83d\ude80 #AI #LanguageModels",
+    "The paper shows SuperBPE outperforms BPE in practical tasks despite slightly higher losses. \ud83e\udde0\ud83d\udca1 #NLP #AI"
+  ]
+}

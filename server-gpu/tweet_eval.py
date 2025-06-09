@@ -140,7 +140,7 @@ def eval_model(num_bot, model, label):
         json.dump(results, f, indent=2)
 
 def main():
-    eval_model(0, "Qwen3-4B", "thread")
+    eval_model(1, "Qwen3-4B", "thread")
 
 if __name__ == "__main__":
     main()
